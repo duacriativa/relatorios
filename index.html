@@ -776,6 +776,44 @@ body{
 <script>
 // ════════ CONSTANTS ════════
 const PASS = 'Ads2026@';
+const SUPA_URL = 'https://ugvmbtufwtpfqmvfmsde.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVndm1idHVmd3RwZnFtdmZtc2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjM2ODQsImV4cCI6MjA5MDAzOTY4NH0.yrJDf5iC1hcDfloF6QWmgkCrTgut7s10BfZWSi8AjNk';
+
+async function sbFetch(path, options = {}) {
+  const res = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': `Bearer ${SUPA_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': options.prefer || '',
+      ...options.headers,
+    }
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e?.message || 'Erro no Supabase'); }
+  return res.status === 204 ? null : res.json();
+}
+
+async function loadClients() {
+  try {
+    clients = await sbFetch('clientes?select=*&order=name.asc');
+  } catch(e) {
+    console.error('Erro ao carregar clientes:', e);
+    clients = [];
+  }
+}
+
+async function saveClient(client) {
+  await sbFetch('clientes', {
+    method: 'POST',
+    prefer: 'return=representation',
+    body: JSON.stringify(client)
+  });
+}
+
+async function deleteClient(id) {
+  await sbFetch(`clientes?id=eq.${id}`, { method: 'DELETE' });
+}
 
 // ════════ THEME ════════
 function toggleTheme(checkbox) {
@@ -806,14 +844,11 @@ function doLogin() {
     err.style.display = 'none';
     sessionStorage.setItem('auth', '1');
     document.getElementById('login-screen').style.display = 'none';
-    // Check if already configured
     const saved = localStorage.getItem('meta_cfg');
     if (saved) {
       const c = JSON.parse(saved);
-      cfg.clickup = c.clickup;
-      cfg.listId  = c.listId;
-      load();
-      launch();
+      cfg.clickup = c.clickup; cfg.listId = c.listId;
+      loadClients().then(() => launch());
     } else {
       document.getElementById('setup-screen').classList.add('open');
     }
@@ -821,7 +856,6 @@ function doLogin() {
     err.style.display = 'block';
     document.getElementById('login-input').value = '';
     document.getElementById('login-input').focus();
-    // shake animation
     const box = document.querySelector('.login-box');
     box.style.animation = 'none';
     box.offsetHeight;
@@ -841,14 +875,12 @@ window.addEventListener('DOMContentLoaded', () => {
     if (saved) {
       const c = JSON.parse(saved);
       cfg.clickup = c.clickup; cfg.listId = c.listId;
-      load(); launch();
+      loadClients().then(() => launch());
     } else {
       document.getElementById('setup-screen').classList.add('open');
     }
   }
-  // period
   applyQuickPeriod();
-  // atk toggle
   document.getElementById('atk-toggle').addEventListener('change', function(){
     document.getElementById('atk-section').style.display = this.checked ? 'block' : 'none';
   });
@@ -866,10 +898,8 @@ let selClient = null;
 let fetchedData = null;
 let weekHistory = [];
 
-function save() { localStorage.setItem('meta_clients', JSON.stringify(clients)); }
-function load() {
-  try { clients = JSON.parse(localStorage.getItem('meta_clients') || '[]'); } catch(e){ clients=[]; }
-}
+function save() { /* Supabase — usado via saveClient() */ }
+async function load() { await loadClients(); }
 
 // ════════ SETUP ════════
 function startApp() {
@@ -878,7 +908,7 @@ function startApp() {
   if (!cfg.clickup || !cfg.listId) { toast('⚠️ Preencha o token do ClickUp e o ID da lista.'); return; }
   localStorage.setItem('meta_cfg', JSON.stringify({clickup: cfg.clickup, listId: cfg.listId}));
   document.getElementById('setup-screen').classList.remove('open');
-  load(); launch();
+  loadClients().then(() => launch());
 }
 function startDemo() {
   cfg.isDemo = true; cfg.clickup = 'DEMO'; cfg.listId = 'DEMO';
@@ -934,7 +964,7 @@ function renderClients() {
     </div>`).join('');
 }
 function selectClient(i) {
-  selClient = clients[i];
+  selClient = {...clients[i], accountId: clients[i].account_id || clients[i].accountId};
   fetchedData = null;
   document.getElementById('lbl-client2').textContent = selClient.name;
   document.getElementById('card-results').style.display = 'none';
@@ -957,27 +987,39 @@ function renderClientManager() {
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:var(--radius2);margin-bottom:8px;transition:var(--transition)">
       <div>
         <div style="font-size:13px;font-weight:600">${c.name}</div>
-        <div style="font-size:11px;color:var(--text3)">${c.accountId} · token ${c.token==='DEMO'?'demo':c.token.substring(0,10)+'...'}</div>
+        <div style="font-size:11px;color:var(--text3)">${c.account_id||c.accountId} · token ${c.token==='DEMO'?'demo':c.token.substring(0,10)+'...'}</div>
       </div>
       <button onclick="removeClient(${i})" style="background:var(--redbg);border:1px solid rgba(239,68,68,.2);color:var(--red);border-radius:var(--radius2);padding:5px 10px;font-size:12px;cursor:pointer">Remover</button>
     </div>`).join('');
 }
-function saveNewClient() {
+async function saveNewClient() {
   const name    = document.getElementById('add-cname').value.trim();
   const token   = document.getElementById('add-ctoken').value.trim();
   const account = document.getElementById('add-caccount').value.trim();
   if (!name||!token||!account) { toast('⚠️ Preencha todos os campos.'); return; }
-  clients.push({name, token, accountId: account.startsWith('act_') ? account : 'act_'+account});
-  save(); renderClients(); renderClientManager();
-  document.getElementById('add-cname').value = '';
-  document.getElementById('add-ctoken').value = '';
-  document.getElementById('add-caccount').value = '';
-  toast(`✓ ${name} adicionado!`);
+  const accountId = account.startsWith('act_') ? account : 'act_'+account;
+  try {
+    const saved = await saveClient({name, token, account_id: accountId});
+    await loadClients();
+    renderClients(); renderClientManager();
+    document.getElementById('add-cname').value = '';
+    document.getElementById('add-ctoken').value = '';
+    document.getElementById('add-caccount').value = '';
+    toast(`✓ ${name} adicionado!`);
+  } catch(e) {
+    toast('⚠️ Erro ao salvar: ' + e.message);
+  }
 }
-function removeClient(i) {
+async function removeClient(i) {
   if (!confirm(`Remover "${clients[i].name}"?`)) return;
   if (selClient?.name === clients[i].name) selClient = null;
-  clients.splice(i,1); save(); renderClients(); renderClientManager();
+  try {
+    await deleteClient(clients[i].id);
+    await loadClients();
+    renderClients(); renderClientManager();
+  } catch(e) {
+    toast('⚠️ Erro ao remover: ' + e.message);
+  }
 }
 function renderHistory() {
   const tbody = document.getElementById('hist-body');

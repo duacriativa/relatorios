@@ -577,6 +577,7 @@ body{
         <input id="cfg-list" placeholder="901xxxxxxxx"/>
         <div class="hint">URL da lista: <code style="font-size:11px;background:var(--s3);padding:1px 6px;border-radius:4px;color:var(--accent2)">/list/XXXXXXXXX</code></div>
       </div>
+      <div class="field"><label>Chave OpenAI (API Key)</label><input id="cfg-openai" type="password" placeholder="sk-..."/><div class="hint">Em <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a></div></div>
       <button class="btn-main" onclick="startApp()">Entrar na Central →</button>
       <hr class="divider"/>
       <button class="btn-ghost" onclick="startDemo()">Ver demonstração com dados fictícios</button>
@@ -905,6 +906,7 @@ async function load() { await loadClients(); }
 function startApp() {
   cfg.clickup = document.getElementById('cfg-clickup').value.trim();
   cfg.listId  = document.getElementById('cfg-list').value.trim();
+  cfg.openaiKey = (document.getElementById('cfg-openai')||{}).value?.trim()||cfg.openaiKey||'';
   if (!cfg.clickup || !cfg.listId) { toast('⚠️ Preencha o token do ClickUp e o ID da lista.'); return; }
   localStorage.setItem('meta_cfg', JSON.stringify({clickup: cfg.clickup, listId: cfg.listId}));
   document.getElementById('setup-screen').classList.remove('open');
@@ -1183,6 +1185,7 @@ function addAtkRow() {
 // ════════ COLLECT ════════
 function collectAll() {
   const d = fetchedData;
+  if (!d) return null;
   const roi    = d.spend>0&&d.revenue>0 ? (d.revenue/d.spend).toFixed(2) : '—';
   const cpa    = d.convs>0 ? fmtR(d.spend/d.convs) : '—';
   const ticket = d.convs>0&&d.revenue>0 ? fmtR(d.revenue/d.convs) : '—';
@@ -1297,6 +1300,7 @@ function buildRelatorio() {
 // ════════ AI ════════
 async function genAnalysis() {
   const m=collectAll();
+  if (!m) { const el=document.getElementById('ai-box'); el.className='ai-box'; el.textContent='⚠️ Puxe os dados do Meta antes de gerar a análise.'; return; }
   const el=document.getElementById('ai-box');
   el.className='ai-box loading';
   el.innerHTML='Gerando análise<span class="dots"></span>';
@@ -1317,9 +1321,9 @@ Escreva em 3 blocos:
 
 Sem introdução. Direto ao ponto.`;
   try {
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const cfg2=JSON.parse(localStorage.getItem('meta_cfg')||'{}');const oKey=cfg2.openaiKey||'';const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+oKey},body:JSON.stringify({model:'gpt-4o-mini',max_tokens:1500,messages:[{role:'user',content:prompt}]})});
     const data=await r.json();
-    const text=data.content?.find(b=>b.type==='text')?.text||'Não foi possível gerar.';
+    const text=data.choices?.[0]?.message?.content||data.error?.message||'Não foi possível gerar.';
     el.className='ai-box'; el.textContent=text; window._ai=text;
   } catch(e) {
     el.className='ai-box'; el.textContent='⚠️ Erro ao gerar análise. Tente novamente.';

@@ -1210,55 +1210,91 @@ function collectAll() {
 }
 
 // ════════ CLICKUP ════════
+function buildCUDescription(m) {
+  let d = `Relatório Semanal - (${m.from} a ${m.to})\nEmpresa: ${m.cliente}\n\n`;
+  d += `📊 Resultados dos Anúncios (Meta Ads):\n\n`;
+  d += `💰 Valor Investido: R$ ${fmtR(m.spend)}\n`;
+  d += `🛒 Vendas: ${m.convs}\n`;
+  d += `💵 Receita: R$ ${fmtR(m.revenue)}\n`;
+  d += `📈 ROI: ${m.roi}\n`;
+  d += `🎯 CPA: R$ ${m.cpa}\n`;
+  d += `🎫 Ticket Médio: R$ ${m.ticket}\n`;
+  d += `📊 Cliques: ${m.clicks.toLocaleString('pt-BR')}\n`;
+  d += `📊 CTR: ${m.ctr}%\n`;
+  d += `💲 CPC: R$ ${m.cpc}\n`;
+  d += `📣 CPM: R$ ${m.cpm}\n`;
+  if (m.atkOn && m.atkMsgs) {
+    d += `\n💬 Campanhas de Mensagens — Atacado:\n`;
+    d += `Mensagens recebidas: ${m.atkMsgs}\n`;
+    if (m.atkCpm) d += `Custo por Mensagem: R$ ${m.atkCpm}\n`;
+    m.atkItems.forEach(i => { d += `${i.emoji} ${i.nome}: ${i.msgs} mensagens\n`; });
+  }
+  if (m.obs) d += `\n📝 Observações: ${m.obs}\n`;
+  return d;
+}
+
 function buildCUPreview() {
   const m = collectAll();
-  const fields = [
-    ['💰 Valor Investido','R$ '+fmtR(m.spend)],['🛒 Vendas',String(m.convs)],
-    ['💵 Receita Anúncios','R$ '+fmtR(m.revenue)],['📈 ROI',m.roi],
-    ['🎯 CPA',m.cpa!=='—'?'R$ '+m.cpa:'—'],['🎫 Ticket Médio',m.ticket!=='—'?'R$ '+m.ticket:'—'],
-    ['📊 Cliques',m.clicks.toLocaleString('pt-BR')],['📊 CTR',m.ctr+'%'],
-    ['💲 CPC','R$ '+m.cpc],['📣 CPM','R$ '+m.cpm],
-  ];
-  if(m.atkOn&&m.atkMsgs){fields.push(['💬 Msgs Atacado',String(m.atkMsgs)]);if(m.atkCpm)fields.push(['💲 Custo/Msg','R$ '+m.atkCpm]);}
-  if(m.obs) fields.push(['📝 Observações',m.obs]);
-  document.getElementById('cu-rows').innerHTML=fields.map(([k,v])=>`<div class="cu-row"><span class="crk">${k}</span><span class="crv">${v}</span></div>`).join('');
+  const taskName = `Relatório Semana - ${m.cliente}`;
+  const desc = buildCUDescription(m);
+  document.getElementById('cu-rows').innerHTML =
+    `<div class="cu-row" style="margin-bottom:10px"><span class="crk">📌 Tarefa</span><span class="crv" style="font-weight:600">${taskName}</span></div>` +
+    `<div class="cu-row" style="flex-direction:column;align-items:flex-start;gap:6px"><span class="crk">📝 Descrição</span><pre style="font-size:12px;color:var(--text2);white-space:pre-wrap;line-height:1.6;margin:0;font-family:inherit">${desc}</pre></div>`;
 }
 
 async function sendClickUp() {
-  const m=collectAll();
-  const btn=document.getElementById('btn-send-cu');
-  const res=document.getElementById('cu-result');
-  btn.disabled=true; btn.textContent='Enviando…';
-  if(cfg.isDemo||selClient.token==='DEMO'){
+  const m = collectAll();
+  const btn = document.getElementById('btn-send-cu');
+  const res = document.getElementById('cu-result');
+  btn.disabled = true; btn.textContent = 'Enviando…';
+
+  if (cfg.isDemo || selClient.token === 'DEMO') {
     await delay(1100);
-    weekHistory.push({client:m.cliente,investido:'R$ '+fmtR(m.spend),roi:m.roi,vendas:String(m.convs),status:'ok'});
+    weekHistory.push({client:m.cliente, investido:'R$ '+fmtR(m.spend), roi:m.roi, vendas:String(m.convs), status:'ok'});
     renderHistory();
-    res.innerHTML=`<div class="status-pill ok" style="padding:8px 16px;font-size:13px">✓ Enviado! (modo demo)</div>`;
-    btn.textContent='✓ Enviado!'; btn.disabled=false;
-    setTimeout(()=>goStep(3),700); return;
+    res.innerHTML = `<div class="status-pill ok" style="padding:8px 16px;font-size:13px">✓ Enviado! (modo demo)</div>`;
+    btn.textContent = '✓ Enviado!'; btn.disabled = false;
+    setTimeout(() => goStep(3), 700); return;
   }
+
   try {
-    const headers={Authorization:cfg.clickup,'Content-Type':'application/json'};
-    const sR=await fetch(`https://api.clickup.com/api/v2/list/${cfg.listId}/task?search=${encodeURIComponent(m.cliente)}`,{headers});
-    const sD=await sR.json();
-    let tid=sD.tasks?.[0]?.id;
-    if(!tid){const cr=await fetch(`https://api.clickup.com/api/v2/list/${cfg.listId}/task`,{method:'POST',headers,body:JSON.stringify({name:m.cliente,status:'in progress'})});tid=(await cr.json()).id;}
-    if(!tid) throw new Error('Não foi possível criar a tarefa.');
-    const fR=await fetch(`https://api.clickup.com/api/v2/list/${cfg.listId}/field`,{headers});
-    const fD=await fR.json();
-    const fmap={};(fD.fields||[]).forEach(f=>{fmap[f.name]=f.id});
-    const toSet={'💰 Valor Investido':fmtR(m.spend),'🛒 Vendas':String(m.convs),'💵 Receita Anúncios':fmtR(m.revenue),'📈 ROI':m.roi,'🎯 CPA':m.cpa,'🎫 Ticket Médio':m.ticket,'📊 Cliques':String(m.clicks),'📊 CTR':m.ctr,'💲 CPC':m.cpc,'📣 CPM':m.cpm};
-    if(m.atkOn){toSet['💬 Msgs Atacado']=String(m.atkMsgs);toSet['💲 Custo/Msg']=m.atkCpm;}
-    if(m.obs) toSet['📝 Observações']=m.obs;
-    await Promise.all(Object.entries(toSet).filter(([k,v])=>v&&fmap[k]).map(([k,v])=>fetch(`https://api.clickup.com/api/v2/task/${tid}/field/${fmap[k]}`,{method:'POST',headers,body:JSON.stringify({value:v})})));
-    weekHistory.push({client:m.cliente,investido:'R$ '+fmtR(m.spend),roi:m.roi,vendas:String(m.convs),status:'ok'});
+    const headers = {Authorization: cfg.clickup, 'Content-Type': 'application/json'};
+    const taskName = `Relatório Semana - ${m.cliente}`;
+    const desc = buildCUDescription(m);
+
+    // Busca tarefa existente pelo nome completo
+    const sR = await fetch(`https://api.clickup.com/api/v2/list/${cfg.listId}/task?search=${encodeURIComponent(taskName)}`, {headers});
+    if (!sR.ok) { const e = await sR.json(); throw new Error(e?.err || e?.message || 'Erro ao buscar tarefa no ClickUp'); }
+    const sD = await sR.json();
+    let tid = sD.tasks?.find(t => t.name.toLowerCase().includes(m.cliente.toLowerCase()))?.id;
+
+    if (!tid) {
+      // Cria nova tarefa com nome e descrição corretos
+      const cr = await fetch(`https://api.clickup.com/api/v2/list/${cfg.listId}/task`, {
+        method: 'POST', headers,
+        body: JSON.stringify({name: taskName, description: desc, status: 'complete'})
+      });
+      if (!cr.ok) { const e = await cr.json(); throw new Error(e?.err || e?.message || 'Erro ao criar tarefa'); }
+      tid = (await cr.json()).id;
+    } else {
+      // Atualiza descrição e status da tarefa existente
+      const up = await fetch(`https://api.clickup.com/api/v2/task/${tid}`, {
+        method: 'PUT', headers,
+        body: JSON.stringify({description: desc, status: 'complete'})
+      });
+      if (!up.ok) { const e = await up.json(); throw new Error(e?.err || e?.message || 'Erro ao atualizar tarefa'); }
+    }
+
+    if (!tid) throw new Error('Não foi possível criar/atualizar a tarefa.');
+
+    weekHistory.push({client:m.cliente, investido:'R$ '+fmtR(m.spend), roi:m.roi, vendas:String(m.convs), status:'ok'});
     renderHistory();
-    res.innerHTML=`<div class="status-pill ok" style="padding:8px 16px;font-size:13px">✓ ClickUp atualizado!</div>`;
-    btn.textContent='✓ Enviado!'; btn.disabled=false;
-    setTimeout(()=>goStep(3),700);
-  } catch(e){
-    res.innerHTML=`<div class="err-box">✕ ${e.message}</div>`;
-    btn.disabled=false; btn.textContent='↺ Tentar novamente';
+    res.innerHTML = `<div class="status-pill ok" style="padding:8px 16px;font-size:13px">✓ ClickUp atualizado!</div>`;
+    btn.textContent = '✓ Enviado!'; btn.disabled = false;
+    setTimeout(() => goStep(3), 700);
+  } catch(e) {
+    res.innerHTML = `<div class="err-box">✕ ${e.message}</div>`;
+    btn.disabled = false; btn.textContent = '↺ Tentar novamente';
   }
 }
 

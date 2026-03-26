@@ -1353,12 +1353,17 @@ Escreva em 3 blocos:
 
 Sem introdução. Direto ao ponto.`;
   try {
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const r=await fetch(`${SUPA_URL}/functions/v1/analyze`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPA_KEY}`,'apikey':SUPA_KEY},
+      body:JSON.stringify({prompt})
+    });
+    if(!r.ok){const e=await r.json();throw new Error(e?.error||'Erro na Edge Function');}
     const data=await r.json();
-    const text=data.content?.find(b=>b.type==='text')?.text||'Não foi possível gerar.';
+    const text=data.text||'Não foi possível gerar.';
     el.className='ai-box'; el.textContent=text; window._ai=text;
   } catch(e) {
-    el.className='ai-box'; el.textContent='⚠️ Erro ao gerar análise. Tente novamente.';
+    el.className='ai-box'; el.textContent='⚠️ Erro ao gerar análise: '+e.message;
   }
 }
 

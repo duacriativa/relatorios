@@ -742,7 +742,7 @@ body{
   <div class="panel" id="panel2">
     <div class="card">
       <div class="card-title">🔗 Campos para o ClickUp</div>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">A tarefa do cliente será atualizada automaticamente. Campos inexistentes são criados.</p>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">A tarefa do cliente será atualizada. Os dados preencherão campos customizados existentes e serão postados como comentário.</p>
       <div id="cu-rows"></div>
       <div id="cu-result" style="margin-top:12px"></div>
     </div>
@@ -1259,6 +1259,12 @@ async function sendClickUp() {
     if(m.atkOn){toSet['💬 Msgs Atacado']=String(m.atkMsgs);toSet['💲 Custo/Msg']=m.atkCpm;}
     if(m.obs) toSet['📝 Observações']=m.obs;
     await Promise.all(Object.entries(toSet).filter(([k,v])=>v&&fmap[k]).map(([k,v])=>fetch(`https://api.clickup.com/api/v2/task/${tid}/field/${fmap[k]}`,{method:'POST',headers,body:JSON.stringify({value:v})})));
+    
+    let commentText = `📊 Resumo Automático (${m.from} a ${m.to}):\n\n`;
+    for(const [k,v] of Object.entries(toSet)) {
+      if(v) commentText += `${k}: ${v}\n`;
+    }
+    await fetch(`https://api.clickup.com/api/v2/task/${tid}/comment`,{method:'POST',headers,body:JSON.stringify({comment_text: commentText})});
     weekHistory.push({client:m.cliente,investido:'R$ '+fmtR(m.spend),roi:m.roi,vendas:String(m.convs),status:'ok'});
     renderHistory();
     res.innerHTML=`<div class="status-pill ok" style="padding:8px 16px;font-size:13px">✓ ClickUp atualizado!</div>`;

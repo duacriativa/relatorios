@@ -577,7 +577,10 @@ body{
         <input id="cfg-list" placeholder="901xxxxxxxx"/>
         <div class="hint">URL da lista: <code style="font-size:11px;background:var(--s3);padding:1px 6px;border-radius:4px;color:var(--accent2)">/list/XXXXXXXXX</code></div>
       </div>
-      <div class="field"><label>Chave OpenAI (API Key)</label><input id="cfg-openai" type="password" placeholder="sk-..."/><div class="hint">Em <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a></div></div>
+      <div class="field">
+        <label>Chave OpenAI API Key</label>
+        <input type="password" id="oai-key" placeholder="sk-..." />
+      </div>
       <button class="btn-main" onclick="startApp()">Entrar na Central →</button>
       <hr class="divider"/>
       <button class="btn-ghost" onclick="startDemo()">Ver demonstração com dados fictícios</button>
@@ -848,7 +851,7 @@ function doLogin() {
     const saved = localStorage.getItem('meta_cfg');
     if (saved) {
       const c = JSON.parse(saved);
-      cfg.clickup = c.clickup; cfg.listId = c.listId;
+      cfg.clickup = c.clickup; cfg.listId = c.listId; cfg.openaiKey = c.openaiKey || '';
       loadClients().then(() => launch());
     } else {
       document.getElementById('setup-screen').classList.add('open');
@@ -875,7 +878,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const saved = localStorage.getItem('meta_cfg');
     if (saved) {
       const c = JSON.parse(saved);
-      cfg.clickup = c.clickup; cfg.listId = c.listId;
+      cfg.clickup = c.clickup; cfg.listId = c.listId; cfg.openaiKey = c.openaiKey || '';
       loadClients().then(() => launch());
     } else {
       document.getElementById('setup-screen').classList.add('open');
@@ -906,9 +909,9 @@ async function load() { await loadClients(); }
 function startApp() {
   cfg.clickup = document.getElementById('cfg-clickup').value.trim();
   cfg.listId  = document.getElementById('cfg-list').value.trim();
-  cfg.openaiKey = (document.getElementById('cfg-openai')||{}).value?.trim()||cfg.openaiKey||'';
+  cfg.openaiKey = document.getElementById('oai-key').value.trim();
   if (!cfg.clickup || !cfg.listId) { toast('⚠️ Preencha o token do ClickUp e o ID da lista.'); return; }
-  localStorage.setItem('meta_cfg', JSON.stringify({clickup: cfg.clickup, listId: cfg.listId}));
+  localStorage.setItem('meta_cfg', JSON.stringify({clickup: cfg.clickup, listId: cfg.listId, openaiKey: cfg.openaiKey}));
   document.getElementById('setup-screen').classList.remove('open');
   loadClients().then(() => launch());
 }
@@ -1184,6 +1187,7 @@ function addAtkRow() {
 
 // ════════ COLLECT ════════
 function collectAll() {
+if (!fetchedData) return null;
   const d = fetchedData;
   if (!d) return null;
   const roi    = d.spend>0&&d.revenue>0 ? (d.revenue/d.spend).toFixed(2) : '—';
@@ -1215,6 +1219,7 @@ function collectAll() {
 // ════════ CLICKUP ════════
 function buildCUPreview() {
   const m = collectAll();
+  if (!m) { document.getElementById('ai-box').textContent = 'Puxe os dados do Meta primeiro.'; return; }
   const fields = [
     ['💰 Valor Investido','R$ '+fmtR(m.spend)],['🛒 Vendas',String(m.convs)],
     ['💵 Receita Anúncios','R$ '+fmtR(m.revenue)],['📈 ROI',m.roi],

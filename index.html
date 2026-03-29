@@ -184,6 +184,24 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 .dots::after{content:'.';animation:dots 1.2s steps(3,end) infinite;}
 @keyframes dots{0%{content:'.'}33%{content:'..'}66%{content:'...'}100%{content:'.'}}
 
+/* Token status badges */
+.token-badge{display:inline-flex;align-items:center;gap:3px;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;letter-spacing:.03em;margin-top:3px;}
+.token-badge.expired{background:var(--redbg);border:1px solid rgba(239,68,68,.2);color:var(--red);}
+.token-badge.permission{background:var(--yellowbg);border:1px solid rgba(245,158,11,.2);color:var(--yellow);}
+.token-badge.invalid{background:var(--redbg);border:1px solid rgba(239,68,68,.2);color:var(--red);}
+.token-badge.valid{background:var(--greenbg);border:1px solid rgba(34,197,94,.2);color:var(--green);}
+.token-badge.checking{background:var(--s3);border:1px solid var(--border);color:var(--text3);}
+/* Client chip layout fix for badge */
+.client-chip{flex-direction:column;align-items:flex-start;}
+.client-chip .chip-top{display:flex;align-items:center;justify-content:space-between;width:100%;}
+/* Edit/Remove button row in modal */
+.btn-edit{background:var(--accentbg);border:1px solid rgba(99,102,241,.2);color:var(--accent2);border-radius:var(--radius2);padding:5px 10px;font-size:12px;cursor:pointer;transition:var(--transition);}
+.btn-edit:hover{border-color:var(--accent);color:var(--accent);}
+.btn-remove{background:var(--redbg);border:1px solid rgba(239,68,68,.2);color:var(--red);border-radius:var(--radius2);padding:5px 10px;font-size:12px;cursor:pointer;}
+/* Edit mode banner */
+.edit-mode-banner{background:var(--accentbg);border:1px solid rgba(99,102,241,.25);border-radius:var(--radius2);padding:9px 13px;font-size:12px;color:var(--accent2);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.edit-mode-banner button{background:transparent;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:2px 6px;}
+.edit-mode-banner button:hover{color:var(--red);}
 /* Responsive */
 @media(max-width:680px){
 .panel{padding:14px;} .topbar{padding:0 14px;} .tabs{padding:0 8px;}
@@ -216,14 +234,27 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <p class="msub">Clientes salvos no Supabase. Cadastre uma vez, use em qualquer computador.</p>
 <div id="client-manager-list"></div>
 <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent2);margin-bottom:12px">Adicionar cliente</div>
-<div class="field"><label>Nome</label><input id="add-cname" placeholder="ex: Kyrefh Jeans"/></div>
-<div class="field"><label>Access Token (Meta)</label><input id="add-ctoken" type="password" placeholder="EAAxxxxx..."/>
-<div class="hint">Não sabe gerar? <a href="#" onclick="openTutorial();return false">Ver tutorial</a></div></div>
-<div class="field"><label>Ad Account ID</label><input id="add-caccount" placeholder="act_123456789"/></div>
-<button class="btn-main" onclick="saveNewClient()">Salvar cliente</button>
+<!-- Banner de modo edição -->
+<div class="edit-mode-banner" id="edit-mode-banner">
+  <span>✏️ Editando cliente: <strong id="edit-mode-name"></strong></span>
+  <button onclick="cancelEditClient()">✕ Cancelar</button>
 </div>
-<button class="btn-ghost" style="margin-top:10px" onclick="document.getElementById('modal-clients').classList.remove('open')">Fechar</button>
+<div id="form-section-title" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent2);margin-bottom:12px">Adicionar cliente</div>
+<div class="field"><label>Nome</label><input id="add-cname" placeholder="ex: Kyrefh Jeans"/></div>
+<div class="field">
+  <label>Access Token (Meta)</label>
+  <div style="position:relative">
+    <input id="add-ctoken" type="password" placeholder="EAAxxxxx..." style="padding-right:90px"/>
+    <button onclick="validateTokenManual()" id="btn-validate-token" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:var(--accentbg);border:1px solid rgba(99,102,241,.2);color:var(--accent2);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Verificar</button>
+  </div>
+  <div class="hint">Não sabe gerar? <a href="#" onclick="openTutorial();return false">Ver tutorial</a></div>
+  <div id="token-validation-result" style="margin-top:6px;display:none"></div>
+</div>
+<div class="field"><label>Ad Account ID</label><input id="add-caccount" placeholder="act_123456789"/></div>
+<input type="hidden" id="edit-client-id" value=""/>
+<button class="btn-main" id="btn-save-client" onclick="saveNewClient()">Salvar cliente</button>
+</div>
+<button class="btn-ghost" style="margin-top:10px" onclick="closeClientModal()">Fechar</button>
 </div>
 </div>
 
@@ -524,6 +555,14 @@ async function deleteClient(id) {
   await sbFetch(`clientes?id=eq.${id}`, { method: 'DELETE' });
 }
 
+async function updateClientInDb(id, data) {
+  await sbFetch(`clientes?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: { 'Prefer': 'return=minimal' },
+    body: JSON.stringify(data)
+  });
+}
+
 // ════════ THEME ════════
 function toggleTheme(checkbox) {
   const isDark = !checkbox.checked;
@@ -610,6 +649,84 @@ let clients = [];
 let selClient = null;
 let fetchedData = null;
 let weekHistory = [];
+let tokenStatuses = {}; // { clientId: 'checking'|'valid'|'expired'|'permission'|'invalid' }
+
+// ════════ TOKEN VALIDATION ════════
+async function validateToken(token, accountId) {
+  if (!token || token === 'DEMO') return { valid: true, demo: true };
+  try {
+    const url = `https://graph.facebook.com/v18.0/${accountId}?fields=id,name&access_token=${token}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.error) {
+      const code = data.error.code;
+      if (code === 190)  return { valid: false, reason: 'expired',    message: '⚠ Token expirado' };
+      if (code === 200)  return { valid: false, reason: 'permission', message: '⚠ Sem permissão' };
+      return { valid: false, reason: 'invalid', message: '⚠ ' + (data.error.message || 'Token inválido') };
+    }
+    return { valid: true };
+  } catch(e) {
+    return { valid: false, reason: 'invalid', message: '⚠ Erro de rede' };
+  }
+}
+
+async function checkAllTokens() {
+  if (cfg.isDemo) return;
+  for (const c of clients) {
+    if (!c.token || c.token === 'DEMO') continue;
+    const id = c.id;
+    tokenStatuses[id] = 'checking';
+    renderClients();
+    renderClientManager();
+    const result = await validateToken(c.token, c.account_id || c.accountId);
+    if (result.demo) {
+      tokenStatuses[id] = 'valid';
+    } else if (result.valid) {
+      tokenStatuses[id] = 'valid';
+    } else {
+      tokenStatuses[id] = result.reason || 'invalid';
+      tokenStatuses[id + '_msg'] = result.message;
+    }
+    renderClients();
+    renderClientManager();
+  }
+}
+
+function tokenBadgeHTML(clientId) {
+  const status = tokenStatuses[clientId];
+  if (!status) return '';
+  const labels = {
+    checking:   '⋯ Verificando',
+    valid:      '✓ Token OK',
+    expired:    '⚠ Token expirado',
+    permission: '⚠ Sem permissão',
+    invalid:    '⚠ Token inválido',
+  };
+  const label = labels[status] || '⚠ Inválido';
+  return `<span class="token-badge ${status}">${label}</span>`;
+}
+
+// ════════ VALIDATE TOKEN MANUALLY (botão Verificar no form) ════════
+async function validateTokenManual() {
+  const token   = document.getElementById('add-ctoken').value.trim();
+  const account = document.getElementById('add-caccount').value.trim();
+  const result  = document.getElementById('token-validation-result');
+  const btn     = document.getElementById('btn-validate-token');
+  if (!token) { toast('⚠️ Digite o token primeiro.'); return; }
+  const accountId = account ? (account.startsWith('act_') ? account : 'act_' + account) : 'me';
+  btn.textContent = '...';
+  btn.disabled = true;
+  result.style.display = 'block';
+  result.innerHTML = '<span style="font-size:12px;color:var(--text3)">Verificando token<span class="dots"></span></span>';
+  const res = await validateToken(token, accountId);
+  btn.textContent = 'Verificar';
+  btn.disabled = false;
+  if (res.valid || res.demo) {
+    result.innerHTML = '<span style="font-size:12px;color:var(--green)">✓ Token válido e com permissões corretas!</span>';
+  } else {
+    result.innerHTML = `<span style="font-size:12px;color:var(--red)">${res.message}</span>`;
+  }
+}
 
 // ════════ SETUP ════════
 async function startApp() {
@@ -650,6 +767,8 @@ function launch() {
   document.getElementById('week-label').textContent = f && t ? `${fmt2(f)} – ${fmt2(t)}` : 'Esta semana';
   renderClients();
   renderHistory();
+  // Verifica tokens de todos os clientes em background
+  if (!cfg.isDemo) checkAllTokens();
 }
 
 // ════════ STEPS ════════
@@ -676,10 +795,15 @@ function renderClients() {
     grid.innerHTML = `<div style="grid-column:1/-1;color:var(--text3);font-size:13px;padding:6px 0">Nenhum cliente cadastrado. Clique em "+ Adicionar".</div>`;
     return;
   }
-  grid.innerHTML = clients.map((c,i) => `
-    <div class="client-chip ${selClient?.name===c.name?'sel':''}" onclick="selectClient(${i})">
-      <span class="cn">${c.name}</span><span class="cc">✓</span>
-    </div>`).join('');
+  grid.innerHTML = clients.map((c,i) => {
+    const badge = tokenBadgeHTML(c.id);
+    const isSel = selClient?.name === c.name;
+    return `
+    <div class="client-chip ${isSel?'sel':''}" onclick="selectClient(${i})">
+      <div class="chip-top"><span class="cn">${c.name}</span><span class="cc">✓</span></div>
+      ${badge}
+    </div>`;
+  }).join('');
 }
 
 function selectClient(i) {
@@ -694,42 +818,115 @@ function selectClient(i) {
 
 function openAddClient() {
   const name = document.getElementById('new-client-input').value.trim();
+  cancelEditClient();
   if (name) document.getElementById('add-cname').value = name;
   document.getElementById('new-client-input').value = '';
   renderClientManager();
   document.getElementById('modal-clients').classList.add('open');
 }
 
-function openClientManager() { renderClientManager(); document.getElementById('modal-clients').classList.add('open'); }
+function openClientManager() { cancelEditClient(); renderClientManager(); document.getElementById('modal-clients').classList.add('open'); }
 
 function renderClientManager() {
   const list = document.getElementById('client-manager-list');
   if (!clients.length) { list.innerHTML = '<p style="font-size:13px;color:var(--text3);margin-bottom:12px">Nenhum cliente ainda.</p>'; return; }
-  list.innerHTML = clients.map((c,i) => `
+  list.innerHTML = clients.map((c,i) => {
+    const badge = tokenBadgeHTML(c.id);
+    const tokenPreview = c.token === 'DEMO' ? 'demo' : (c.token ? c.token.substring(0,10)+'...' : '—');
+    return `
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:var(--radius2);margin-bottom:8px;transition:var(--transition)">
-      <div>
+      <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600">${c.name}</div>
-        <div style="font-size:11px;color:var(--text3)">${c.account_id||c.accountId} · token ${c.token==='DEMO'?'demo':c.token.substring(0,10)+'...'}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${c.account_id||c.accountId||'—'} · token ${tokenPreview}</div>
+        ${badge ? `<div style="margin-top:4px">${badge}</div>` : ''}
       </div>
-      <button onclick="removeClient(${i})" style="background:var(--redbg);border:1px solid rgba(239,68,68,.2);color:var(--red);border-radius:var(--radius2);padding:5px 10px;font-size:12px;cursor:pointer">Remover</button>
-    </div>`).join('');
+      <div style="display:flex;gap:6px;flex-shrink:0;margin-left:10px">
+        <button class="btn-edit" onclick="editClient(${i})">Alterar</button>
+        <button class="btn-remove" onclick="removeClient(${i})">Remover</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function editClient(i) {
+  const c = clients[i];
+  document.getElementById('edit-client-id').value = c.id;
+  document.getElementById('add-cname').value = c.name;
+  document.getElementById('add-ctoken').value = c.token || '';
+  document.getElementById('add-caccount').value = c.account_id || c.accountId || '';
+  document.getElementById('form-section-title').textContent = 'Editar cliente';
+  document.getElementById('btn-save-client').textContent = 'Salvar alterações';
+  document.getElementById('edit-mode-name').textContent = c.name;
+  document.getElementById('edit-mode-banner').style.display = 'flex';
+  document.getElementById('token-validation-result').style.display = 'none';
+  // Scroll para o form
+  document.getElementById('edit-mode-banner').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function cancelEditClient() {
+  document.getElementById('edit-client-id').value = '';
+  document.getElementById('add-cname').value = '';
+  document.getElementById('add-ctoken').value = '';
+  document.getElementById('add-caccount').value = '';
+  document.getElementById('form-section-title').textContent = 'Adicionar cliente';
+  document.getElementById('btn-save-client').textContent = 'Salvar cliente';
+  document.getElementById('edit-mode-banner').style.display = 'none';
+  document.getElementById('token-validation-result').style.display = 'none';
+}
+
+function closeClientModal() {
+  document.getElementById('modal-clients').classList.remove('open');
+  cancelEditClient();
 }
 
 async function saveNewClient() {
+  const editId  = document.getElementById('edit-client-id').value;
   const name    = document.getElementById('add-cname').value.trim();
   const token   = document.getElementById('add-ctoken').value.trim();
   const account = document.getElementById('add-caccount').value.trim();
-  if (!name||!token||!account) { toast('⚠️ Preencha todos os campos.'); return; }
-  const accountId = account.startsWith('act_') ? account : 'act_'+account;
+  if (!name || !token || !account) { toast('⚠️ Preencha todos os campos.'); return; }
+  const accountId = account.startsWith('act_') ? account : 'act_' + account;
+
+  const btn = document.getElementById('btn-save-client');
+  btn.disabled = true;
+  btn.textContent = 'Validando token...';
+
+  // Valida token antes de salvar
+  const validation = await validateToken(token, accountId);
+  if (!validation.valid && !validation.demo) {
+    const proceed = confirm(`⚠️ ${validation.message}\n\nO token pode estar expirado ou sem as permissões necessárias.\n\nDeseja salvar assim mesmo?`);
+    if (!proceed) {
+      btn.disabled = false;
+      btn.textContent = editId ? 'Salvar alterações' : 'Salvar cliente';
+      return;
+    }
+  }
+
+  btn.textContent = 'Salvando...';
   try {
-    await saveClient({name, token, account_id: accountId});
+    if (editId) {
+      // Modo edição — atualiza no Supabase
+      await updateClientInDb(editId, { name, token, account_id: accountId });
+      toast(`✓ ${name} atualizado!`);
+    } else {
+      // Novo cliente
+      await saveClient({ name, token, account_id: accountId });
+      toast(`✓ ${name} adicionado!`);
+    }
     await loadClients();
-    renderClients(); renderClientManager();
-    document.getElementById('add-cname').value = '';
-    document.getElementById('add-ctoken').value = '';
-    document.getElementById('add-caccount').value = '';
-    toast(`✓ ${name} adicionado!`);
-  } catch(e) { toast('⚠️ Erro ao salvar: ' + e.message); }
+    // Atualiza status do token salvo
+    const saved = clients.find(c => c.account_id === accountId || c.name === name);
+    if (saved) {
+      tokenStatuses[saved.id] = validation.valid ? 'valid' : (validation.reason || 'invalid');
+    }
+    renderClients();
+    cancelEditClient();
+    renderClientManager();
+  } catch(e) {
+    toast('⚠️ Erro ao salvar: ' + e.message);
+  }
+  btn.disabled = false;
+  btn.textContent = 'Salvar cliente';
 }
 
 async function removeClient(i) {

@@ -242,12 +242,12 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div id="form-section-title" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent2);margin-bottom:12px">Adicionar cliente</div>
 <div class="field"><label>Nome</label><input id="add-cname" placeholder="ex: Kyrefh Jeans"/></div>
 <div class="field">
-  <label>Access Token (Meta)</label>
+  <label>Access Token (Meta) <span style="font-weight:400;color:var(--text3);font-size:10px;text-transform:none;letter-spacing:0">— opcional se token global configurado</span></label>
   <div style="position:relative">
-    <input id="add-ctoken" type="password" placeholder="EAAxxxxx..." style="padding-right:90px"/>
+    <input id="add-ctoken" type="password" placeholder="EAAxxxxx... (deixe vazio para usar token global)" style="padding-right:90px"/>
     <button onclick="validateTokenManual()" id="btn-validate-token" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:var(--accentbg);border:1px solid rgba(99,102,241,.2);color:var(--accent2);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Verificar</button>
   </div>
-  <div class="hint">Não sabe gerar? <a href="#" onclick="openTutorial();return false">Ver tutorial</a></div>
+  <div class="hint">Token individual do cliente. Se vazio, usa o <strong>token global</strong> configurado em ⚙️ Config. <a href="#" onclick="openTutorial();return false">Ver tutorial</a></div>
   <div id="token-validation-result" style="margin-top:6px;display:none"></div>
 </div>
 <div class="field"><label>Ad Account ID</label><input id="add-caccount" placeholder="act_123456789"/></div>
@@ -302,6 +302,11 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div class="hint">URL da lista: <code style="font-size:11px;background:var(--s3);padding:1px 6px;border-radius:4px;color:var(--accent2)">/list/XXXXXXXXX</code></div>
 </div>
 <div class="field">
+<label>Token Global Meta (Sistema de Usuário)</label>
+<input type="password" id="cfg-meta-token" placeholder="EAAxxxxxxxx..."/>
+<div class="hint">Token permanente do Usuário do Sistema. Usado para todos os clientes sem token próprio.</div>
+</div>
+<div class="field">
 <label>Chave OpenAI API Key</label>
 <input type="password" id="oai-key" placeholder="sk-..."/>
 </div>
@@ -309,6 +314,37 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <hr class="divider"/>
 <button class="btn-ghost" onclick="startDemo()">Ver demonstração com dados fictícios</button>
 </div>
+</div>
+</div>
+
+<!-- ══════════ MODAL CONFIGURAÇÕES ══════════ -->
+<div class="modal-bg" id="modal-config">
+<div class="modal">
+<h2>⚙️ Configurações</h2>
+<p class="msub">Configurações globais do sistema. Salvas para toda a equipe.</p>
+<div class="field">
+  <label>Token Global Meta (Sistema de Usuário)</label>
+  <div style="position:relative">
+    <input type="password" id="cfg-meta-token-modal" placeholder="EAAxxxxxxxx..." style="padding-right:90px"/>
+    <button onclick="validateGlobalToken()" id="btn-validate-global" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:var(--accentbg);border:1px solid rgba(99,102,241,.2);color:var(--accent2);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer">Verificar</button>
+  </div>
+  <div class="hint">Token permanente do Usuário do Sistema da sua BM. Clientes sem token próprio usam este automaticamente.</div>
+  <div id="global-token-result" style="margin-top:6px;display:none"></div>
+</div>
+<div class="field">
+  <label>ClickUp API Token</label>
+  <input type="password" id="cfg-clickup-modal" placeholder="pk_xxxxxxxxxxxxxxxx"/>
+</div>
+<div class="field">
+  <label>ID da Lista de Clientes no ClickUp</label>
+  <input id="cfg-list-modal" placeholder="901xxxxxxxx"/>
+</div>
+<div class="field">
+  <label>OpenAI API Key</label>
+  <input type="password" id="cfg-oai-modal" placeholder="sk-..."/>
+</div>
+<button class="btn-main" id="btn-save-config" onclick="saveConfig()">Salvar configurações</button>
+<button class="btn-ghost" style="margin-top:10px" onclick="document.getElementById('modal-config').classList.remove('open')">Fechar</button>
 </div>
 </div>
 
@@ -326,6 +362,7 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div class="theme-thumb"><span class="theme-icon-moon">🌙</span><span class="theme-icon-sun">☀️</span></div>
 </label>
 <button class="btn-top" onclick="openTutorial()">📖 Tutorial</button>
+<button class="btn-top" onclick="openConfig()">⚙️ Config</button>
 <button class="btn-top" onclick="openClientManager()">👤 Clientes</button>
 <button class="btn-top danger" onclick="doLogout()">Sair</button>
 </div>
@@ -517,9 +554,10 @@ async function loadConfig() {
   try {
     const rows = await sbFetch('config?select=*&limit=1');
     if (rows && rows.length > 0) {
-      cfg.clickup = rows[0].clickup_token || '';
-      cfg.listId  = rows[0].clickup_list_id || '';
+      cfg.clickup   = rows[0].clickup_token || '';
+      cfg.listId    = rows[0].clickup_list_id || '';
       cfg.openaiKey = rows[0].openai_key || '';
+      cfg.metaToken = rows[0].meta_token || '';
       return true;
     }
   } catch(e) {
@@ -528,13 +566,12 @@ async function loadConfig() {
   return false;
 }
 
-async function saveConfigToSupabase(clickup, listId, openaiKey) {
-  // upsert: se já existe, atualiza; se não, cria
+async function saveConfigToSupabase(clickup, listId, openaiKey, metaToken) {
   await sbFetch('config', {
     method: 'POST',
     prefer: 'return=minimal,resolution=merge-duplicates',
     headers: { 'Prefer': 'return=minimal,resolution=merge-duplicates' },
-    body: JSON.stringify({ id: 1, clickup_token: clickup, clickup_list_id: listId, openai_key: openaiKey })
+    body: JSON.stringify({ id: 1, clickup_token: clickup, clickup_list_id: listId, openai_key: openaiKey, meta_token: metaToken })
   });
 }
 
@@ -644,7 +681,7 @@ style.textContent = '@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{tr
 document.head.appendChild(style);
 
 // ════════ STATE ════════
-let cfg = {clickup:'', listId:'', openaiKey:'', isDemo:false};
+let cfg = {clickup:'', listId:'', openaiKey:'', metaToken:'', isDemo:false};
 let clients = [];
 let selClient = null;
 let fetchedData = null;
@@ -670,23 +707,25 @@ async function validateToken(token, accountId) {
   }
 }
 
+// Resolve qual token usar para um cliente (próprio ou global)
+function resolveToken(client) {
+  const t = client.token && client.token !== 'DEMO' ? client.token : null;
+  return t || cfg.metaToken || null;
+}
+
 async function checkAllTokens() {
   if (cfg.isDemo) return;
   for (const c of clients) {
-    if (!c.token || c.token === 'DEMO') continue;
+    const token = resolveToken(c);
+    if (!token) continue;
     const id = c.id;
     tokenStatuses[id] = 'checking';
     renderClients();
     renderClientManager();
-    const result = await validateToken(c.token, c.account_id || c.accountId);
-    if (result.demo) {
-      tokenStatuses[id] = 'valid';
-    } else if (result.valid) {
-      tokenStatuses[id] = 'valid';
-    } else {
-      tokenStatuses[id] = result.reason || 'invalid';
-      tokenStatuses[id + '_msg'] = result.message;
-    }
+    const accountId = c.account_id || c.accountId;
+    const result = await validateToken(token, accountId);
+    tokenStatuses[id] = (result.valid || result.demo) ? 'valid' : (result.reason || 'invalid');
+    if (!result.valid && !result.demo) tokenStatuses[id + '_msg'] = result.message;
     renderClients();
     renderClientManager();
   }
@@ -730,12 +769,13 @@ async function validateTokenManual() {
 
 // ════════ SETUP ════════
 async function startApp() {
-  cfg.clickup  = document.getElementById('cfg-clickup').value.trim();
-  cfg.listId   = document.getElementById('cfg-list').value.trim();
+  cfg.clickup   = document.getElementById('cfg-clickup').value.trim();
+  cfg.listId    = document.getElementById('cfg-list').value.trim();
   cfg.openaiKey = document.getElementById('oai-key').value.trim();
+  cfg.metaToken = document.getElementById('cfg-meta-token').value.trim();
   if (!cfg.clickup || !cfg.listId) { toast('⚠️ Preencha o token do ClickUp e o ID da lista.'); return; }
   try {
-    await saveConfigToSupabase(cfg.clickup, cfg.listId, cfg.openaiKey);
+    await saveConfigToSupabase(cfg.clickup, cfg.listId, cfg.openaiKey, cfg.metaToken);
     toast('✓ Configuração salva para toda a equipe!');
   } catch(e) {
     toast('⚠️ Erro ao salvar config: ' + e.message);
@@ -743,6 +783,62 @@ async function startApp() {
   document.getElementById('setup-screen').classList.remove('open');
   await loadClients();
   launch();
+}
+
+// ════════ MODAL CONFIGURAÇÕES ════════
+function openConfig() {
+  document.getElementById('cfg-meta-token-modal').value = cfg.metaToken || '';
+  document.getElementById('cfg-clickup-modal').value    = cfg.clickup || '';
+  document.getElementById('cfg-list-modal').value       = cfg.listId || '';
+  document.getElementById('cfg-oai-modal').value        = cfg.openaiKey || '';
+  document.getElementById('global-token-result').style.display = 'none';
+  document.getElementById('modal-config').classList.add('open');
+}
+
+async function saveConfig() {
+  const metaToken = document.getElementById('cfg-meta-token-modal').value.trim();
+  const clickup   = document.getElementById('cfg-clickup-modal').value.trim();
+  const listId    = document.getElementById('cfg-list-modal').value.trim();
+  const openaiKey = document.getElementById('cfg-oai-modal').value.trim();
+  const btn = document.getElementById('btn-save-config');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try {
+    await saveConfigToSupabase(
+      clickup || cfg.clickup,
+      listId  || cfg.listId,
+      openaiKey || cfg.openaiKey,
+      metaToken
+    );
+    cfg.metaToken = metaToken;
+    if (clickup)   cfg.clickup   = clickup;
+    if (listId)    cfg.listId    = listId;
+    if (openaiKey) cfg.openaiKey = openaiKey;
+    toast('✓ Configurações salvas!');
+    document.getElementById('modal-config').classList.remove('open');
+    // Re-verifica todos os tokens com o novo token global
+    if (!cfg.isDemo) checkAllTokens();
+  } catch(e) {
+    toast('⚠️ Erro ao salvar: ' + e.message);
+  }
+  btn.disabled = false; btn.textContent = 'Salvar configurações';
+}
+
+async function validateGlobalToken() {
+  const token  = document.getElementById('cfg-meta-token-modal').value.trim();
+  const result = document.getElementById('global-token-result');
+  const btn    = document.getElementById('btn-validate-global');
+  if (!token) { toast('⚠️ Cole o token primeiro.'); return; }
+  btn.textContent = '...'; btn.disabled = true;
+  result.style.display = 'block';
+  result.innerHTML = '<span style="font-size:12px;color:var(--text3)">Verificando<span class="dots"></span></span>';
+  // Valida contra /me para checar se o token em si é válido
+  const res = await validateToken(token, 'me');
+  btn.textContent = 'Verificar'; btn.disabled = false;
+  if (res.valid || res.demo) {
+    result.innerHTML = '<span style="font-size:12px;color:var(--green)">✓ Token válido! Pode salvar.</span>';
+  } else {
+    result.innerHTML = `<span style="font-size:12px;color:var(--red)">${res.message}</span>`;
+  }
 }
 
 function startDemo() {
@@ -884,15 +980,18 @@ async function saveNewClient() {
   const name    = document.getElementById('add-cname').value.trim();
   const token   = document.getElementById('add-ctoken').value.trim();
   const account = document.getElementById('add-caccount').value.trim();
-  if (!name || !token || !account) { toast('⚠️ Preencha todos os campos.'); return; }
+  // Token é opcional se houver token global configurado
+  if (!name || !account) { toast('⚠️ Preencha nome e Ad Account ID.'); return; }
+  if (!token && !cfg.metaToken) { toast('⚠️ Digite um token ou configure o Token Global em ⚙️ Config.'); return; }
   const accountId = account.startsWith('act_') ? account : 'act_' + account;
 
   const btn = document.getElementById('btn-save-client');
   btn.disabled = true;
-  btn.textContent = 'Validando token...';
 
-  // Valida token antes de salvar
-  const validation = await validateToken(token, accountId);
+  // Valida com token próprio ou global
+  const tokenToValidate = token || cfg.metaToken;
+  btn.textContent = 'Validando token...';
+  const validation = await validateToken(tokenToValidate, accountId);
   if (!validation.valid && !validation.demo) {
     const proceed = confirm(`⚠️ ${validation.message}\n\nO token pode estar expirado ou sem as permissões necessárias.\n\nDeseja salvar assim mesmo?`);
     if (!proceed) {
@@ -987,12 +1086,20 @@ async function fetchData() {
     return;
   }
 
+  // Resolve token: usa o do cliente ou o token global
+  const token = resolveToken(selClient);
+  if (!token) {
+    loading.style.display='none'; btn.disabled=false;
+    errBox.style.display='block';
+    errBox.innerHTML=`<div class="err-box">❌ Nenhum token configurado para este cliente.<br><small style="opacity:.7">Configure um token global em ⚙️ Config ou adicione um token individual ao cliente.</small></div>`;
+    return;
+  }
+
   try {
     prog.style.width='20%'; progLbl.textContent='Buscando conta...';
     document.getElementById('loading-msg').innerHTML='Conectando à API do Meta<span class="dots"></span>';
 
     const accountId = selClient.accountId || selClient.account_id;
-    const token     = selClient.token;
 
     prog.style.width='40%'; progLbl.textContent='Buscando insights...';
     const insightsUrl = `https://graph.facebook.com/v18.0/${accountId}/insights?fields=spend,clicks,impressions,ctr,cpm,actions,action_values,cost_per_action_type&time_range={"since":"${from}","until":"${to}"}&level=account&access_token=${token}`;

@@ -333,12 +333,19 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 </div>
 <div class="field">
   <label>ClickUp API Token</label>
-  <input type="password" id="cfg-clickup-modal" placeholder="pk_xxxxxxxxxxxxxxxx"/>
+  <div style="position:relative">
+    <input type="password" id="cfg-clickup-modal" placeholder="pk_xxxxxxxxxxxxxxxx" style="padding-right:90px"/>
+    <button onclick="testClickUpToken()" id="btn-test-cu-token" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:var(--accentbg);border:1px solid rgba(99,102,241,.2);color:var(--accent2);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer">Testar</button>
+  </div>
 </div>
 <div class="field">
   <label>ID da Lista de Clientes no ClickUp</label>
-  <input id="cfg-list-modal" placeholder="901xxxxxxxx"/>
+  <div style="position:relative">
+    <input id="cfg-list-modal" placeholder="901xxxxxxxx" style="padding-right:90px"/>
+    <button onclick="testClickUpList()" id="btn-test-cu-list" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:var(--accentbg);border:1px solid rgba(99,102,241,.2);color:var(--accent2);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer">Testar</button>
+  </div>
 </div>
+<div id="cu-diag-result" style="display:none;margin-bottom:12px;padding:10px 13px;border-radius:8px;font-size:12px;line-height:1.6;font-family:monospace;word-break:break-all;"></div>
 <div class="field">
   <label>OpenAI API Key</label>
   <input type="password" id="cfg-oai-modal" placeholder="sk-..."/>
@@ -862,6 +869,77 @@ async function saveConfig() {
   btn.disabled = false; btn.textContent = 'Salvar configurações';
 }
 
+async function testClickUpToken() {
+  const token = document.getElementById("cfg-clickup-modal").value.trim() || cfg.clickup;
+  const res = document.getElementById("cu-diag-result");
+  const btn = document.getElementById("btn-test-cu-token");
+  if (!token) { toast("⚠️ Cole o token primeiro."); return; }
+  btn.textContent = "..."; btn.disabled = true;
+  res.style.display = "block";
+  res.style.background = "var(--s3)";
+  res.style.border = "1px solid var(--border)";
+  res.style.color = "var(--text2)";
+  res.textContent = "Testando token...";
+  try {
+    const r = await fetch("https://api.clickup.com/api/v2/user", { headers: { "Authorization": token } });
+    const body = await r.text();
+    let parsed; try { parsed = JSON.parse(body); } catch(_) { parsed = { raw: body }; }
+    if (r.ok && parsed.user) {
+      res.style.background = "var(--greenbg)";
+      res.style.border = "1px solid rgba(34,197,94,.3)";
+      res.style.color = "var(--green)";
+      res.textContent = "✓ Token válido! Usuário: " + parsed.user.username + " (" + parsed.user.email + ")";
+    } else {
+      res.style.background = "var(--redbg)";
+      res.style.border = "1px solid rgba(239,68,68,.3)";
+      res.style.color = "var(--red)";
+      res.textContent = "❌ Token inválido — HTTP " + r.status + ": " + (parsed.err || parsed.message || body.slice(0,200));
+    }
+  } catch(e) {
+    res.style.background = "var(--redbg)";
+    res.style.border = "1px solid rgba(239,68,68,.3)";
+    res.style.color = "var(--red)";
+    res.textContent = "❌ Erro de rede: " + e.message;
+  }
+  btn.textContent = "Testar"; btn.disabled = false;
+}
+async function testClickUpList() {
+  const token = document.getElementById("cfg-clickup-modal").value.trim() || cfg.clickup;
+  const listId = document.getElementById("cfg-list-modal").value.trim() || cfg.listId;
+  const res = document.getElementById("cu-diag-result");
+  const btn = document.getElementById("btn-test-cu-list");
+  if (!token) { toast("⚠️ Preencha o token primeiro."); return; }
+  if (!listId) { toast("⚠️ Preencha o ID da lista primeiro."); return; }
+  btn.textContent = "..."; btn.disabled = true;
+  res.style.display = "block";
+  res.style.background = "var(--s3)";
+  res.style.border = "1px solid var(--border)";
+  res.style.color = "var(--text2)";
+  res.textContent = "Testando lista " + listId + "...";
+  try {
+    const r = await fetch("https://api.clickup.com/api/v2/list/" + listId, { headers: { "Authorization": token } });
+    const body = await r.text();
+    let parsed; try { parsed = JSON.parse(body); } catch(_) { parsed = { raw: body }; }
+    if (r.ok && parsed.id) {
+      res.style.background = "var(--greenbg)";
+      res.style.border = "1px solid rgba(34,197,94,.3)";
+      res.style.color = "var(--green)";
+      res.textContent = "✓ Lista encontrada: " + parsed.name + " (" + parsed.task_count + " tarefas)";
+    } else {
+      res.style.background = "var(--redbg)";
+      res.style.border = "1px solid rgba(239,68,68,.3)";
+      res.style.color = "var(--red)";
+      const detail = parsed.err || parsed.message || body.slice(0,300);
+      res.textContent = "❌ Lista não encontrada — HTTP " + r.status + ": " + detail + " | Dica: copie só os números da URL do ClickUp: app.clickup.com/.../v/l/ESSE_NUMERO";
+    }
+  } catch(e) {
+    res.style.background = "var(--redbg)";
+    res.style.border = "1px solid rgba(239,68,68,.3)";
+    res.style.color = "var(--red)";
+    res.textContent = "❌ Erro de rede: " + e.message;
+  }
+  btn.textContent = "Testar"; btn.disabled = false;
+}
 async function validateGlobalToken() {
   const token  = document.getElementById('cfg-meta-token-modal').value.trim();
   const result = document.getElementById('global-token-result');

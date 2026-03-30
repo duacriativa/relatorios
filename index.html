@@ -1364,22 +1364,44 @@ async function sendClickUp() {
     const fmtBRL = v => 'R$ '+parseFloat(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
     const obs = document.getElementById('obs-field').value.trim();
 
-    // Busca tarefa do cliente na lista — sem parâmetro query (inválido na API)
-    // include_closed=true garante que tarefas em qualquer status sejam retornadas
-    const tasksRes = await fetch(
-      `https://api.clickup.com/api/v2/list/${cfg.listId}/task?include_closed=true&order_by=date_updated&reverse=true`,
-      { headers: {'Authorization': cfg.clickup, 'Content-Type':'application/json'} }
-    );
+    // Helper para fazer request ao ClickUp com tratamento de erro detalhado
+    const cuFetch = async (url, options = {}) => {
+      const r = await fetch(url, {
+        ...options,
+        headers: {
+          'Authorization': cfg.clickup,
+          'Content-Type': 'application/json',
+          ...(options.headers || {})
+        }
+      });
+      const text = await r.text();
+      let body = {};
+      try { body = JSON.parse(text); } catch(_) { body = { raw: text }; }
+      if (!r.ok) {
+        // Monta mensagem de erro completa para debug
+        const detail = body.err || body.message || body.raw || ('Status ' + r.status);
+        throw new Error(`ClickUp ${r.status}: ${detail}`);
+      }
+      return body;
+    };
 
-    if (!tasksRes.ok) {
-      const errData = await tasksRes.json().catch(()=>({}));
-      throw new Error(`ClickUp: ${errData.err || errData.message || 'Erro '+tasksRes.status} (verifique o token em ⚙️ Config)`);
+    // 1. Valida que o token e lista funcionam buscando info da lista primeiro
+    res.innerHTML = '<span style="font-size:12px;color:var(--text3)">Validando acesso ao ClickUp<span class="dots"></span></span>';
+    let listInfo;
+    try {
+      listInfo = await cuFetch(`https://api.clickup.com/api/v2/list/${cfg.listId}`);
+    } catch(e) {
+      throw new Error(`Não foi possível acessar a lista "${cfg.listId}". ${e.message}. Verifique o ID da lista e o token em ⚙️ Config.`);
     }
 
-    const tasksData = await tasksRes.json();
+    // 2. Busca todas as tarefas da lista (paginação: até 100 por página)
+    res.innerHTML = '<span style="font-size:12px;color:var(--text3)">Buscando tarefas<span class="dots"></span></span>';
+    const tasksData = await cuFetch(
+      `https://api.clickup.com/api/v2/list/${cfg.listId}/task?include_closed=true&order_by=date_updated&reverse=true&page=0`
+    );
     const allTasks = tasksData.tasks || [];
 
-    // Busca a tarefa que contém o nome do cliente (ex: "Relatório Semana - Um Dilema")
+    // 3. Busca a tarefa que contém o nome do cliente
     const clientLower = selClient.name.toLowerCase().trim();
     const task = allTasks.find(t => t.name.toLowerCase().includes(clientLower));
 
@@ -1401,28 +1423,20 @@ async function sendClickUp() {
 
     if (task) {
       // Tarefa encontrada — adiciona comentário
-      const commentRes = await fetch(`https://api.clickup.com/api/v2/task/${task.id}/comment`, {
-        method:'POST',
-        headers:{'Authorization': cfg.clickup, 'Content-Type':'application/json'},
-        body: JSON.stringify({comment_text: commentLines, notify_all: true})
+      res.innerHTML = `<span style="font-size:12px;color:var(--text3)">Comentando em "${task.name}"<span class="dots"></span></span>`;
+      await cuFetch(`https://api.clickup.com/api/v2/task/${task.id}/comment`, {
+        method: 'POST',
+        body: JSON.stringify({ comment_text: commentLines, notify_all: true })
       });
-      if (!commentRes.ok) {
-        const errData = await commentRes.json().catch(()=>({}));
-        throw new Error(`Erro ao comentar: ${errData.err || errData.message || 'Status '+commentRes.status}`);
-      }
-      res.innerHTML=`<div class="status-pill ok" style="font-size:13px;padding:8px 14px">✓ Comentário adicionado em "${task.name}"</div>`;
+      res.innerHTML = `<div class="status-pill ok" style="font-size:13px;padding:8px 14px">✓ Comentário adicionado em "${task.name}"</div>`;
     } else {
       // Tarefa não encontrada — cria nova na lista
-      const createRes = await fetch(`https://api.clickup.com/api/v2/list/${cfg.listId}/task`, {
-        method:'POST',
-        headers:{'Authorization': cfg.clickup, 'Content-Type':'application/json'},
-        body: JSON.stringify({name:`Relatório — ${selClient.name} — ${fmt2(d.from)}`, description: commentLines})
+      res.innerHTML = `<span style="font-size:12px;color:var(--text3)">Criando nova tarefa<span class="dots"></span></span>`;
+      const created = await cuFetch(`https://api.clickup.com/api/v2/list/${cfg.listId}/task`, {
+        method: 'POST',
+        body: JSON.stringify({ name: `Relatório — ${selClient.name} — ${fmt2(d.from)}`, description: commentLines })
       });
-      if (!createRes.ok) {
-        const errData = await createRes.json().catch(()=>({}));
-        throw new Error(`Erro ao criar tarefa: ${errData.err || errData.message || 'Status '+createRes.status}. Nenhum card encontrado para "${selClient.name}" na lista.`);
-      }
-      res.innerHTML=`<div class="status-pill ok" style="font-size:13px;padding:8px 14px">✓ Nova tarefa criada para ${selClient.name}</div>`;
+      res.innerHTML = `<div class="status-pill ok" style="font-size:13px;padding:8px 14px">✓ Nova tarefa criada para ${selClient.name}</div>`;
     }
 
     weekHistory.push({client:selClient.name,investido:fmtBRL(d.spend),roi:d.roi,vendas:d.convQty,status:'ok'});

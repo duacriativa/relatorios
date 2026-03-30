@@ -1343,7 +1343,7 @@ async function fetchData() {
     const accountId = selClient.accountId || selClient.account_id;
 
     prog.style.width='40%'; progLbl.textContent='Buscando insights...';
-    const insightsUrl = `https://graph.facebook.com/v18.0/${accountId}/insights?fields=spend,clicks,impressions,ctr,cpm,actions,action_values,cost_per_action_type&time_range={"since":"${from}","until":"${to}"}&level=account&access_token=${token}`;
+    const insightsUrl = `https://graph.facebook.com/v18.0/${accountId}/insights?fields=spend,clicks,impressions,reach,ctr,cpm,actions,action_values,cost_per_action_type&time_range={"since":"${from}","until":"${to}"}&level=account&access_token=${token}`;
     const insRes = await fetch(insightsUrl);
     const insData = await insRes.json();
     if (insData.error) throw new Error(insData.error.message);
@@ -1358,6 +1358,7 @@ async function fetchData() {
     const spend   = parseFloat(ins.spend||0);
     const clicks  = parseInt(ins.clicks||0);
     const impr    = parseInt(ins.impressions||0);
+    const reach   = parseInt(ins.reach||0);
     const ctr     = parseFloat(ins.ctr||0);
     const cpm     = parseFloat(ins.cpm||0);
     const actions = ins.actions||[];
@@ -1389,7 +1390,7 @@ async function fetchData() {
     prog.style.width='100%'; progLbl.textContent='Concluído!';
     await new Promise(r=>setTimeout(r,400));
 
-    fetchedData = {spend,clicks,impr,ctr,cpm,convQty,revVal,roi,cpa,msgs:parseInt(msgs?.value||0),leads:parseInt(leads?.value||0),camps,from,to};
+    fetchedData = {spend,clicks,impr,reach,ctr,cpm,convQty,revVal,roi,cpa,msgs:parseInt(msgs?.value||0),leads:parseInt(leads?.value||0),camps,from,to};
     loading.style.display='none'; results.style.display='block';
     renderMetrics(fetchedData);
     btn.disabled=false;
@@ -1435,7 +1436,7 @@ function renderMetrics(d) {
   if (isMsgsTpl) {
     box.innerHTML = `
       <div class="metric-box"><div class="mlabel">Investido</div><div class="mvalue hi">${fmtBRL(d.spend)}</div></div>
-      <div class="metric-box"><div class="mlabel">Alcance</div><div class="mvalue">${parseInt(d.impr).toLocaleString('pt-BR')}</div></div>
+      <div class="metric-box"><div class="mlabel">Alcance</div><div class="mvalue">${(d.reach||d.impr).toLocaleString('pt-BR')}</div></div>
       <div class="metric-box"><div class="mlabel">Cliques</div><div class="mvalue">${parseInt(d.clicks).toLocaleString('pt-BR')}</div></div>
       <div class="metric-box"><div class="mlabel">CTR</div><div class="mvalue">${parseFloat(d.ctr).toFixed(2)}%</div></div>
       <div class="metric-box"><div class="mlabel">CPM</div><div class="mvalue">R$ ${parseFloat(d.cpm).toFixed(2)}</div></div>
@@ -1496,7 +1497,7 @@ function renderCuSummary(d, isMsgsTpl, msgsQty, custoMsg, fmtBRL) {
   if (isMsgsTpl) {
     metricsEl.innerHTML =
       mb('Investido', fmtBRL(d.spend), true) +
-      mb('Alcance', parseInt(d.impr).toLocaleString('pt-BR')) +
+      mb('Alcance', (d.reach||d.impr).toLocaleString('pt-BR')) +
       mb('Cliques', parseInt(d.clicks).toLocaleString('pt-BR')) +
       mb('CTR', parseFloat(d.ctr).toFixed(2)+'%') +
       (msgsQty>0 ? mb('Msgs Iniciadas', msgsQty.toLocaleString('pt-BR'), true) : '') +
@@ -1576,7 +1577,7 @@ function buildCUPreview() {
   if (selTemplate === 'mensagens') {
     rows = [
       ['Investido', fmtBRL(d.spend)],
-      ['Alcance', parseInt(d.impr).toLocaleString('pt-BR')],
+      ['Alcance', (d.reach||d.impr).toLocaleString('pt-BR')],
       ['Cliques no link', parseInt(d.clicks).toLocaleString('pt-BR')],
       ['CTR', parseFloat(d.ctr).toFixed(2)+'%'],
       ['CPM', 'R$ '+parseFloat(d.cpm).toFixed(2)],
@@ -1691,7 +1692,7 @@ async function sendClickUp() {
         `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,
         ``,
         `📱 *Tráfego p/ Perfil IG*`,
-        `👁️ Alcance: ${d.impr.toLocaleString('pt-BR')}`,
+        `👁️ Alcance: ${(d.reach||d.impr).toLocaleString('pt-BR')}`,
         `👆 Cliques no link: ${d.clicks.toLocaleString('pt-BR')}`,
         `🎯 CTR: ${parseFloat(d.ctr).toFixed(2)}%`,
         msgs > 0 ? `💬 Mensagens Iniciadas: ${msgs.toLocaleString('pt-BR')}` : null,
@@ -1792,7 +1793,7 @@ function buildRelatorio() {
       `📅 ${fmt2(d.from)} a ${fmt2(d.to)}`,
       ``,
       `📱 *Tráfego p/ Perfil IG*`,
-      `• Alcance: *${fmtN(d.impr)}*`,
+      `• Alcance: *${fmtN(d.reach||d.impr)}*`,
       `• Cliques no link: *${fmtN(d.clicks)}*`,
       `• CTR: *${parseFloat(d.ctr).toFixed(2)}%*`,
       `• CPM: *R$ ${parseFloat(d.cpm).toFixed(2)}*`,
@@ -1859,7 +1860,7 @@ async function genAnalysis() {
   const custoMsgAI = msgsQty > 0 ? 'R$ ' + ((atkInvVal || parseFloat(d.spend)) / msgsQty).toFixed(2) : null;
 
   const dadosAI = isMsgs
-    ? `Alcance: ${parseInt(d.impr).toLocaleString('pt-BR')}
+    ? `Alcance: ${(d.reach||d.impr).toLocaleString('pt-BR')}
 Cliques: ${parseInt(d.clicks).toLocaleString('pt-BR')}
 CTR: ${parseFloat(d.ctr).toFixed(2)}%
 ${msgsQty > 0 ? 'Mensagens iniciadas: '+msgsQty.toLocaleString('pt-BR') : ''}

@@ -1486,7 +1486,6 @@ function renderCuSummary(d, isMsgsTpl, msgsQty, custoMsg, fmtBRL) {
       (msgsQty>0 ? mb('Msgs Iniciadas', msgsQty.toLocaleString('pt-BR'), true) : '') +
       (msgsQty>0 ? mb('Custo/Msg', custoMsg) : '');
   } else {
-    mb('Investido', fmtBRL(d.spend), true) +
     metricsEl.innerHTML =
       mb('Investido', fmtBRL(d.spend), true) +
       mb('ROI', d.roi+'x') +

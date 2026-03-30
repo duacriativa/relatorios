@@ -187,6 +187,17 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 .tut-body code{background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:11px;color:var(--accent2);font-family:monospace;}
 .modal-close{width:100%;background:var(--accent);border:none;border-radius:var(--radius2);padding:12px;color:#fff;font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;}
 
+/* Templates */
+.tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
+.tpl-card{background:var(--s2);border:2px solid var(--border);border-radius:var(--radius);padding:14px 16px;cursor:pointer;transition:var(--transition);display:flex;flex-direction:column;gap:6px;}
+.tpl-card:hover{border-color:var(--accent2);transform:translateY(-1px);}
+.tpl-card.sel{border-color:var(--accent);background:var(--accentbg);}
+.tpl-card .tpl-icon{font-size:22px;line-height:1;}
+.tpl-card .tpl-name{font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:800;}
+.tpl-card .tpl-desc{font-size:11px;color:var(--text3);line-height:1.5;}
+.tpl-card.sel .tpl-name{color:var(--accent2);}
+.tpl-required{background:var(--redbg);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius2);padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:10px;display:none;}
+
 /* Toast */
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--s1);border:1px solid var(--border);border-radius:30px;padding:9px 20px;font-size:13px;font-weight:600;color:var(--text);opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;box-shadow:0 8px 32px rgba(0,0,0,.3);}
 .toast.show{opacity:1;}
@@ -396,6 +407,22 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div style="display:flex;gap:8px;flex-wrap:wrap">
 <input id="new-client-input" placeholder="Nome do novo cliente..." onkeydown="if(event.key==='Enter')openAddClient()" style="flex:1;min-width:160px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius2);padding:10px 14px;color:var(--text);font-family:'Lato',sans-serif;font-size:13px;outline:none;transition:var(--transition);"/>
 <button class="btn-act accent" style="padding:10px 18px;font-weight:700" onclick="openAddClient()">+ Adicionar</button>
+</div>
+</div>
+<div class="card">
+<div class="card-title" style="font-size:15px;margin-bottom:12px">📋 Template do Relatório</div>
+<div class="sec-label" style="margin-bottom:10px">Escolha o modelo que melhor representa este cliente</div>
+<div class="tpl-grid" id="tpl-grid">
+  <div class="tpl-card sel" onclick="selectTemplate('ecommerce')" id="tpl-ecommerce">
+    <div class="tpl-icon">🛍️</div>
+    <div class="tpl-name">E-commerce</div>
+    <div class="tpl-desc">ROI, Conversões, CPA, Cliques, CTR, Impressões. Ideal para lojas com vendas rastreadas.</div>
+  </div>
+  <div class="tpl-card" onclick="selectTemplate('mensagens')" id="tpl-mensagens">
+    <div class="tpl-icon">💬</div>
+    <div class="tpl-name">Mensagens / Tráfego</div>
+    <div class="tpl-desc">Visitas IG, Seguidores, Alcance, Mensagens iniciadas, Custo/msg. Ideal para infoprodutos e locais.</div>
+  </div>
 </div>
 </div>
 <div class="card">
@@ -728,6 +755,7 @@ let clients = [];
 let selClient = null;
 let fetchedData = null;
 let weekHistory = [];
+let selTemplate = 'ecommerce'; // 'ecommerce' | 'mensagens'
 let tokenStatuses = {}; // { clientId: 'checking'|'valid'|'expired'|'permission'|'invalid' }
 
 // ════════ TOKEN VALIDATION ════════
@@ -1010,6 +1038,13 @@ function goStep(n) {
 }
 
 // ════════ CLIENTS ════════
+function selectTemplate(tpl) {
+  selTemplate = tpl;
+  document.querySelectorAll('.tpl-card').forEach(c => c.classList.remove('sel'));
+  const el = document.getElementById('tpl-' + tpl);
+  if (el) el.classList.add('sel');
+}
+
 const AVATAR_COLORS = [
   '#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6','#ef4444','#14b8a6'
 ];
@@ -1515,21 +1550,46 @@ async function sendClickUp() {
     const clientLower = selClient.name.toLowerCase().trim();
     const task = allTasks.find(t => t.name.toLowerCase().includes(clientLower));
 
-    const commentLines = [
-      `📊 *Relatório Meta Ads — ${selClient.name}*`,
-      `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,
-      ``,
-      `💰 Investido: ${fmtBRL(d.spend)}`,
-      d.revVal > 0 ? `💵 Receita: ${fmtBRL(d.revVal)}` : null,
-      `📈 ROI: ${d.roi}x`,
-      `🛒 Conversões: ${d.convQty}`,
-      d.cpa !== '—' ? `💲 CPA: R$ ${parseFloat(d.cpa).toFixed(2)}` : null,
-      `👆 Cliques: ${d.clicks.toLocaleString('pt-BR')}`,
-      `👁️ Impressões: ${d.impr.toLocaleString('pt-BR')}`,
-      `🎯 CTR: ${parseFloat(d.ctr).toFixed(2)}%`,
-      d.msgs > 0 ? `💬 Mensagens Atacado: ${d.msgs}` : null,
-      obs ? `\n📝 Obs: ${obs}` : null,
-    ].filter(Boolean).join('\n');
+    // Monta comentário conforme template selecionado
+    let commentLines;
+    if (selTemplate === 'mensagens') {
+      // Template Mensagens / Tráfego IG
+      const atkEnabled = document.getElementById('atk-toggle').checked;
+      const msgs      = atkEnabled ? parseInt(document.getElementById('atk-msgs').value||'0') : d.msgs;
+      const atkInv    = atkEnabled ? parseFloat(document.getElementById('atk-inv').value||'0') : 0;
+      const custoMsg  = msgs > 0 ? fmtBRL((atkInv || parseFloat(d.spend)) / msgs) : '—';
+      commentLines = [
+        `📊 *Relatório Meta Ads — ${selClient.name}*`,
+        `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,
+        ``,
+        `📱 *Tráfego p/ Perfil IG*`,
+        `👁️ Alcance: ${d.impr.toLocaleString('pt-BR')}`,
+        `👆 Cliques no link: ${d.clicks.toLocaleString('pt-BR')}`,
+        `🎯 CTR: ${parseFloat(d.ctr).toFixed(2)}%`,
+        msgs > 0 ? `💬 Mensagens Iniciadas: ${msgs.toLocaleString('pt-BR')}` : null,
+        msgs > 0 ? `💲 Custo por Msg: ${custoMsg}` : null,
+        ``,
+        `💰 *Valor Geral Investido: ${fmtBRL(d.spend)}*`,
+        obs ? `\n📝 Obs: ${obs}` : null,
+      ].filter(Boolean).join('\n');
+    } else {
+      // Template E-commerce (padrão)
+      commentLines = [
+        `📊 *Relatório Meta Ads — ${selClient.name}*`,
+        `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,
+        ``,
+        `💰 Investido: ${fmtBRL(d.spend)}`,
+        d.revVal > 0 ? `💵 Receita: ${fmtBRL(d.revVal)}` : null,
+        `📈 ROI: ${d.roi}x`,
+        `🛒 Conversões: ${d.convQty}`,
+        d.cpa !== '—' ? `💲 CPA: R$ ${parseFloat(d.cpa).toFixed(2)}` : null,
+        `👆 Cliques: ${d.clicks.toLocaleString('pt-BR')}`,
+        `👁️ Impressões: ${d.impr.toLocaleString('pt-BR')}`,
+        `🎯 CTR: ${parseFloat(d.ctr).toFixed(2)}%`,
+        d.msgs > 0 ? `💬 Mensagens Atacado: ${d.msgs}` : null,
+        obs ? `\n📝 Obs: ${obs}` : null,
+      ].filter(Boolean).join('\n');
+    }
 
     if (task) {
       // Tarefa encontrada — adiciona comentário
@@ -1583,29 +1643,55 @@ function buildRelatorio() {
 
   const plan = (document.getElementById('plan-field')?.value||'').trim();
 
-  const rel = [
-    `📊 *Relatório Semanal — ${selClient.name}*`,
-    `📅 ${fmt2(d.from)} a ${fmt2(d.to)}`,
-    ``,
-    `💰 Investido: *${fmtBRL(d.spend)}*`,
-    d.revVal > 0 ? `💵 Receita gerada: *${fmtBRL(d.revVal)}*` : null,
-    `📈 ROI: *${d.roi}x*`,
-    `🛒 Vendas/Conversões: *${d.convQty}*`,
-    d.cpa !== '—' ? `💲 Custo por conversão: *R$ ${parseFloat(d.cpa).toFixed(2)}*` : null,
-    ``,
-    `📉 Detalhes:`,
-    `• Cliques: ${fmtN(d.clicks)}`,
-    `• Impressões: ${fmtN(d.impr)}`,
-    `• CTR: ${parseFloat(d.ctr).toFixed(2)}%`,
-    `• CPM: R$ ${parseFloat(d.cpm).toFixed(2)}`,
-    d.msgs > 0 ? `• Mensagens iniciadas: ${d.msgs}` : null,
-    d.leads > 0 ? `• Leads: ${d.leads}` : null,
-    atkSection || null,
-    obs ? `\n📝 Observações:\n${obs}` : null,
-    plan ? `\n🗓️ O que planejamos para a semana:\n${plan}` : null,
-    ``,
-    `_Relatório gerado pela Central de Relatórios_`,
-  ].filter(v=>v!==null).join('\n');
+  let rel;
+  if (selTemplate === 'mensagens') {
+    const msgs      = atkEnabled ? parseInt(document.getElementById('atk-msgs').value||'0') : d.msgs;
+    const atkInv    = atkEnabled ? parseFloat(document.getElementById('atk-inv').value||'0') : 0;
+    const custoMsg  = msgs > 0 ? fmtBRL((atkInv || parseFloat(d.spend)) / msgs) : '—';
+    rel = [
+      `📊 *Relatório Semanal — ${selClient.name}*`,
+      `📅 ${fmt2(d.from)} a ${fmt2(d.to)}`,
+      ``,
+      `📱 *Tráfego p/ Perfil IG*`,
+      `• Alcance: *${fmtN(d.impr)}*`,
+      `• Cliques no link: *${fmtN(d.clicks)}*`,
+      `• CTR: *${parseFloat(d.ctr).toFixed(2)}%*`,
+      `• CPM: *R$ ${parseFloat(d.cpm).toFixed(2)}*`,
+      msgs > 0 ? `• Mensagens Iniciadas: *${msgs.toLocaleString('pt-BR')}*` : null,
+      msgs > 0 ? `• Custo por Msg: *${custoMsg}*` : null,
+      ``,
+      `💰 *Valor Geral Investido: ${fmtBRL(d.spend)}*`,
+      atkSection || null,
+      obs ? `\n📝 Observações:\n${obs}` : null,
+      plan ? `\n🗓️ O que planejamos para a semana:\n${plan}` : null,
+      ``,
+      `_Relatório gerado pela Central de Relatórios_`,
+    ].filter(v=>v!==null).join('\n');
+  } else {
+    rel = [
+      `📊 *Relatório Semanal — ${selClient.name}*`,
+      `📅 ${fmt2(d.from)} a ${fmt2(d.to)}`,
+      ``,
+      `💰 Investido: *${fmtBRL(d.spend)}*`,
+      d.revVal > 0 ? `💵 Receita gerada: *${fmtBRL(d.revVal)}*` : null,
+      `📈 ROI: *${d.roi}x*`,
+      `🛒 Vendas/Conversões: *${d.convQty}*`,
+      d.cpa !== '—' ? `💲 Custo por conversão: *R$ ${parseFloat(d.cpa).toFixed(2)}*` : null,
+      ``,
+      `📉 Detalhes:`,
+      `• Cliques: ${fmtN(d.clicks)}`,
+      `• Impressões: ${fmtN(d.impr)}`,
+      `• CTR: ${parseFloat(d.ctr).toFixed(2)}%`,
+      `• CPM: R$ ${parseFloat(d.cpm).toFixed(2)}`,
+      d.msgs > 0 ? `• Mensagens iniciadas: ${d.msgs}` : null,
+      d.leads > 0 ? `• Leads: ${d.leads}` : null,
+      atkSection || null,
+      obs ? `\n📝 Observações:\n${obs}` : null,
+      plan ? `\n🗓️ O que planejamos para a semana:\n${plan}` : null,
+      ``,
+      `_Relatório gerado pela Central de Relatórios_`,
+    ].filter(v=>v!==null).join('\n');
+  }
 
   document.getElementById('rel-preview').textContent = rel;
 }
@@ -1627,6 +1713,30 @@ async function genAnalysis() {
   const d = fetchedData;
   const obs = document.getElementById('obs-field').value.trim();
   const plan = (document.getElementById('plan-field')?.value||'').trim();
+  const isMsgs = selTemplate === 'mensagens';
+  const atkOn = document.getElementById('atk-toggle').checked;
+  const msgsQty = isMsgs ? (atkOn ? parseInt(document.getElementById('atk-msgs').value||'0') : d.msgs) : d.msgs;
+  const atkInvVal = atkOn ? parseFloat(document.getElementById('atk-inv').value||'0') : 0;
+  const custoMsgAI = msgsQty > 0 ? 'R$ ' + ((atkInvVal || parseFloat(d.spend)) / msgsQty).toFixed(2) : null;
+
+  const dadosAI = isMsgs
+    ? `Alcance: ${parseInt(d.impr).toLocaleString('pt-BR')}
+Cliques: ${parseInt(d.clicks).toLocaleString('pt-BR')}
+CTR: ${parseFloat(d.ctr).toFixed(2)}%
+${msgsQty > 0 ? 'Mensagens iniciadas: '+msgsQty.toLocaleString('pt-BR') : ''}
+${custoMsgAI ? 'Custo por mensagem: '+custoMsgAI : ''}
+Investido: R$ ${parseFloat(d.spend).toFixed(2)}`
+    : `Investido: R$ ${parseFloat(d.spend).toFixed(2)}
+${d.revVal>0 ? 'Receita: R$ '+parseFloat(d.revVal).toFixed(2)+'\nROI: '+d.roi+'x' : 'Sem dados de receita'}
+Conversões/Vendas: ${d.convQty}
+${d.cpa!=='—' ? 'Custo por venda: R$ '+parseFloat(d.cpa).toFixed(2) : ''}
+Cliques: ${d.clicks} | CTR: ${parseFloat(d.ctr).toFixed(2)}%
+${d.msgs>0 ? 'Mensagens iniciadas: '+d.msgs : ''}`;
+
+  const regrasExtra = isMsgs
+    ? '- Este cliente trabalha com tráfego para perfil e mensagens no WhatsApp, NÃO com e-commerce. Fale sobre alcance, cliques, mensagens geradas e custo por mensagem.'
+    : '- Este cliente tem e-commerce com vendas rastreadas. Foque em ROI, conversões e custo por venda.';
+
   const prompt = `Você é gestor de tráfego e vai escrever um resumo semanal para o cliente "${selClient.name}", estilo mensagem de WhatsApp — próximo, humano e direto.
 
 REGRAS OBRIGATÓRIAS:
@@ -1637,17 +1747,13 @@ REGRAS OBRIGATÓRIAS:
 - Comece com "Resumo da semana:" e inclua dados reais
 - Termine com uma pergunta ou gancho que gere resposta do cliente
 - Se houver planejamento informado, finalize com "🗓️ O que planejamos para a semana:" seguido do planejamento em prosa curta
+${regrasExtra}
 
 Dados da semana:
 Período: ${fmt2(d.from)} a ${fmt2(d.to)}
-Investido: R$ ${parseFloat(d.spend).toFixed(2)}
-${d.revVal>0?`Receita: R$ ${parseFloat(d.revVal).toFixed(2)}\nROI: ${d.roi}x (cada R$1 investido gerou R$${d.roi} em vendas)`:'Sem dados de receita registrados'}
-Conversões/Vendas: ${d.convQty}
-${d.cpa!=='—'?`Custo por venda: R$ ${parseFloat(d.cpa).toFixed(2)}`:''}
-Cliques: ${d.clicks} | CTR: ${parseFloat(d.ctr).toFixed(2)}%
-${d.msgs>0?`Mensagens iniciadas: ${d.msgs}`:''}
-${obs?`Contexto extra do gestor: ${obs}`:''}
-${plan?`Planejamento informado pelo gestor para a próxima semana: ${plan}`:''}
+${dadosAI}
+${obs ? 'Contexto extra do gestor: '+obs : ''}
+${plan ? 'Planejamento informado pelo gestor para a próxima semana: '+plan : ''}
 
 Escreva APENAS o texto final, sem introdução ou explicação.`;
 

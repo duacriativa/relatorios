@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Central de Relatórios — Meta Ads</title>
+<title>Metricana</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
 <style>
 /* ══════════ TOKENS ══════════ */
@@ -49,22 +49,97 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 [data-theme="light"] .theme-icon-sun{display:block;} [data-theme="light"] .theme-icon-moon{display:none;}
 
 /* ══════════ LOGIN ══════════ */
-#login-screen{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;align-items:center;justify-content:center;padding:24px;transition:var(--transition);}
-.login-wrap{width:100%;max-width:400px;}
-.login-logo{font-family:'Bricolage Grotesque',sans-serif;font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;}
-.login-title{font-family:'Bricolage Grotesque',sans-serif;font-size:32px;font-weight:800;margin-bottom:6px;line-height:1.1;}
-.login-sub{color:var(--text2);font-size:14px;margin-bottom:32px;line-height:1.5;}
-.login-box{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:28px;box-shadow:var(--card-shadow);transition:var(--transition);}
-.login-theme-row{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:24px;}
-.login-theme-label{font-size:12px;color:var(--text3);}
-.login-field{margin-bottom:18px;}
-.login-field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:7px;}
-.login-field input{width:100%;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius2);padding:11px 14px;color:var(--text);font-family:'Lato',sans-serif;font-size:15px;outline:none;transition:var(--transition);letter-spacing:.08em;}
-.login-field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentbg);}
-.login-error{background:var(--redbg);border:1px solid rgba(239,68,68,.25);border-radius:var(--radius2);padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:14px;display:none;}
-.btn-login{width:100%;background:var(--accent);border:none;border-radius:var(--radius2);padding:13px;color:#fff;font-family:'Bricolage Grotesque',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .15s,transform .1s;}
-.btn-login:hover{opacity:.88} .btn-login:active{transform:scale(.98)}
-.login-hint{text-align:center;margin-top:16px;font-size:12px;color:var(--text3);}
+/* ══════════ LOGIN — Metricana dark glass ══════════ */
+#login-screen{
+  position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:24px;
+  background:#000;overflow:hidden;
+}
+/* Gradiente de fundo roxo */
+#login-screen::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(to bottom, rgba(139,92,246,.45) 0%, rgba(109,40,217,.5) 40%, #000 100%);
+  pointer-events:none;
+}
+/* Glow top */
+#login-screen::after{
+  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:120vw;height:55vh;border-radius:0 0 50% 50%;
+  background:radial-gradient(ellipse at center top, rgba(167,139,250,.25) 0%, transparent 70%);
+  pointer-events:none;
+}
+/* Partícula de glow animada */
+@keyframes loginGlow{0%,100%{opacity:.18;transform:scale(1)}50%{opacity:.35;transform:scale(1.08)}}
+@keyframes loginGlowB{0%,100%{opacity:.28;transform:scale(1)}50%{opacity:.45;transform:scale(1.1)}}
+@keyframes lightBeamH{0%{left:-50%;opacity:0}10%{opacity:.7}90%{opacity:.7}100%{left:110%;opacity:0}}
+@keyframes lightBeamV{0%{top:-50%;opacity:0}10%{opacity:.7}90%{opacity:.7}100%{top:110%;opacity:0}}
+@keyframes lightBeamHR{0%{right:-50%;opacity:0}10%{opacity:.7}90%{opacity:.7}100%{right:110%;opacity:0}}
+@keyframes lightBeamVB{0%{bottom:-50%;opacity:0}10%{opacity:.7}90%{opacity:.7}100%{bottom:110%;opacity:0}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+@keyframes loginFadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+
+.login-glow-a{position:absolute;left:20%;top:20%;width:420px;height:420px;background:rgba(255,255,255,.04);border-radius:50%;filter:blur(90px);animation:loginGlow 9s ease-in-out infinite;pointer-events:none;}
+.login-glow-b{position:absolute;right:20%;bottom:20%;width:380px;height:380px;background:rgba(255,255,255,.04);border-radius:50%;filter:blur(90px);animation:loginGlowB 7s ease-in-out infinite 1s;pointer-events:none;}
+
+.login-wrap{
+  width:100%;max-width:380px;position:relative;z-index:2;
+  animation:loginFadeUp .7s ease both;
+  perspective:1200px;
+}
+.login-card-outer{
+  position:relative;
+  transform-style:preserve-3d;
+  transition:transform .08s linear;
+}
+/* Luz viajando pelas bordas */
+.login-beam-wrap{position:absolute;inset:-1px;border-radius:18px;overflow:hidden;pointer-events:none;z-index:3;}
+.login-beam-top{position:absolute;top:0;left:-50%;height:2px;width:50%;background:linear-gradient(to right,transparent,rgba(255,255,255,.85),transparent);filter:blur(1.5px);animation:lightBeamH 3s ease-in-out infinite;}
+.login-beam-right{position:absolute;right:0;top:-50%;width:2px;height:50%;background:linear-gradient(to bottom,transparent,rgba(255,255,255,.85),transparent);filter:blur(1.5px);animation:lightBeamV 3s ease-in-out infinite .7s;}
+.login-beam-bottom{position:absolute;bottom:0;right:-50%;height:2px;width:50%;background:linear-gradient(to left,transparent,rgba(255,255,255,.85),transparent);filter:blur(1.5px);animation:lightBeamHR 3s ease-in-out infinite 1.4s;}
+.login-beam-left{position:absolute;left:0;bottom:-50%;width:2px;height:50%;background:linear-gradient(to top,transparent,rgba(255,255,255,.85),transparent);filter:blur(1.5px);animation:lightBeamVB 3s ease-in-out infinite 2.1s;}
+
+.login-card{
+  position:relative;background:rgba(0,0,0,.45);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:32px 28px;
+  box-shadow:0 32px 80px rgba(0,0,0,.6),0 0 0 .5px rgba(255,255,255,.04);
+  overflow:hidden;
+}
+.login-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.03) 0%,transparent 60%);
+  pointer-events:none;
+}
+
+/* Cabeçalho */
+.login-icon{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-family:'Bricolage Grotesque',sans-serif;font-size:16px;font-weight:800;color:#fff;position:relative;overflow:hidden;}
+.login-icon::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.15),transparent);pointer-events:none;}
+.login-title{font-family:'Bricolage Grotesque',sans-serif;font-size:20px;font-weight:800;color:#fff;text-align:center;margin-bottom:4px;background:linear-gradient(to bottom,#fff,rgba(255,255,255,.8));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.login-sub{color:rgba(255,255,255,.5);font-size:12px;text-align:center;margin-bottom:22px;}
+
+/* Campo */
+.login-field{margin-bottom:12px;position:relative;}
+.login-field-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:rgba(255,255,255,.35);pointer-events:none;transition:color .2s;}
+.login-field:focus-within .login-field-icon{color:rgba(255,255,255,.8);}
+.login-field input{
+  width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.0);
+  border-radius:10px;padding:10px 38px;color:#fff;font-family:'Lato',sans-serif;font-size:14px;
+  outline:none;transition:background .2s,border-color .2s;letter-spacing:.04em;box-sizing:border-box;
+}
+.login-field input::placeholder{color:rgba(255,255,255,.28);}
+.login-field input:focus{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);}
+.login-pw-toggle{position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,.35);font-size:13px;padding:2px;line-height:1;transition:color .2s;}
+.login-pw-toggle:hover{color:rgba(255,255,255,.8);}
+
+.login-error{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:9px 13px;font-size:12px;color:#fca5a5;margin-bottom:12px;display:none;}
+.btn-login{
+  width:100%;background:#fff;border:none;border-radius:10px;padding:11px;
+  color:#000;font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:700;
+  cursor:pointer;transition:opacity .15s,transform .1s,box-shadow .2s;
+  position:relative;overflow:hidden;margin-top:4px;
+}
+.btn-login:hover{opacity:.92;box-shadow:0 0 24px rgba(255,255,255,.15);}
+.btn-login:active{transform:scale(.98)}
+.btn-login:disabled{opacity:.5;cursor:not-allowed;}
+.login-hint{text-align:center;margin-top:16px;font-size:11px;color:rgba(255,255,255,.35);}
 
 /* ══════════ SETUP (mantido para admin — oculto para equipe) ══════════ */
 #setup-screen{position:fixed;inset:0;background:var(--bg);z-index:400;display:none;align-items:center;justify-content:center;padding:24px;overflow-y:auto;transition:var(--transition);}
@@ -280,36 +355,48 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 </div>
 
 <!-- ══════════ LOGIN ══════════ -->
-<div id="login-screen">
+<div id="login-screen" onmousemove="loginMouseMove(event)" onmouseleave="loginMouseLeave()">
+<!-- glows de fundo -->
+<div class="login-glow-a"></div>
+<div class="login-glow-b"></div>
+
 <div class="login-wrap">
-<div class="login-logo">▲ Central de Relatórios</div>
-<div class="login-title">Bem-vindo de volta.</div>
-<div class="login-sub">Acesso restrito à equipe interna.</div>
-<div class="login-box">
-<div class="login-theme-row">
-<span class="login-theme-label">Tema</span>
-<label class="theme-toggle" title="Alternar tema">
-<input type="checkbox" id="theme-toggle-login" onchange="toggleTheme(this)"/>
-<div class="theme-track"></div>
-<div class="theme-thumb"><span class="theme-icon-moon">🌙</span><span class="theme-icon-sun">☀️</span></div>
-</label>
+  <div class="login-card-outer" id="login-card-outer">
+    <!-- Luzes nas bordas -->
+    <div class="login-beam-wrap">
+      <div class="login-beam-top"></div>
+      <div class="login-beam-right"></div>
+      <div class="login-beam-bottom"></div>
+      <div class="login-beam-left"></div>
+    </div>
+    <div class="login-card">
+      <!-- Ícone / logo -->
+      <div class="login-icon">M</div>
+      <div class="login-title">Bem-vindo de volta.</div>
+      <div class="login-sub">Metricana · Acesso restrito à equipe</div>
+
+      <!-- Campo de senha -->
+      <div class="login-field">
+        <span class="login-field-icon">🔒</span>
+        <input type="password" id="login-input" placeholder="Senha de acesso" onkeydown="if(event.key==='Enter')doLogin()" autocomplete="current-password"/>
+        <button class="login-pw-toggle" type="button" onclick="toggleLoginPw(this)" tabindex="-1">👁</button>
+      </div>
+
+      <div class="login-error" id="login-error">Senha incorreta. Tente novamente.</div>
+      <button class="btn-login" id="btn-login" onclick="doLogin()">Entrar →</button>
+      <div class="login-hint">Esqueceu a senha? Fale com o administrador.</div>
+    </div>
+  </div>
 </div>
-<div class="login-field">
-<label>Senha de acesso</label>
-<input type="password" id="login-input" placeholder="••••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
-</div>
-<div class="login-error" id="login-error">Senha incorreta. Tente novamente.</div>
-<button class="btn-login" id="btn-login" onclick="doLogin()">Entrar →</button>
-<div class="login-hint">Esqueceu a senha? Fale com o administrador.</div>
-</div>
-</div>
+<!-- input oculto para compatibilidade com toggleTheme -->
+<input type="checkbox" id="theme-toggle-login" style="display:none" onchange="toggleTheme(this)"/>
 </div>
 
 <!-- ══════════ SETUP (apenas admin, nunca aparece para equipe) ══════════ -->
 <div id="setup-screen">
 <div class="setup-wrap">
-<div class="setup-logo">▲ Central de Relatórios</div>
-<div class="setup-title">Configuração inicial</div>
+<div class="setup-logo">▲ Metricana</div>
+<div class="setup-title">Configuração inicial — Metricana</div>
 <div class="setup-sub">Conecte o ClickUp. Feito uma vez, fica salvo para toda a equipe.</div>
 <div class="setup-box">
 <div class="field">
@@ -380,7 +467,7 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div id="app">
 <div class="topbar">
 <div class="topbar-left">
-<div class="topbar-brand" onclick="goStep(0)" style="cursor:pointer" title="Voltar ao início">Central</div>
+<div class="topbar-brand" onclick="goStep(0)" style="cursor:pointer" title="Voltar ao início">Metricana</div>
 <div class="week-badge" id="week-label">—</div>
 </div>
 <div class="topbar-center" id="topbar-client-name" style="display:none"></div>
@@ -677,6 +764,28 @@ async function updateClientInDb(id, data) {
 }
 
 // ════════ THEME ════════
+// ════════ LOGIN 3D EFFECT ════════
+function loginMouseMove(e) {
+  const card = document.getElementById('login-card-outer');
+  if (!card) return;
+  const rect = card.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const dx = (e.clientX - cx) / (rect.width / 2);
+  const dy = (e.clientY - cy) / (rect.height / 2);
+  card.style.transform = `rotateY(${dx * 8}deg) rotateX(${-dy * 8}deg) translateZ(8px)`;
+}
+function loginMouseLeave() {
+  const card = document.getElementById('login-card-outer');
+  if (card) card.style.transform = 'rotateY(0deg) rotateX(0deg) translateZ(0)';
+}
+function toggleLoginPw(btn) {
+  const inp = document.getElementById('login-input');
+  if (!inp) return;
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁'; }
+}
+
 function toggleTheme(checkbox) {
   const isDark = !checkbox.checked;
   document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');

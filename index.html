@@ -99,20 +99,25 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 
 /* ══════════ APP ══════════ */
 #app{display:none;}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;background:var(--topbar-bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;transition:var(--transition);}
-.topbar-left{display:flex;align-items:center;gap:14px;}
-.topbar-brand{font-family:'Bricolage Grotesque',sans-serif;font-size:16px;font-weight:800;color:var(--accent);}
-.week-badge{background:var(--accentbg);border:1px solid rgba(99,102,241,.25);border-radius:20px;padding:3px 11px;font-size:12px;font-weight:600;color:var(--accent2);}
-.topbar-right{display:flex;align-items:center;gap:8px;}
-.btn-top{background:var(--s2);border:1px solid var(--border);border-radius:var(--radius2);padding:6px 13px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);white-space:nowrap;}
-.btn-top:hover{border-color:var(--accent);color:var(--accent);} .btn-top.danger:hover{border-color:var(--red);color:var(--red);}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:58px;background:var(--topbar-bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;transition:var(--transition);}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.topbar-brand{font-family:'Bricolage Grotesque',sans-serif;font-size:17px;font-weight:800;color:var(--accent);letter-spacing:-.01em;display:flex;align-items:center;gap:7px;}
+.topbar-brand::before{content:'▲';font-size:13px;opacity:.8;}
+.week-badge{background:var(--accentbg);border:1px solid rgba(99,102,241,.2);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--accent2);letter-spacing:.02em;}
+.topbar-right{display:flex;align-items:center;gap:6px;}
+.btn-top{background:transparent;border:1px solid transparent;border-radius:var(--radius2);padding:6px 12px;color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);white-space:nowrap;}
+.btn-top:hover{background:var(--s2);border-color:var(--border);color:var(--text);}
+.btn-top.danger:hover{color:var(--red);background:var(--redbg);border-color:rgba(239,68,68,.2);}
 
-/* Tabs */
-.tabs{display:flex;background:var(--topbar-bg);border-bottom:1px solid var(--border);padding:0 24px;overflow-x:auto;transition:var(--transition);}
-.tab{display:flex;align-items:center;gap:7px;padding:13px 18px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:var(--transition);white-space:nowrap;}
-.tab .tnum{width:20px;height:20px;border-radius:50%;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;transition:var(--transition);}
-.tab.active{color:var(--text);border-bottom-color:var(--accent);} .tab.active .tnum{background:var(--accent);color:#fff;}
-.tab.done{color:var(--green);} .tab.done .tnum{background:var(--greenbg);color:var(--green);}
+/* Tabs — stepper pill (Lovable style) */
+.tabs{display:flex;align-items:center;justify-content:center;background:var(--topbar-bg);border-bottom:1px solid var(--border);padding:0 24px;overflow-x:auto;transition:var(--transition);gap:0;}
+.tab{display:flex;align-items:center;gap:8px;padding:12px 22px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:var(--transition);white-space:nowrap;position:relative;}
+.tab:not(:last-child)::after{content:'';position:absolute;right:-16px;top:50%;margin-top:-6px;width:32px;height:1px;background:var(--border);z-index:1;pointer-events:none;}
+.tab .tnum{width:26px;height:26px;border-radius:50%;background:var(--s3);border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;transition:var(--transition);flex-shrink:0;font-family:'Bricolage Grotesque',sans-serif;}
+.tab.active{color:var(--text);border-bottom-color:var(--accent);}
+.tab.active .tnum{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 4px var(--accentbg);}
+.tab.done{color:var(--green);}
+.tab.done .tnum{background:var(--greenbg);border-color:var(--green);color:var(--green);}
 
 /* Panels */
 .panel{display:none;padding:24px;max-width:960px;margin:0 auto;animation:fadeUp .2s ease;}
@@ -125,11 +130,15 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 .btn-act.accent{background:var(--accent);border-color:var(--accent);color:#fff;} .btn-act.accent:hover{opacity:.88;}
 .btn-act:disabled{opacity:.35;cursor:not-allowed;}
 
-/* Clients */
-.client-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:8px;margin-bottom:14px;}
-.client-chip{background:var(--chip-bg);border:1px solid var(--border);border-radius:var(--radius2);padding:10px 13px;cursor:pointer;transition:var(--transition);display:flex;align-items:center;justify-content:space-between;}
-.client-chip:hover{border-color:var(--accent2);} .client-chip.sel{background:var(--accentbg);border-color:var(--accent);}
-.client-chip .cn{font-size:13px;font-weight:600;} .client-chip .cc{font-size:12px;opacity:0;transition:opacity .15s;color:var(--green);}
+/* Clients — card estilo Lovable */
+.client-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px;margin-bottom:14px;}
+.client-chip{background:var(--s2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;cursor:pointer;transition:var(--transition);display:flex;flex-direction:column;align-items:flex-start;gap:8px;position:relative;}
+.client-chip:hover{border-color:var(--accent2);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.15);}
+.client-chip.sel{background:var(--accentbg);border-color:var(--accent);box-shadow:0 0 0 3px var(--accentbg);}
+.client-chip .chip-top{display:flex;align-items:center;justify-content:space-between;width:100%;}
+.client-chip .ca{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;}
+.client-chip .cn{font-size:13px;font-weight:700;line-height:1.3;margin-top:2px;} 
+.client-chip .cc{font-size:10px;font-weight:700;color:var(--green);opacity:0;transition:opacity .15s;display:flex;align-items:center;gap:3px;}
 .client-chip.sel .cc{opacity:1;}
 
 /* Metrics */
@@ -191,9 +200,7 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 .token-badge.invalid{background:var(--redbg);border:1px solid rgba(239,68,68,.2);color:var(--red);}
 .token-badge.valid{background:var(--greenbg);border:1px solid rgba(34,197,94,.2);color:var(--green);}
 .token-badge.checking{background:var(--s3);border:1px solid var(--border);color:var(--text3);}
-/* Client chip layout fix for badge */
-.client-chip{flex-direction:column;align-items:flex-start;}
-.client-chip .chip-top{display:flex;align-items:center;justify-content:space-between;width:100%;}
+/* client-chip layout — definido no bloco Clients acima */
 /* Edit/Remove button row in modal */
 .btn-edit{background:var(--accentbg);border:1px solid rgba(99,102,241,.2);color:var(--accent2);border-radius:var(--radius2);padding:5px 10px;font-size:12px;cursor:pointer;transition:var(--transition);}
 .btn-edit:hover{border-color:var(--accent);color:var(--accent);}
@@ -359,7 +366,7 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div id="app">
 <div class="topbar">
 <div class="topbar-left">
-<div class="topbar-brand">▲ Central</div>
+<div class="topbar-brand">Central</div>
 <div class="week-badge" id="week-label">—</div>
 </div>
 <div class="topbar-right">
@@ -387,8 +394,8 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div class="card">
 <div class="client-grid" id="client-grid"></div>
 <div style="display:flex;gap:8px;flex-wrap:wrap">
-<input id="new-client-input" placeholder="Nome do novo cliente..." onkeydown="if(event.key==='Enter')openAddClient()" style="flex:1;min-width:140px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius2);padding:9px 13px;color:var(--text);font-family:'Lato',sans-serif;font-size:13px;outline:none;transition:var(--transition)"/>
-<button class="btn-act" onclick="openAddClient()">+ Adicionar</button>
+<input id="new-client-input" placeholder="Nome do novo cliente..." onkeydown="if(event.key==='Enter')openAddClient()" style="flex:1;min-width:160px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius2);padding:10px 14px;color:var(--text);font-family:'Lato',sans-serif;font-size:13px;outline:none;transition:var(--transition);"/>
+<button class="btn-act accent" style="padding:10px 18px;font-weight:700" onclick="openAddClient()">+ Adicionar</button>
 </div>
 </div>
 <div class="card">
@@ -1003,6 +1010,13 @@ function goStep(n) {
 }
 
 // ════════ CLIENTS ════════
+const AVATAR_COLORS = [
+  '#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6','#ef4444','#14b8a6'
+];
+function clientAvatarColor(name) {
+  let h = 0; for (let i=0;i<name.length;i++) h = (h*31+name.charCodeAt(i))&0xffffffff;
+  return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+}
 function renderClients() {
   const grid = document.getElementById('client-grid');
   if (!clients.length) {
@@ -1012,9 +1026,15 @@ function renderClients() {
   grid.innerHTML = clients.map((c,i) => {
     const badge = tokenBadgeHTML(c.id);
     const isSel = selClient?.name === c.name;
+    const initial = c.name.trim()[0].toUpperCase();
+    const color = clientAvatarColor(c.name);
     return `
     <div class="client-chip ${isSel?'sel':''}" onclick="selectClient(${i})">
-      <div class="chip-top"><span class="cn">${c.name}</span><span class="cc">✓</span></div>
+      <div class="chip-top">
+        <div class="ca" style="background:${color}">${initial}</div>
+        <span class="cc">✓ Selecionado</span>
+      </div>
+      <span class="cn">${c.name}</span>
       ${badge}
     </div>`;
   }).join('');
@@ -1159,12 +1179,24 @@ async function removeClient(i) {
 function renderHistory() {
   const tbody = document.getElementById('hist-body');
   if (!weekHistory.length) return;
-  tbody.innerHTML = weekHistory.map(h => `
-    <tr>
-      <td style="font-weight:600">${h.client}</td>
-      <td>${h.investido}</td><td>${h.roi}</td><td>${h.vendas}</td>
-      <td><span class="status-pill ${h.status==='ok'?'ok':'warn'}">${h.status==='ok'?'✓ Enviado':'Pendente'}</span></td>
-    </tr>`).join('');
+  tbody.innerHTML = weekHistory.map(h => {
+    const roi = parseFloat(h.roi);
+    const roiColor = roi >= 5 ? '#10b981' : roi >= 2 ? '#818cf8' : roi >= 1 ? '#f59e0b' : '#ef4444';
+    const initial = h.client.trim()[0].toUpperCase();
+    const color = clientAvatarColor(h.client);
+    return `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:9px">
+          <div style="width:28px;height:28px;border-radius:8px;background:${color};display:flex;align-items:center;justify-content:center;font-family:'Bricolage Grotesque',sans-serif;font-size:12px;font-weight:800;color:#fff;flex-shrink:0">${initial}</div>
+          <span style="font-weight:600;font-size:13px">${h.client}</span>
+        </div>
+      </td>
+      <td style="font-size:13px">${h.investido}</td>
+      <td><span style="font-family:'Bricolage Grotesque',sans-serif;font-size:15px;font-weight:800;color:${roiColor}">${roi.toFixed(1)}x</span></td>
+      <td style="font-size:13px">${h.vendas}</td>
+      <td><span class="status-pill ${h.status==='ok'?'ok':'warn'}" style="font-size:11px">${h.status==='ok'?'✓ Enviado':'Pendente'}</span></td>
+    </tr>`;
+  }).join('');
 }
 
 // ════════ PERIOD ════════

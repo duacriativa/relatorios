@@ -390,7 +390,6 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div class="theme-track"></div>
 <div class="theme-thumb"><span class="theme-icon-moon">🌙</span><span class="theme-icon-sun">☀️</span></div>
 </label>
-<button class="btn-top" onclick="openTutorial()">📖 Tutorial</button>
 <button class="btn-top" onclick="openConfig()">⚙️ Config</button>
 <button class="btn-top" onclick="openClientManager()">👤 Clientes</button>
 <button class="btn-top danger" onclick="doLogout()">Sair</button>
@@ -433,7 +432,7 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div class="card-title" style="font-size:14px">📋 Relatórios desta semana</div>
 <div style="overflow-x:auto">
 <table class="data-table" id="hist-table">
-<thead><tr><th>Cliente</th><th>Investido</th><th>ROI</th><th>Vendas</th><th>Status</th></tr></thead>
+<thead id="hist-head"><tr><th>Cliente</th><th>Investido</th><th id="hist-col3">ROI</th><th id="hist-col4">Vendas</th><th>Status</th></tr></thead>
 <tbody id="hist-body"><tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Nenhum relatório enviado ainda.</td></tr></tbody>
 </table>
 </div>
@@ -1224,11 +1223,30 @@ async function removeClient(i) {
 function renderHistory() {
   const tbody = document.getElementById('hist-body');
   if (!weekHistory.length) return;
+
+  // Detecta template predominante no histórico para definir cabeçalho
+  const hasMsgs = weekHistory.some(h => h.template === 'mensagens');
+  const hasEcom = weekHistory.some(h => h.template !== 'mensagens');
+  const col3Label = hasMsgs && !hasEcom ? 'Msgs' : hasEcom && !hasMsgs ? 'ROI' : 'ROI / Msgs';
+  const col4Label = hasMsgs && !hasEcom ? 'Custo/Msg' : hasEcom && !hasMsgs ? 'Vendas' : 'Vendas / Custo';
+  const c3 = document.getElementById('hist-col3');
+  const c4 = document.getElementById('hist-col4');
+  if (c3) c3.textContent = col3Label;
+  if (c4) c4.textContent = col4Label;
+
   tbody.innerHTML = weekHistory.map(h => {
-    const roi = parseFloat(h.roi);
-    const roiColor = roi >= 5 ? '#10b981' : roi >= 2 ? '#818cf8' : roi >= 1 ? '#f59e0b' : '#ef4444';
+    const isMsgRow = h.template === 'mensagens';
     const initial = h.client.trim()[0].toUpperCase();
     const color = clientAvatarColor(h.client);
+    // col3: ROI colorido para ecommerce, msgs para mensagens
+    let col3Html;
+    if (isMsgRow) {
+      col3Html = `<span style="font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:700;color:var(--accent2)">${h.col3}</span>`;
+    } else {
+      const roi = parseFloat(h.col3);
+      const roiColor = roi >= 5 ? '#10b981' : roi >= 2 ? '#818cf8' : roi >= 1 ? '#f59e0b' : '#ef4444';
+      col3Html = `<span style="font-family:'Bricolage Grotesque',sans-serif;font-size:15px;font-weight:800;color:${roiColor}">${roi.toFixed(1)}x</span>`;
+    }
     return `<tr>
       <td>
         <div style="display:flex;align-items:center;gap:9px">
@@ -1237,8 +1255,8 @@ function renderHistory() {
         </div>
       </td>
       <td style="font-size:13px">${h.investido}</td>
-      <td><span style="font-family:'Bricolage Grotesque',sans-serif;font-size:15px;font-weight:800;color:${roiColor}">${roi.toFixed(1)}x</span></td>
-      <td style="font-size:13px">${h.vendas}</td>
+      <td>${col3Html}</td>
+      <td style="font-size:13px">${h.col4 ?? h.vendas ?? '—'}</td>
       <td><span class="status-pill ${h.status==='ok'?'ok':'warn'}" style="font-size:11px">${h.status==='ok'?'✓ Enviado':'Pendente'}</span></td>
     </tr>`;
   }).join('');
@@ -1456,12 +1474,10 @@ function updateTopbarClient() {
   if (selClient) {
     const color = clientAvatarColor(selClient.name);
     const initial = selClient.name.trim()[0].toUpperCase();
-    const tplLabel = selTemplate === 'mensagens' ? '💬' : '🛍️';
     el.style.display = 'flex';
     el.innerHTML = `<div class="topbar-client-badge">
       <div class="tca" style="background:${color}">${initial}</div>
       <span>${selClient.name}</span>
-      <span style="font-size:11px;color:var(--text3);font-weight:400">${tplLabel}</span>
     </div>`;
   } else {
     el.style.display = 'none';
@@ -1550,19 +1566,38 @@ function buildCUPreview() {
   if (!fetchedData) return;
   const d = fetchedData;
   const fmtBRL = v => 'R$ '+parseFloat(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-  const rows = [
-    ['Investido', fmtBRL(d.spend)],
-    ['Receita', d.revVal>0?fmtBRL(d.revVal):'—'],
-    ['ROI', d.roi+'x'],
-    ['Conversões', d.convQty],
-    ['CPA', d.cpa!=='—'?'R$ '+parseFloat(d.cpa).toFixed(2):'—'],
-    ['Cliques', d.clicks.toLocaleString('pt-BR')],
-    ['Impressões', d.impr.toLocaleString('pt-BR')],
-    ['CTR', parseFloat(d.ctr).toFixed(2)+'%'],
-    ['Período', `${fmt2(d.from)} – ${fmt2(d.to)}`],
-  ];
-  if (d.msgs > 0) rows.push(['Mensagens (Atacado)', d.msgs]);
+  const atkOn = document.getElementById('atk-toggle').checked;
+  const msgsQty = atkOn ? parseInt(document.getElementById('atk-msgs').value||'0') : d.msgs;
+  const atkInvVal = atkOn ? parseFloat(document.getElementById('atk-inv').value||'0') : 0;
+  const custoMsg = msgsQty > 0 ? fmtBRL((atkInvVal || parseFloat(d.spend)) / msgsQty) : '—';
   const obs = document.getElementById('obs-field').value.trim();
+
+  let rows;
+  if (selTemplate === 'mensagens') {
+    rows = [
+      ['Investido', fmtBRL(d.spend)],
+      ['Alcance', parseInt(d.impr).toLocaleString('pt-BR')],
+      ['Cliques no link', parseInt(d.clicks).toLocaleString('pt-BR')],
+      ['CTR', parseFloat(d.ctr).toFixed(2)+'%'],
+      ['CPM', 'R$ '+parseFloat(d.cpm).toFixed(2)],
+      ['Período', `${fmt2(d.from)} – ${fmt2(d.to)}`],
+    ];
+    if (msgsQty > 0) rows.push(['Mensagens Iniciadas', msgsQty.toLocaleString('pt-BR')]);
+    if (msgsQty > 0) rows.push(['Custo por Msg', custoMsg]);
+  } else {
+    rows = [
+      ['Investido', fmtBRL(d.spend)],
+      ['Receita', d.revVal>0?fmtBRL(d.revVal):'—'],
+      ['ROI', d.roi+'x'],
+      ['Conversões', d.convQty],
+      ['CPA', d.cpa!=='—'?'R$ '+parseFloat(d.cpa).toFixed(2):'—'],
+      ['Cliques', d.clicks.toLocaleString('pt-BR')],
+      ['Impressões', d.impr.toLocaleString('pt-BR')],
+      ['CTR', parseFloat(d.ctr).toFixed(2)+'%'],
+      ['Período', `${fmt2(d.from)} – ${fmt2(d.to)}`],
+    ];
+    if (d.msgs > 0) rows.push(['Mensagens (Atacado)', d.msgs]);
+  }
   if (obs) rows.push(['Observações', obs]);
   document.getElementById('cu-rows').innerHTML = rows.map(([k,v])=>`
     <div class="cu-row"><span class="crk">${k}</span><span class="crv">${v}</span></div>`).join('');
@@ -1578,7 +1613,19 @@ async function sendClickUp() {
     await new Promise(r=>setTimeout(r,1000));
     res.innerHTML='<div class="status-pill ok" style="font-size:13px;padding:8px 14px">✓ [DEMO] Enviado com sucesso!</div>';
     btn.disabled=false; btn.textContent='✓ Enviar ao ClickUp';
-    weekHistory.push({client:selClient.name,investido:'R$ '+parseFloat(fetchedData.spend).toFixed(2),roi:fetchedData.roi,vendas:fetchedData.convQty,status:'ok'});
+    const _d0 = fetchedData;
+    const _atkOn0 = document.getElementById('atk-toggle').checked;
+    const _msgs0 = _atkOn0 ? parseInt(document.getElementById('atk-msgs').value||'0') : _d0.msgs;
+    const _atkInv0 = _atkOn0 ? parseFloat(document.getElementById('atk-inv').value||'0') : 0;
+    const _custMsg0 = _msgs0>0 ? 'R$ '+((_atkInv0||parseFloat(_d0.spend))/_msgs0).toFixed(2) : '—';
+    weekHistory.push({
+      client: selClient.name,
+      investido: 'R$ '+parseFloat(_d0.spend).toFixed(2),
+      col3: selTemplate==='mensagens' ? (_msgs0>0?String(_msgs0):'—') : _d0.roi+'x',
+      col4: selTemplate==='mensagens' ? _custMsg0 : String(_d0.convQty),
+      template: selTemplate,
+      status:'ok'
+    });
     renderHistory();
     document.getElementById('btn-to-ai').style.display='flex';
     toast('✓ Relatório registrado!');
@@ -1690,7 +1737,18 @@ async function sendClickUp() {
       res.innerHTML = `<div class="status-pill ok" style="font-size:13px;padding:8px 14px">✓ Nova tarefa criada para ${selClient.name}</div>`;
     }
 
-    weekHistory.push({client:selClient.name,investido:fmtBRL(d.spend),roi:d.roi,vendas:d.convQty,status:'ok'});
+    const _atkOnR = document.getElementById('atk-toggle').checked;
+    const _msgsR = _atkOnR ? parseInt(document.getElementById('atk-msgs').value||'0') : d.msgs;
+    const _atkInvR = _atkOnR ? parseFloat(document.getElementById('atk-inv').value||'0') : 0;
+    const _custMsgR = _msgsR>0 ? fmtBRL((_atkInvR||parseFloat(d.spend))/_msgsR) : '—';
+    weekHistory.push({
+      client: selClient.name,
+      investido: fmtBRL(d.spend),
+      col3: selTemplate==='mensagens' ? (_msgsR>0?_msgsR.toLocaleString('pt-BR'):'—') : d.roi+'x',
+      col4: selTemplate==='mensagens' ? _custMsgR : String(d.convQty),
+      template: selTemplate,
+      status:'ok'
+    });
     renderHistory();
     document.getElementById('btn-to-ai').style.display='flex';
     toast('✓ Enviado ao ClickUp!');

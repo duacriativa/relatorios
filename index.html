@@ -201,12 +201,36 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 .panel{display:none;padding:24px;max-width:960px;margin:0 auto;animation:fadeUp .2s ease;}
 .panel.active{display:block;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-.action-row{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
-.btn-act{background:var(--s2);border:1px solid var(--border);border-radius:var(--radius2);padding:9px 16px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:var(--transition);display:flex;align-items:center;gap:6px;white-space:nowrap;}
-.btn-act:hover{border-color:var(--accent);color:var(--accent);}
-.btn-act.green{border-color:rgba(34,197,94,.3);color:var(--green);background:var(--greenbg);} .btn-act.green:hover{border-color:var(--green);}
-.btn-act.accent{background:var(--accent);border-color:var(--accent);color:#fff;} .btn-act.accent:hover{opacity:.88;}
-.btn-act:disabled{opacity:.35;cursor:not-allowed;}
+.action-row{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;align-items:center;}
+/* Pill buttons — estilo inspirado no ProgressIndicator */
+.btn-act{
+  background:var(--s1);border:1.5px solid var(--border);
+  border-radius:50px;padding:10px 22px;
+  color:var(--text2);font-size:13px;font-weight:700;
+  cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+  transition:background .18s,border-color .18s,color .18s,transform .15s,box-shadow .18s;
+  font-family:'Bricolage Grotesque',sans-serif;
+  letter-spacing:.01em;
+}
+.btn-act:hover{
+  background:var(--s3);border-color:var(--border2);color:var(--text);
+  transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.1);
+}
+.btn-act:active{transform:scale(.97);}
+.btn-act.green{
+  border-color:rgba(34,197,94,.35);color:var(--green);background:var(--greenbg);
+}
+.btn-act.green:hover{border-color:var(--green);box-shadow:0 4px 14px rgba(34,197,94,.18);}
+.btn-act.accent{
+  background:var(--accent);border-color:var(--accent);color:#fff;
+  box-shadow:0 2px 10px rgba(99,102,241,.3);
+}
+.btn-act.accent:hover{
+  background:var(--accent2);border-color:var(--accent2);
+  box-shadow:0 4px 18px rgba(99,102,241,.4);transform:translateY(-1px);
+}
+.btn-act:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
 
 /* Clients — card estilo Lovable */
 .client-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px;margin-bottom:14px;}
@@ -645,8 +669,8 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 </div>
 <div class="action-row">
 <button class="btn-act" onclick="goStep(1)">← Editar</button>
-<button class="btn-act green" id="btn-send-cu" onclick="sendClickUp()">✓ Enviar ao ClickUp</button>
-<button class="btn-act accent" id="btn-to-ai" style="display:none" onclick="goStep(3)">→ Relatório + IA</button>
+<button class="btn-act accent" id="btn-send-cu" onclick="sendClickUp()">✓ Enviar ao ClickUp</button>
+<button class="btn-act green" id="btn-to-ai" style="display:none" onclick="goStep(3)">→ Relatório + IA</button>
 </div>
 </div>
 
@@ -1570,7 +1594,7 @@ function renderMetrics(d) {
   if (d.camps && d.camps.length) {
     document.getElementById('camp-section').style.display='block';
     campSortCol = 'status'; campSortAsc = true;
-    sortCamps('status');
+    sortCamps('status', true); // força ativas primeiro
   }
   // Atualizar nome do cliente na topbar
   updateTopbarClient();
@@ -1624,8 +1648,17 @@ function renderCuSummary(d, isMsgsTpl, msgsQty, custoMsg, fmtBRL) {
 
 // ════════ SORT CAMPAIGNS ════════
 let campSortCol = 'status'; let campSortAsc = true;
-function sortCamps(col) {
-  if (campSortCol === col) { campSortAsc = !campSortAsc; } else { campSortCol = col; campSortAsc = col === 'status'; }
+function sortCamps(col, forceAsc) {
+  // Se mesma coluna e não forçado, inverte; se nova coluna, status começa asc (ativas primeiro), resto desc
+  if (forceAsc !== undefined) {
+    campSortAsc = forceAsc;
+  } else if (campSortCol === col) {
+    campSortAsc = !campSortAsc;
+  } else {
+    campSortAsc = col === 'status'; // status: asc=ativas primeiro; outros: desc=maiores primeiro
+    if (col !== 'status') campSortAsc = false;
+  }
+  campSortCol = col;
   // Update indicators
   ['status','spend','clicks','ctr','conv'].forEach(c => {
     const el = document.getElementById('sort-ind-'+c);

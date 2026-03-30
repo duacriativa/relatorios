@@ -1475,7 +1475,7 @@ async function sendClickUp() {
     // 2. Busca todas as tarefas da lista (paginação: até 100 por página)
     res.innerHTML = '<span style="font-size:12px;color:var(--text3)">Buscando tarefas<span class="dots"></span></span>';
     const tasksData = await cuFetch(
-      `https://api.clickup.com/api/v2/list/${cfg.listId}/task?include_closed=true&order_by=date_updated&reverse=true&page=0`
+      `https://api.clickup.com/api/v2/list/${cfg.listId}/task?include_closed=true`
     );
     const allTasks = tasksData.tasks || [];
 

@@ -105,6 +105,9 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 .topbar-brand::before{content:'▲';font-size:13px;opacity:.8;}
 .week-badge{background:var(--accentbg);border:1px solid rgba(99,102,241,.2);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--accent2);letter-spacing:.02em;}
 .topbar-right{display:flex;align-items:center;gap:6px;}
+.topbar-center{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;pointer-events:none;}
+.topbar-client-badge{font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:7px;}
+.topbar-client-badge .tca{width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;}
 .btn-top{background:transparent;border:1px solid transparent;border-radius:var(--radius2);padding:6px 12px;color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);white-space:nowrap;}
 .btn-top:hover{background:var(--s2);border-color:var(--border);color:var(--text);}
 .btn-top.danger:hover{color:var(--red);background:var(--redbg);border-color:rgba(239,68,68,.2);}
@@ -377,9 +380,10 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div id="app">
 <div class="topbar">
 <div class="topbar-left">
-<div class="topbar-brand">Central</div>
+<div class="topbar-brand" onclick="goStep(0)" style="cursor:pointer" title="Voltar ao início">Central</div>
 <div class="week-badge" id="week-label">—</div>
 </div>
+<div class="topbar-center" id="topbar-client-name" style="display:none"></div>
 <div class="topbar-right">
 <label class="theme-toggle" title="Alternar tema" style="margin-right:4px">
 <input type="checkbox" id="theme-toggle-app" onchange="toggleTheme(this)"/>
@@ -543,6 +547,10 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 
 <!-- STEP 2 -->
 <div class="panel" id="panel2">
+<div class="card" id="cu-summary-card" style="display:none">
+<div class="card-title" style="font-size:14px;margin-bottom:12px">📊 Resumo — <span id="cu-summary-client" style="color:var(--accent2)">—</span></div>
+<div id="cu-summary-metrics" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px"></div>
+</div>
 <div class="card">
 <div class="card-title">🔗 Campos para o ClickUp</div>
 <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">A tarefa do cliente será atualizada. Os dados preencherão campos customizados existentes e serão postados como comentário.</p>
@@ -1043,6 +1051,7 @@ function selectTemplate(tpl) {
   document.querySelectorAll('.tpl-card').forEach(c => c.classList.remove('sel'));
   const el = document.getElementById('tpl-' + tpl);
   if (el) el.classList.add('sel');
+  updateTopbarClient();
 }
 
 const AVATAR_COLORS = [
@@ -1083,6 +1092,7 @@ function selectClient(i) {
   document.getElementById('card-error').style.display = 'none';
   document.getElementById('btn-to-cu').style.display = 'none';
   renderClients();
+  updateTopbarClient();
 }
 
 function openAddClient() {
@@ -1396,22 +1406,94 @@ function genDemoData(name, from, to) {
 function renderMetrics(d) {
   const box = document.getElementById('metrics-display');
   const fmtBRL = v => 'R$ '+parseFloat(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-  box.innerHTML = `
-    <div class="metric-box"><div class="mlabel">Investido</div><div class="mvalue hi">${fmtBRL(d.spend)}</div></div>
-    <div class="metric-box"><div class="mlabel">Receita</div><div class="mvalue">${d.revVal>0?fmtBRL(d.revVal):'—'}</div></div>
-    <div class="metric-box"><div class="mlabel">ROI</div><div class="mvalue">${d.roi}x</div></div>
-    <div class="metric-box"><div class="mlabel">Conversões</div><div class="mvalue">${d.convQty}</div></div>
-    <div class="metric-box"><div class="mlabel">CPA</div><div class="mvalue">${d.cpa!=='—'?'R$ '+parseFloat(d.cpa).toFixed(2):'—'}</div></div>
-    <div class="metric-box"><div class="mlabel">Cliques</div><div class="mvalue">${d.clicks.toLocaleString('pt-BR')}</div></div>
-    <div class="metric-box"><div class="mlabel">Impressões</div><div class="mvalue">${d.impr.toLocaleString('pt-BR')}</div></div>
-    <div class="metric-box"><div class="mlabel">CTR</div><div class="mvalue">${parseFloat(d.ctr).toFixed(2)}%</div></div>
-    ${d.msgs>0?`<div class="metric-box"><div class="mlabel">Mensagens</div><div class="mvalue">${d.msgs}</div></div>`:''}
-    ${d.leads>0?`<div class="metric-box"><div class="mlabel">Leads</div><div class="mvalue">${d.leads}</div></div>`:''}
-  `;
+  const isMsgsTpl = selTemplate === 'mensagens';
+  const msgsQty = document.getElementById('atk-toggle').checked
+    ? parseInt(document.getElementById('atk-msgs').value||'0')
+    : d.msgs;
+  const atkInv = document.getElementById('atk-toggle').checked
+    ? parseFloat(document.getElementById('atk-inv').value||'0') : 0;
+  const custoMsg = msgsQty > 0 ? fmtBRL((atkInv || parseFloat(d.spend)) / msgsQty) : '—';
+
+  if (isMsgsTpl) {
+    box.innerHTML = `
+      <div class="metric-box"><div class="mlabel">Investido</div><div class="mvalue hi">${fmtBRL(d.spend)}</div></div>
+      <div class="metric-box"><div class="mlabel">Alcance</div><div class="mvalue">${parseInt(d.impr).toLocaleString('pt-BR')}</div></div>
+      <div class="metric-box"><div class="mlabel">Cliques</div><div class="mvalue">${parseInt(d.clicks).toLocaleString('pt-BR')}</div></div>
+      <div class="metric-box"><div class="mlabel">CTR</div><div class="mvalue">${parseFloat(d.ctr).toFixed(2)}%</div></div>
+      <div class="metric-box"><div class="mlabel">CPM</div><div class="mvalue">R$ ${parseFloat(d.cpm).toFixed(2)}</div></div>
+      ${msgsQty>0?`<div class="metric-box"><div class="mlabel">Msgs Iniciadas</div><div class="mvalue hi">${msgsQty.toLocaleString('pt-BR')}</div></div>`:''}
+      ${msgsQty>0?`<div class="metric-box"><div class="mlabel">Custo/Msg</div><div class="mvalue">${custoMsg}</div></div>`:''}
+    `;
+  } else {
+    box.innerHTML = `
+      <div class="metric-box"><div class="mlabel">Investido</div><div class="mvalue hi">${fmtBRL(d.spend)}</div></div>
+      <div class="metric-box"><div class="mlabel">Receita</div><div class="mvalue">${d.revVal>0?fmtBRL(d.revVal):'—'}</div></div>
+      <div class="metric-box"><div class="mlabel">ROI</div><div class="mvalue">${d.roi}x</div></div>
+      <div class="metric-box"><div class="mlabel">Conversões</div><div class="mvalue">${d.convQty}</div></div>
+      <div class="metric-box"><div class="mlabel">CPA</div><div class="mvalue">${d.cpa!=='—'?'R$ '+parseFloat(d.cpa).toFixed(2):'—'}</div></div>
+      <div class="metric-box"><div class="mlabel">Cliques</div><div class="mvalue">${d.clicks.toLocaleString('pt-BR')}</div></div>
+      <div class="metric-box"><div class="mlabel">Impressões</div><div class="mvalue">${d.impr.toLocaleString('pt-BR')}</div></div>
+      <div class="metric-box"><div class="mlabel">CTR</div><div class="mvalue">${parseFloat(d.ctr).toFixed(2)}%</div></div>
+      ${d.msgs>0?`<div class="metric-box"><div class="mlabel">Mensagens</div><div class="mvalue">${d.msgs}</div></div>`:''}
+      ${d.leads>0?`<div class="metric-box"><div class="mlabel">Leads</div><div class="mvalue">${d.leads}</div></div>`:''}
+    `;
+  }
+  // Campanhas — sempre ativas primeiro
   if (d.camps && d.camps.length) {
     document.getElementById('camp-section').style.display='block';
     campSortCol = 'status'; campSortAsc = true;
-    sortCamps('status'); // Ativas primeiro por padrão
+    sortCamps('status');
+  }
+  // Atualizar nome do cliente na topbar
+  updateTopbarClient();
+  // Preencher resumo no step 3 (ClickUp)
+  renderCuSummary(d, isMsgsTpl, msgsQty, custoMsg, fmtBRL);
+}
+
+function updateTopbarClient() {
+  const el = document.getElementById('topbar-client-name');
+  if (!el) return;
+  if (selClient) {
+    const color = clientAvatarColor(selClient.name);
+    const initial = selClient.name.trim()[0].toUpperCase();
+    const tplLabel = selTemplate === 'mensagens' ? '💬' : '🛍️';
+    el.style.display = 'flex';
+    el.innerHTML = `<div class="topbar-client-badge">
+      <div class="tca" style="background:${color}">${initial}</div>
+      <span>${selClient.name}</span>
+      <span style="font-size:11px;color:var(--text3);font-weight:400">${tplLabel}</span>
+    </div>`;
+  } else {
+    el.style.display = 'none';
+    el.innerHTML = '';
+  }
+}
+
+function renderCuSummary(d, isMsgsTpl, msgsQty, custoMsg, fmtBRL) {
+  const card = document.getElementById('cu-summary-card');
+  const metricsEl = document.getElementById('cu-summary-metrics');
+  const clientEl = document.getElementById('cu-summary-client');
+  if (!card || !metricsEl) return;
+  clientEl.textContent = selClient?.name || '—';
+  card.style.display = 'block';
+  const mb = (label, value, hi) => `<div class="metric-box"><div class="mlabel">${label}</div><div class="mvalue${hi?' hi':''}">${value}</div></div>`;
+  if (isMsgsTpl) {
+    metricsEl.innerHTML =
+      mb('Investido', fmtBRL(d.spend), true) +
+      mb('Alcance', parseInt(d.impr).toLocaleString('pt-BR')) +
+      mb('Cliques', parseInt(d.clicks).toLocaleString('pt-BR')) +
+      mb('CTR', parseFloat(d.ctr).toFixed(2)+'%') +
+      (msgsQty>0 ? mb('Msgs Iniciadas', msgsQty.toLocaleString('pt-BR'), true) : '') +
+      (msgsQty>0 ? mb('Custo/Msg', custoMsg) : '');
+  } else {
+    mb('Investido', fmtBRL(d.spend), true) +
+    metricsEl.innerHTML =
+      mb('Investido', fmtBRL(d.spend), true) +
+      mb('ROI', d.roi+'x') +
+      mb('Conversões', d.convQty) +
+      mb('CPA', d.cpa!=='—'?'R$ '+parseFloat(d.cpa).toFixed(2):'—') +
+      mb('Cliques', parseInt(d.clicks).toLocaleString('pt-BR')) +
+      mb('CTR', parseFloat(d.ctr).toFixed(2)+'%');
   }
 }
 

@@ -403,8 +403,8 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div class="card">
 <div class="card-title">📅 Período</div>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
-<div class="field" style="margin:0"><label>Início</label><input type="date" id="date-from"/></div>
-<div class="field" style="margin:0"><label>Fim</label><input type="date" id="date-to"/></div>
+<div class="field" style="margin:0"><label>Início</label><input type="date" id="date-from" onchange="onDateChange()"/></div>
+<div class="field" style="margin:0"><label>Fim</label><input type="date" id="date-to" onchange="onDateChange()"/></div>
 <div class="field" style="margin:0">
 <label>Atalho</label>
 <select id="quick-period" onchange="applyQuickPeriod()">
@@ -414,6 +414,10 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <option value="30">Últimos 30 dias</option>
 </select>
 </div>
+</div>
+<div id="custom-date-banner" style="display:none;margin-top:12px;background:var(--yellowbg);border:1px solid rgba(245,158,11,.25);border-radius:var(--radius2);padding:9px 13px;font-size:12px;color:var(--yellow);display:none;align-items:center;justify-content:space-between;gap:10px">
+<span>📅 Data personalizada — clique em Atualizar para aplicar.</span>
+<button onclick="applyCustomDate()" style="background:var(--yellow);border:none;border-radius:6px;padding:5px 12px;color:#000;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🔄 Atualizar</button>
 </div>
 </div>
 <div class="card" id="card-loading" style="display:none">
@@ -429,7 +433,7 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div id="card-results" style="display:none">
 <div class="card">
 <div class="card-title">
-📊 Dados puxados — <span id="lbl-client2" style="color:var(--accent2)">—</span>
+📊 Meta Ads - <span id="lbl-client2" style="color:var(--accent2)">—</span>
 <span class="status-pill ok" style="margin-left:auto;font-size:10px">✓ API Meta</span>
 </div>
 <div class="metrics-auto" id="metrics-display"></div>
@@ -437,7 +441,15 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div class="sec-label" style="margin-top:6px">Campanhas no período</div>
 <div style="overflow-x:auto">
 <table class="data-table" id="camp-table">
-<thead><tr><th>Campanha</th><th>Status</th><th>Investido</th><th>Cliques</th><th>CTR</th><th>Conversões</th><th>CPA</th></tr></thead>
+<thead><tr>
+<th>Campanha</th>
+<th onclick="sortCamps('status')" style="cursor:pointer;user-select:none" title="Ordenar por Status">Status <span id="sort-ind-status" style="opacity:.5">↕</span></th>
+<th onclick="sortCamps('spend')" style="cursor:pointer;user-select:none" title="Ordenar por Investido">Investido <span id="sort-ind-spend" style="opacity:.5">↕</span></th>
+<th onclick="sortCamps('clicks')" style="cursor:pointer;user-select:none" title="Ordenar por Cliques">Cliques <span id="sort-ind-clicks" style="opacity:.5">↕</span></th>
+<th onclick="sortCamps('ctr')" style="cursor:pointer;user-select:none" title="Ordenar por CTR">CTR <span id="sort-ind-ctr" style="opacity:.5">↕</span></th>
+<th onclick="sortCamps('conv')" style="cursor:pointer;user-select:none" title="Ordenar por Conversões">Conversões <span id="sort-ind-conv" style="opacity:.5">↕</span></th>
+<th>CPA</th>
+</tr></thead>
 <tbody id="camp-body"></tbody>
 </table>
 </div>
@@ -458,13 +470,13 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 </div>
 <div id="atk-items">
 <div class="atk-row" style="display:grid;grid-template-columns:1fr 1fr 70px auto;gap:8px;margin-bottom:7px;align-items:end">
-<div class="field" style="margin:0"><label>Produto</label><input placeholder="Ivyna"/></div>
+<div class="field" style="margin:0"><label>Vendedora</label><input placeholder="Ivyna"/></div>
 <div class="field" style="margin:0"><label>Mensagens</label><input type="number" placeholder="176"/></div>
 <div class="field" style="margin:0"><label>Emoji</label><input placeholder="👗"/></div>
 <button onclick="this.closest('.atk-row').remove()" style="height:36px;width:34px;background:var(--redbg);border:1px solid rgba(239,68,68,.2);color:var(--red);border-radius:var(--radius2);cursor:pointer;font-size:13px;align-self:end">✕</button>
 </div>
 <div class="atk-row" style="display:grid;grid-template-columns:1fr 1fr 70px auto;gap:8px;margin-bottom:7px;align-items:end">
-<div class="field" style="margin:0"><label>Produto</label><input placeholder="Thalya"/></div>
+<div class="field" style="margin:0"><label>Vendedora</label><input placeholder="Thalya"/></div>
 <div class="field" style="margin:0"><label>Mensagens</label><input type="number" placeholder="249"/></div>
 <div class="field" style="margin:0"><label>Emoji</label><input placeholder="👗"/></div>
 <button onclick="this.closest('.atk-row').remove()" style="height:36px;width:34px;background:var(--redbg);border:1px solid rgba(239,68,68,.2);color:var(--red);border-radius:var(--radius2);cursor:pointer;font-size:13px;align-self:end">✕</button>
@@ -499,6 +511,7 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div class="action-row">
 <button class="btn-act" onclick="goStep(1)">← Editar</button>
 <button class="btn-act green" id="btn-send-cu" onclick="sendClickUp()">✓ Enviar ao ClickUp</button>
+<button class="btn-act accent" id="btn-to-ai" style="display:none" onclick="goStep(3)">→ Relatório + IA</button>
 </div>
 </div>
 
@@ -512,11 +525,20 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 </div>
 </div>
 <div class="card">
-<div class="card-title">🤖 Análise + Próximos Passos <span style="font-size:12px;font-weight:400;color:var(--text3)">(gerado pela IA)</span></div>
+<div class="card-title">🗓️ Planejamento da Semana <span style="font-size:12px;font-weight:400;color:var(--text3)">(escreva manualmente)</span></div>
+<div class="field" style="margin:0">
+<textarea id="plan-field" placeholder="Descreva o que planejamos para a próxima semana... ex: Otimizar a campanha de mensagens do atacado, preparar campanhas para o lançamento..." style="min-height:90px;font-size:13px;line-height:1.6" oninput="buildRelatorio()"></textarea>
+</div>
+<div class="action-row" style="margin-top:10px">
+<button class="btn-act green" onclick="copyRel()">📋 Copiar relatório completo</button>
+</div>
+</div>
+<div class="card">
+<div class="card-title">🤖 Resumo IA <span style="font-size:12px;font-weight:400;color:var(--text3)">(estilo WhatsApp — gerado pela IA)</span></div>
 <div class="ai-box loading" id="ai-box">Gerando análise<span class="dots"></span></div>
 <div class="action-row">
 <button class="btn-act" onclick="genAnalysis()">↺ Regenerar</button>
-<button class="btn-act green" onclick="copyAI()">📋 Copiar análise</button>
+<button class="btn-act green" onclick="copyAI()">📋 Copiar resumo IA</button>
 </div>
 </div>
 <div class="action-row">
@@ -545,8 +567,14 @@ async function sbFetch(path, options = {}) {
       ...options.headers,
     }
   });
-  if (!res.ok) { const e = await res.json(); throw new Error(e?.message || 'Erro no Supabase'); }
-  return res.status === 204 ? null : res.json();
+  const text = await res.text();
+  if (!res.ok) {
+    let msg = 'Erro no Supabase (status ' + res.status + ')';
+    try { msg = JSON.parse(text)?.message || text || msg; } catch(_) {}
+    throw new Error(msg);
+  }
+  if (!text || res.status === 204) return null;
+  try { return JSON.parse(text); } catch(_) { return null; }
 }
 
 // ════════ CARREGAR CONFIG DO SUPABASE ════════
@@ -802,20 +830,31 @@ async function saveConfig() {
   const openaiKey = document.getElementById('cfg-oai-modal').value.trim();
   const btn = document.getElementById('btn-save-config');
   btn.disabled = true; btn.textContent = 'Salvando...';
+
+  // Usa valor atual se o campo estiver em branco (evita sobrescrever com vazio)
+  const finalClickup   = clickup   || cfg.clickup   || '';
+  const finalListId    = listId    || cfg.listId    || '';
+  const finalOpenaiKey = openaiKey || cfg.openaiKey || '';
+  const finalMetaToken = metaToken || cfg.metaToken || '';
+
   try {
-    await saveConfigToSupabase(
-      clickup || cfg.clickup,
-      listId  || cfg.listId,
-      openaiKey || cfg.openaiKey,
-      metaToken
-    );
-    cfg.metaToken = metaToken;
-    if (clickup)   cfg.clickup   = clickup;
-    if (listId)    cfg.listId    = listId;
-    if (openaiKey) cfg.openaiKey = openaiKey;
+    // Usa PATCH diretamente na linha id=1 para evitar problemas de upsert
+    await sbFetch('config?id=eq.1', {
+      method: 'PATCH',
+      headers: { 'Prefer': 'return=minimal' },
+      body: JSON.stringify({
+        clickup_token:   finalClickup,
+        clickup_list_id: finalListId,
+        openai_key:      finalOpenaiKey,
+        meta_token:      finalMetaToken
+      })
+    });
+    cfg.metaToken = finalMetaToken;
+    cfg.clickup   = finalClickup;
+    cfg.listId    = finalListId;
+    cfg.openaiKey = finalOpenaiKey;
     toast('✓ Configurações salvas!');
     document.getElementById('modal-config').classList.remove('open');
-    // Re-verifica todos os tokens com o novo token global
     if (!cfg.isDemo) checkAllTokens();
   } catch(e) {
     toast('⚠️ Erro ao salvar: ' + e.message);
@@ -872,8 +911,9 @@ let step = 0;
 function goStep(n) {
   if (n >= 1 && !selClient) { toast('⚠️ Selecione um cliente primeiro.'); return; }
   if (n >= 2 && !fetchedData) { toast('⚠️ Puxe os dados primeiro.'); return; }
-  if (n === 2) buildCUPreview();
+  if (n === 2) { buildCUPreview(); document.getElementById('btn-to-ai').style.display='none'; document.getElementById('cu-result').innerHTML=''; }
   if (n === 3) { buildRelatorio(); setTimeout(genAnalysis, 300); }
+  if (n === 0) renderHistory();
   document.querySelectorAll('.panel').forEach((p,i) => p.classList.toggle('active', i===n));
   document.querySelectorAll('.tab').forEach((t,i) => {
     t.classList.remove('active','done');
@@ -1057,6 +1097,34 @@ function applyQuickPeriod() {
   const from = new Date(to); from.setDate(to.getDate()-(days-1));
   document.getElementById('date-from').value = from.toISOString().split('T')[0];
   document.getElementById('date-to').value   = to.toISOString().split('T')[0];
+  document.getElementById('custom-date-banner').style.display = 'none';
+  updateWeekLabel();
+}
+
+function onDateChange() {
+  // Se o atalho for "Personalizado", mostra o banner de atualizar
+  const period = document.getElementById('quick-period')?.value;
+  if (!period) {
+    document.getElementById('custom-date-banner').style.display = 'flex';
+  }
+}
+
+function applyCustomDate() {
+  document.getElementById('custom-date-banner').style.display = 'none';
+  updateWeekLabel();
+  // Se já há dados puxados, avisa que precisa buscar novamente
+  if (fetchedData) {
+    fetchedData = null;
+    document.getElementById('card-results').style.display = 'none';
+    document.getElementById('btn-to-cu').style.display = 'none';
+    toast('📅 Datas atualizadas — puxe os dados novamente.');
+  }
+}
+
+function updateWeekLabel() {
+  const f = document.getElementById('date-from')?.value;
+  const t = document.getElementById('date-to')?.value;
+  if (f && t) document.getElementById('week-label').textContent = `${fmt2(f)} – ${fmt2(t)}`;
 }
 
 // ════════ FETCH META ════════
@@ -1197,24 +1265,46 @@ function renderMetrics(d) {
   `;
   if (d.camps && d.camps.length) {
     document.getElementById('camp-section').style.display='block';
-    document.getElementById('camp-body').innerHTML = d.camps.map(c=>`
-      <tr>
-        <td style="font-weight:500;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</td>
-        <td><span class="status-pill ${c.status==='ACTIVE'?'ok':'idle'}">${c.status==='ACTIVE'?'Ativo':'Pausado'}</span></td>
-        <td>R$ ${parseFloat(c.spend).toFixed(2)}</td>
-        <td>${c.clicks.toLocaleString('pt-BR')}</td>
-        <td>${parseFloat(c.ctr).toFixed(2)}%</td>
-        <td>${c.conv}</td>
-        <td>${c.cpa_val!=='—'?'R$ '+parseFloat(c.cpa_val).toFixed(2):'—'}</td>
-      </tr>`).join('');
+    campSortCol = 'status'; campSortAsc = true;
+    sortCamps('status'); // Ativas primeiro por padrão
   }
+}
+
+// ════════ SORT CAMPAIGNS ════════
+let campSortCol = 'status'; let campSortAsc = true;
+function sortCamps(col) {
+  if (campSortCol === col) { campSortAsc = !campSortAsc; } else { campSortCol = col; campSortAsc = col === 'status'; }
+  // Update indicators
+  ['status','spend','clicks','ctr','conv'].forEach(c => {
+    const el = document.getElementById('sort-ind-'+c);
+    if (!el) return;
+    if (c === campSortCol) { el.textContent = campSortAsc ? '↑' : '↓'; el.style.opacity = '1'; }
+    else { el.textContent = '↕'; el.style.opacity = '.5'; }
+  });
+  if (!fetchedData?.camps) return;
+  const sorted = [...fetchedData.camps].sort((a, b) => {
+    let av, bv;
+    if (col === 'status') { av = a.status === 'ACTIVE' ? 0 : 1; bv = b.status === 'ACTIVE' ? 0 : 1; }
+    else { av = parseFloat(a[col])||0; bv = parseFloat(b[col])||0; }
+    return campSortAsc ? av - bv : bv - av;
+  });
+  document.getElementById('camp-body').innerHTML = sorted.map(c=>`
+    <tr>
+      <td style="font-weight:500;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</td>
+      <td><span class="status-pill ${c.status==='ACTIVE'?'ok':'idle'}">${c.status==='ACTIVE'?'Ativo':'Pausado'}</span></td>
+      <td>R$ ${parseFloat(c.spend).toFixed(2)}</td>
+      <td>${c.clicks.toLocaleString('pt-BR')}</td>
+      <td>${parseFloat(c.ctr).toFixed(2)}%</td>
+      <td>${c.conv}</td>
+      <td>${c.cpa_val!=='—'?'R$ '+parseFloat(c.cpa_val).toFixed(2):'—'}</td>
+    </tr>`).join('');
 }
 
 // ════════ ATACADO ════════
 function calcAtk() {
   const msgs = parseInt(document.getElementById('atk-msgs').value)||0;
   const inv  = parseFloat((document.getElementById('atk-inv').value||'0').replace(',','.'))||0;
-  document.getElementById('atk-cpm').value = msgs > 0 ? 'R$ '+(inv/msgs).toFixed(3) : '';
+  document.getElementById('atk-cpm').value = msgs > 0 ? 'R$' + (inv/msgs).toFixed(2).replace('.',',') : '';
 }
 
 function addAtkRow() {
@@ -1222,7 +1312,7 @@ function addAtkRow() {
   row.className='atk-row';
   row.style.cssText='display:grid;grid-template-columns:1fr 1fr 70px auto;gap:8px;margin-bottom:7px;align-items:end';
   row.innerHTML=`
-    <div class="field" style="margin:0"><label>Produto</label><input placeholder="Nome"/></div>
+    <div class="field" style="margin:0"><label>Vendedora</label><input placeholder="Nome"/></div>
     <div class="field" style="margin:0"><label>Mensagens</label><input type="number" placeholder="0"/></div>
     <div class="field" style="margin:0"><label>Emoji</label><input placeholder="👗"/></div>
     <button onclick="this.closest('.atk-row').remove()" style="height:36px;width:34px;background:var(--redbg);border:1px solid rgba(239,68,68,.2);color:var(--red);border-radius:var(--radius2);cursor:pointer;font-size:13px;align-self:end">✕</button>`;
@@ -1263,6 +1353,8 @@ async function sendClickUp() {
     res.innerHTML='<div class="status-pill ok" style="font-size:13px;padding:8px 14px">✓ [DEMO] Enviado com sucesso!</div>';
     btn.disabled=false; btn.textContent='✓ Enviar ao ClickUp';
     weekHistory.push({client:selClient.name,investido:'R$ '+parseFloat(fetchedData.spend).toFixed(2),roi:fetchedData.roi,vendas:fetchedData.convQty,status:'ok'});
+    renderHistory();
+    document.getElementById('btn-to-ai').style.display='flex';
     toast('✓ Relatório registrado!');
     return;
   }
@@ -1312,6 +1404,8 @@ async function sendClickUp() {
     }
 
     weekHistory.push({client:selClient.name,investido:fmtBRL(d.spend),roi:d.roi,vendas:d.convQty,status:'ok'});
+    renderHistory();
+    document.getElementById('btn-to-ai').style.display='flex';
     toast('✓ Enviado ao ClickUp!');
   } catch(e) {
     res.innerHTML=`<div class="err-box">❌ Erro ao enviar: ${e.message}</div>`;
@@ -1341,6 +1435,8 @@ function buildRelatorio() {
     atkSection = `\n📦 *Atacado*\nTotal mensagens: ${msgs} | Investido: R$ ${inv} | Custo/msg: ${cpm}\n${rows.join('\n')}`;
   }
 
+  const plan = (document.getElementById('plan-field')?.value||'').trim();
+
   const rel = [
     `📊 *Relatório Semanal — ${selClient.name}*`,
     `📅 ${fmt2(d.from)} a ${fmt2(d.to)}`,
@@ -1360,6 +1456,7 @@ function buildRelatorio() {
     d.leads > 0 ? `• Leads: ${d.leads}` : null,
     atkSection || null,
     obs ? `\n📝 Observações:\n${obs}` : null,
+    plan ? `\n🗓️ O que planejamos para a semana:\n${plan}` : null,
     ``,
     `_Relatório gerado pela Central de Relatórios_`,
   ].filter(v=>v!==null).join('\n');
@@ -1376,35 +1473,43 @@ async function genAnalysis() {
   if (cfg.isDemo || !cfg.openaiKey) {
     await new Promise(r=>setTimeout(r,1500));
     box.className='ai-box';
-    box.textContent = `✅ Análise de Performance — ${selClient?.name||'Cliente'}\n\nOs resultados da semana mostram um desempenho sólido. O ROI de ${fetchedData.roi}x está acima da média esperada para o segmento.\n\n🎯 Próximos passos sugeridos:\n• Aumentar o orçamento nas campanhas de maior conversão\n• Testar novos criativos para reduzir o CPM\n• Criar campanha de retargeting para visitantes recentes\n• Avaliar expansão de público lookalike`;
+    const d = fetchedData;
+    box.textContent = `Resumo da semana:\nCada R$ 1 investido trouxe R$ ${d.roi} de volta em vendas. Tivemos ${d.convQty} conversões no período, com um custo por venda de ${d.cpa !== '—' ? 'R$ '+parseFloat(d.cpa).toFixed(2) : 'valores em análise'}. O CTR de ${parseFloat(d.ctr).toFixed(2)}% mostra que os anúncios estão chamando atenção de quem importa.${d.msgs > 0 ? ` A campanha de mensagens gerou ${d.msgs} contatos — como estão evoluindo essas conversas do lado de vocês?` : ''}\n\n🗓️ O que planejamos para a semana:\nOtimizar as campanhas de melhor desempenho e testar novos criativos para manter o resultado crescendo. O que vocês acham de investirmos mais no que está funcionando?`;
     return;
   }
 
   const d = fetchedData;
   const obs = document.getElementById('obs-field').value.trim();
-  const prompt = `Você é especialista em tráfego pago Meta Ads. Analise os dados abaixo e forneça uma análise objetiva com pontos positivos, pontos de atenção e 3-5 próximos passos práticos.
+  const plan = (document.getElementById('plan-field')?.value||'').trim();
+  const prompt = `Você é gestor de tráfego e vai escrever um resumo semanal para o cliente "${selClient.name}", estilo mensagem de WhatsApp — próximo, humano e direto.
 
-Cliente: ${selClient.name}
-Período: ${d.from} a ${d.to}
+REGRAS OBRIGATÓRIAS:
+- Máximo 150 palavras no total
+- SEM bullet points, SEM headers, SEM formatação técnica
+- Tom de gestor falando COM o cliente, não um relatório técnico
+- Incorpore os dados reais naturalmente no texto (não liste, use na narrativa)
+- Comece com "Resumo da semana:" e inclua dados reais
+- Termine com uma pergunta ou gancho que gere resposta do cliente
+- Se houver planejamento informado, finalize com "🗓️ O que planejamos para a semana:" seguido do planejamento em prosa curta
+
+Dados da semana:
+Período: ${fmt2(d.from)} a ${fmt2(d.to)}
 Investido: R$ ${parseFloat(d.spend).toFixed(2)}
-${d.revVal>0?`Receita: R$ ${parseFloat(d.revVal).toFixed(2)}`:''}
-ROI: ${d.roi}x
-Conversões: ${d.convQty}
-CPA: ${d.cpa}
-Cliques: ${d.clicks}
-Impressões: ${d.impr}
-CTR: ${parseFloat(d.ctr).toFixed(2)}%
-CPM: R$ ${parseFloat(d.cpm).toFixed(2)}
+${d.revVal>0?`Receita: R$ ${parseFloat(d.revVal).toFixed(2)}\nROI: ${d.roi}x (cada R$1 investido gerou R$${d.roi} em vendas)`:'Sem dados de receita registrados'}
+Conversões/Vendas: ${d.convQty}
+${d.cpa!=='—'?`Custo por venda: R$ ${parseFloat(d.cpa).toFixed(2)}`:''}
+Cliques: ${d.clicks} | CTR: ${parseFloat(d.ctr).toFixed(2)}%
 ${d.msgs>0?`Mensagens iniciadas: ${d.msgs}`:''}
-${obs?`Observações do gestor: ${obs}`:''}
+${obs?`Contexto extra do gestor: ${obs}`:''}
+${plan?`Planejamento informado pelo gestor para a próxima semana: ${plan}`:''}
 
-Responda em português, de forma profissional mas acessível. Máximo 250 palavras.`;
+Escreva APENAS o texto final, sem introdução ou explicação.`;
 
   try {
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method:'POST',
       headers:{'Authorization':'Bearer '+cfg.openaiKey,'Content-Type':'application/json'},
-      body: JSON.stringify({model:'gpt-4o-mini',messages:[{role:'user',content:prompt}],max_tokens:400,temperature:0.7})
+      body: JSON.stringify({model:'gpt-4o-mini',messages:[{role:'user',content:prompt}],max_tokens:280,temperature:0.75})
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
@@ -1430,6 +1535,7 @@ function copyAI() {
 function nextClient() {
   selClient=null; fetchedData=null;
   document.getElementById('obs-field').value='';
+  if (document.getElementById('plan-field')) document.getElementById('plan-field').value='';
   document.getElementById('atk-toggle').checked=false;
   document.getElementById('atk-section').style.display='none';
   renderHistory();

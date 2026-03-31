@@ -1492,12 +1492,7 @@ function updateWeekLabel() {
 
 // ════════ NUVEMSHOP ════════
 async function fetchNuvemshopRevenue(storeId, nsToken, dateFrom, dateTo) {
-  const base = `https://api.nuvemshop.com.br/2025-03/${storeId}`;
-  const headers = {
-    'Authentication': `bearer ${nsToken}`,
-    'User-Agent': 'Metricana (trafego@duacriativa.com.br)',
-    'Content-Type': 'application/json'
-  };
+  // Chama o proxy /api/nuvemshop (Vercel serverless) para evitar CORS
   let totalRevenue     = 0;
   let totalOrders      = 0;
   let totalProductsSold = 0;
@@ -1513,8 +1508,8 @@ async function fetchNuvemshopRevenue(storeId, nsToken, dateFrom, dateTo) {
   const toDate   = new Date(dateTo   + 'T23:59:59');
 
   while (true) {
-    const url = `${base}/orders?payment_status=paid&created_at_min=${dateFrom}&created_at_max=${dateTo}&per_page=${perPage}&page=${page}`;
-    const res = await fetch(url, { headers });
+    const url = `/api/nuvemshop?storeId=${storeId}&from=${dateFrom}&to=${dateTo}&perPage=${perPage}&page=${page}`;
+    const res = await fetch(url, { headers: { 'x-ns-token': nsToken } });
     if (!res.ok) {
       const txt = await res.text();
       throw new Error(`Nuvemshop API HTTP ${res.status}: ${txt.slice(0,200)}`);

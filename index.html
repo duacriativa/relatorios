@@ -382,6 +382,11 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
   <div id="token-validation-result" style="margin-top:6px;display:none"></div>
 </div>
 <div class="field"><label>Ad Account ID</label><input id="add-caccount" placeholder="act_123456789"/></div>
+<div style="background:var(--s3);border:1px solid var(--border);border-radius:var(--radius2);padding:12px 14px;margin-bottom:14px">
+  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--accent2);margin-bottom:10px">🛍️ Nuvemshop (opcional)</div>
+  <div class="field" style="margin-bottom:10px"><label>Store ID <span style="font-weight:400;color:var(--text3);font-size:10px;text-transform:none;letter-spacing:0">— número da loja</span></label><input id="add-ns-store-id" placeholder="ex: 1234567" type="number"/></div>
+  <div class="field" style="margin:0"><label>Access Token Nuvemshop</label><input id="add-ns-token" type="password" placeholder="Cole o token de acesso da loja"/><div class="hint" style="margin-top:4px">Token permanente gerado no painel de parceiros Nuvemshop. Não expira a menos que o app seja desinstalado.</div></div>
+</div>
 <input type="hidden" id="edit-client-id" value=""/>
 <button class="btn-main" id="btn-save-client" onclick="saveNewClient()">Salvar cliente</button>
 </div>
@@ -1286,6 +1291,7 @@ function renderClientManager() {
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600">${c.name}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:2px">${c.account_id||c.accountId||'—'} · token ${tokenPreview}</div>
+        ${c.nuvemshop_store_id ? `<div style="font-size:10px;color:var(--green);margin-top:3px">🛍️ Nuvemshop conectada · loja ${c.nuvemshop_store_id}</div>` : ''}
         ${badge ? `<div style="margin-top:4px">${badge}</div>` : ''}
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0;margin-left:10px">
@@ -1302,6 +1308,8 @@ function editClient(i) {
   document.getElementById('add-cname').value = c.name;
   document.getElementById('add-ctoken').value = c.token || '';
   document.getElementById('add-caccount').value = c.account_id || c.accountId || '';
+  document.getElementById('add-ns-store-id').value = c.nuvemshop_store_id || '';
+  document.getElementById('add-ns-token').value = c.nuvemshop_token || '';
   document.getElementById('form-section-title').textContent = 'Editar cliente';
   document.getElementById('btn-save-client').textContent = 'Salvar alterações';
   document.getElementById('edit-mode-name').textContent = c.name;
@@ -1316,6 +1324,8 @@ function cancelEditClient() {
   document.getElementById('add-cname').value = '';
   document.getElementById('add-ctoken').value = '';
   document.getElementById('add-caccount').value = '';
+  document.getElementById('add-ns-store-id').value = '';
+  document.getElementById('add-ns-token').value = '';
   document.getElementById('form-section-title').textContent = 'Adicionar cliente';
   document.getElementById('btn-save-client').textContent = 'Salvar cliente';
   document.getElementById('edit-mode-banner').style.display = 'none';
@@ -1332,6 +1342,8 @@ async function saveNewClient() {
   const name    = document.getElementById('add-cname').value.trim();
   const token   = document.getElementById('add-ctoken').value.trim();
   const account = document.getElementById('add-caccount').value.trim();
+  const nsStoreId = document.getElementById('add-ns-store-id').value.trim();
+  const nsToken   = document.getElementById('add-ns-token').value.trim();
   // Token é opcional se houver token global configurado
   if (!name || !account) { toast('⚠️ Preencha nome e Ad Account ID.'); return; }
   if (!token && !cfg.metaToken) { toast('⚠️ Digite um token ou configure o Token Global em ⚙️ Config.'); return; }
@@ -1357,11 +1369,11 @@ async function saveNewClient() {
   try {
     if (editId) {
       // Modo edição — atualiza no Supabase
-      await updateClientInDb(editId, { name, token, account_id: accountId });
+      await updateClientInDb(editId, { name, token, account_id: accountId, nuvemshop_store_id: nsStoreId || null, nuvemshop_token: nsToken || null });
       toast(`✓ ${name} atualizado!`);
     } else {
       // Novo cliente
-      await saveClient({ name, token, account_id: accountId });
+      await saveClient({ name, token, account_id: accountId, nuvemshop_store_id: nsStoreId || null, nuvemshop_token: nsToken || null });
       toast(`✓ ${name} adicionado!`);
     }
     await loadClients();
@@ -1470,6 +1482,93 @@ function updateWeekLabel() {
   if (f && t) document.getElementById('week-label').textContent = `${fmt2(f)} – ${fmt2(t)}`;
 }
 
+// ════════ NUVEMSHOP ════════
+async function fetchNuvemshopRevenue(storeId, nsToken, dateFrom, dateTo) {
+  const base = `https://api.nuvemshop.com.br/2025-03/${storeId}`;
+  const headers = {
+    'Authentication': `bearer ${nsToken}`,
+    'User-Agent': 'Metricana (trafego@duacriativa.com.br)',
+    'Content-Type': 'application/json'
+  };
+  let totalRevenue     = 0;
+  let totalOrders      = 0;
+  let totalProductsSold = 0;
+  let couponsUsed      = 0;
+  const seenCustomers       = new Set();
+  const newCustomerIds      = new Set();
+  const returningCustomerIds = new Set();
+  const stateMap = {};
+  let page = 1;
+  const perPage = 200;
+  const fromDate = new Date(dateFrom + 'T00:00:00');
+  const toDate   = new Date(dateTo   + 'T23:59:59');
+
+  while (true) {
+    const url = `${base}/orders?payment_status=paid&created_at_min=${dateFrom}&created_at_max=${dateTo}&per_page=${perPage}&page=${page}`;
+    const res = await fetch(url, { headers });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`Nuvemshop API HTTP ${res.status}: ${txt.slice(0,200)}`);
+    }
+    const orders = await res.json();
+    if (!Array.isArray(orders) || orders.length === 0) break;
+    for (const o of orders) {
+      const orderTotal = parseFloat(o.total || 0);
+      totalRevenue += orderTotal;
+      totalOrders++;
+
+      // Produtos vendidos (soma quantidade de cada item)
+      if (Array.isArray(o.products)) {
+        for (const p of o.products) totalProductsSold += parseInt(p.quantity || 1);
+      }
+
+      // Cupons utilizados
+      if ((Array.isArray(o.coupon) && o.coupon.length > 0) ||
+          (o.coupon && typeof o.coupon === 'object' && o.coupon.code)) {
+        couponsUsed++;
+      }
+
+      // Clientes novos vs recorrentes — por data de cadastro do cliente
+      const custId = o.customer?.id;
+      if (custId && !seenCustomers.has(custId)) {
+        seenCustomers.add(custId);
+        const custCreated = o.customer.created_at ? new Date(o.customer.created_at) : null;
+        if (custCreated && custCreated >= fromDate && custCreated <= toDate) {
+          newCustomerIds.add(custId);
+        } else {
+          returningCustomerIds.add(custId);
+        }
+      }
+
+      // Desempenho por estado
+      const state = o.shipping_address?.province || o.billing_address?.province || 'Desconhecido';
+      if (!stateMap[state]) stateMap[state] = { revenue: 0, orders: 0, shippingCost: 0 };
+      stateMap[state].revenue     += orderTotal;
+      stateMap[state].orders++;
+      stateMap[state].shippingCost += parseFloat(o.shipping_cost_owner || o.shipping_cost_customer || 0);
+    }
+    // Se retornou menos que perPage, acabaram as páginas
+    if (orders.length < perPage) break;
+    page++;
+    // Rate limit: 2 req/s — aguarda 600ms entre páginas
+    await new Promise(r => setTimeout(r, 600));
+  }
+
+  const statePerf = Object.entries(stateMap)
+    .map(([state, data]) => ({ state, ...data }))
+    .sort((a, b) => b.revenue - a.revenue);
+
+  return {
+    revenue: totalRevenue,
+    orders: totalOrders,
+    newCustomers: newCustomerIds.size,
+    returningCustomers: returningCustomerIds.size,
+    productsSold: totalProductsSold,
+    couponsUsed,
+    statePerf
+  };
+}
+
 // ════════ FETCH META ════════
 async function fetchData() {
   if (!selClient) { toast('⚠️ Selecione um cliente.'); return; }
@@ -1537,10 +1636,39 @@ async function fetchData() {
     const revenue   = actVals.find(a=>a.action_type==='purchase');
     const msgs      = actions.find(a=>a.action_type==='onsite_conversion.messaging_conversation_started_7d');
     const leads     = actions.find(a=>a.action_type==='lead');
-    const convQty   = parseInt(purchases?.value||0);
-    const revVal    = parseFloat(revenue?.value||0);
-    const roi       = spend > 0 ? (revVal/spend).toFixed(2) : '—';
-    const cpa       = convQty > 0 ? (spend/convQty).toFixed(2) : '—';
+    let convQty   = parseInt(purchases?.value||0);
+    let revVal    = parseFloat(revenue?.value||0);
+    let nsSource  = false; // flag: dados vieram da Nuvemshop?
+    let nsExtra   = null;  // dados extras da Nuvemshop
+
+    // ── Nuvemshop: puxar receita real se cliente tiver integração ──
+    const nsStoreId = selClient.nuvemshop_store_id;
+    const nsToken   = selClient.nuvemshop_token;
+    if (nsStoreId && nsToken) {
+      try {
+        prog.style.width='90%'; progLbl.textContent='Buscando vendas na Nuvemshop...';
+        document.getElementById('loading-msg').innerHTML='Conectando à Nuvemshop<span class="dots"></span>';
+        const nsData = await fetchNuvemshopRevenue(nsStoreId, nsToken, from, to);
+        if (nsData.revenue > 0 || nsData.orders > 0) {
+          revVal   = nsData.revenue;
+          convQty  = nsData.orders;
+          nsSource = true;
+          nsExtra  = {
+            newCustomers:      nsData.newCustomers,
+            returningCustomers: nsData.returningCustomers,
+            productsSold:      nsData.productsSold,
+            couponsUsed:       nsData.couponsUsed,
+            statePerf:         nsData.statePerf
+          };
+        }
+      } catch(nsErr) {
+        console.warn('Nuvemshop fetch falhou — usando dados Meta:', nsErr.message);
+        toast('⚠️ Nuvemshop: ' + nsErr.message.slice(0,80), 4000);
+      }
+    }
+
+    const roi = spend > 0 && revVal > 0 ? (revVal/spend).toFixed(2) : '—';
+    const cpa = convQty > 0 ? (spend/convQty).toFixed(2) : '—';
 
     const camps = (campData.data||[]).map(c => {
       const ci = c.insights?.data?.[0]||{};
@@ -1560,7 +1688,16 @@ async function fetchData() {
     prog.style.width='100%'; progLbl.textContent='Concluído!';
     await new Promise(r=>setTimeout(r,400));
 
-    fetchedData = {spend,clicks,impr,reach,ctr,cpm,convQty,revVal,roi,cpa,msgs:parseInt(msgs?.value||0),leads:parseInt(leads?.value||0),camps,from,to};
+    fetchedData = {
+      spend,clicks,impr,reach,ctr,cpm,convQty,revVal,roi,cpa,
+      msgs:parseInt(msgs?.value||0),leads:parseInt(leads?.value||0),
+      camps,from,to,nsSource,
+      nsNewCustomers:      nsExtra?.newCustomers      || 0,
+      nsReturningCustomers: nsExtra?.returningCustomers || 0,
+      nsProductsSold:      nsExtra?.productsSold      || 0,
+      nsCouponsUsed:       nsExtra?.couponsUsed       || 0,
+      nsStatePerf:         nsExtra?.statePerf         || []
+    };
     loading.style.display='none'; results.style.display='block';
     renderMetrics(fetchedData);
     btn.disabled=false;
@@ -1614,17 +1751,60 @@ function renderMetrics(d) {
       ${msgsQty>0?`<div class="metric-box"><div class="mlabel">Custo/Msg</div><div class="mvalue">${custoMsg}</div></div>`:''}
     `;
   } else {
+    const nsBadge = d.nsSource ? `<span style="display:inline-block;margin-left:5px;font-size:9px;font-weight:700;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:var(--green);border-radius:4px;padding:1px 5px;vertical-align:middle">🛍️ Nuvemshop</span>` : '';
+    const ticketMedio = d.nsSource && d.convQty > 0 ? fmtBRL(d.revVal / d.convQty) : null;
+
+    // Metric boxes extras da Nuvemshop
+    const nsExtraBoxes = d.nsSource ? `
+      ${ticketMedio ? `<div class="metric-box"><div class="mlabel">Ticket Médio ${nsBadge}</div><div class="mvalue">${ticketMedio}</div></div>` : ''}
+      ${(d.nsNewCustomers > 0 || d.nsReturningCustomers > 0) ? `
+        <div class="metric-box"><div class="mlabel">Clientes Novos ${nsBadge}</div><div class="mvalue">${d.nsNewCustomers}</div></div>
+        <div class="metric-box"><div class="mlabel">Clientes Recorrentes ${nsBadge}</div><div class="mvalue">${d.nsReturningCustomers}</div></div>
+      ` : ''}
+      ${d.nsProductsSold > 0 ? `<div class="metric-box"><div class="mlabel">Produtos Vendidos ${nsBadge}</div><div class="mvalue">${d.nsProductsSold.toLocaleString('pt-BR')}</div></div>` : ''}
+      ${d.nsCouponsUsed > 0 ? `<div class="metric-box"><div class="mlabel">Cupons Usados ${nsBadge}</div><div class="mvalue">${d.nsCouponsUsed}</div></div>` : ''}
+    ` : `${ticketMedio ? `<div class="metric-box"><div class="mlabel">Ticket Médio</div><div class="mvalue">${ticketMedio}</div></div>` : ''}`;
+
+    // Tabela de desempenho por estado
+    const stateTable = (d.nsSource && d.nsStatePerf && d.nsStatePerf.length > 0) ? `
+      <div style="grid-column:1/-1;margin-top:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--accent2);margin-bottom:10px">🗺️ Desempenho por Estado ${nsBadge}</div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em">
+              <th style="text-align:left;padding:5px 8px;border-bottom:1px solid var(--border)">Estado</th>
+              <th style="text-align:right;padding:5px 8px;border-bottom:1px solid var(--border)">Receita</th>
+              <th style="text-align:right;padding:5px 8px;border-bottom:1px solid var(--border)">Pedidos</th>
+              <th style="text-align:right;padding:5px 8px;border-bottom:1px solid var(--border)">Frete</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${d.nsStatePerf.map((s, i) => `
+              <tr style="border-bottom:1px solid var(--border)${i === 0 ? ';font-weight:600' : ''}">
+                <td style="padding:6px 8px">${s.state}</td>
+                <td style="padding:6px 8px;text-align:right">${fmtBRL(s.revenue)}</td>
+                <td style="padding:6px 8px;text-align:right">${s.orders}</td>
+                <td style="padding:6px 8px;text-align:right">${s.shippingCost > 0 ? fmtBRL(s.shippingCost) : '—'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    ` : '';
+
     box.innerHTML = `
       <div class="metric-box"><div class="mlabel">Investido</div><div class="mvalue hi">${fmtBRL(d.spend)}</div></div>
-      <div class="metric-box"><div class="mlabel">Receita</div><div class="mvalue">${d.revVal>0?fmtBRL(d.revVal):'—'}</div></div>
-      <div class="metric-box"><div class="mlabel">ROI</div><div class="mvalue">${d.roi}x</div></div>
-      <div class="metric-box"><div class="mlabel">Conversões</div><div class="mvalue">${d.convQty}</div></div>
+      <div class="metric-box"><div class="mlabel">Receita ${nsBadge}</div><div class="mvalue">${d.revVal>0?fmtBRL(d.revVal):'—'}</div></div>
+      <div class="metric-box"><div class="mlabel">ROI</div><div class="mvalue">${d.roi !== '—' ? d.roi+'x' : '—'}</div></div>
+      <div class="metric-box"><div class="mlabel">Conversões ${nsBadge}</div><div class="mvalue">${d.convQty}</div></div>
       <div class="metric-box"><div class="mlabel">CPA</div><div class="mvalue">${d.cpa!=='—'?'R$ '+parseFloat(d.cpa).toFixed(2):'—'}</div></div>
+      ${nsExtraBoxes}
       <div class="metric-box"><div class="mlabel">Cliques</div><div class="mvalue">${d.clicks.toLocaleString('pt-BR')}</div></div>
       <div class="metric-box"><div class="mlabel">Impressões</div><div class="mvalue">${d.impr.toLocaleString('pt-BR')}</div></div>
       <div class="metric-box"><div class="mlabel">CTR</div><div class="mvalue">${parseFloat(d.ctr).toFixed(2)}%</div></div>
       ${d.msgs>0?`<div class="metric-box"><div class="mlabel">Mensagens</div><div class="mvalue">${d.msgs}</div></div>`:''}
       ${d.leads>0?`<div class="metric-box"><div class="mlabel">Leads</div><div class="mvalue">${d.leads}</div></div>`:''}
+      ${stateTable}
     `;
   }
   // Campanhas — sempre ativas primeiro
@@ -1673,10 +1853,13 @@ function renderCuSummary(d, isMsgsTpl, msgsQty, custoMsg, fmtBRL) {
       (msgsQty>0 ? mb('Msgs Iniciadas', msgsQty.toLocaleString('pt-BR'), true) : '') +
       (msgsQty>0 ? mb('Custo/Msg', custoMsg) : '');
   } else {
+    const nsBadge = d.nsSource ? ' 🛍️' : '';
     metricsEl.innerHTML =
       mb('Investido', fmtBRL(d.spend), true) +
-      mb('ROI', d.roi+'x') +
-      mb('Conversões', d.convQty) +
+      mb('ROI', d.roi !== '—' ? d.roi+'x' : '—') +
+      mb('Conversões'+nsBadge, d.convQty) +
+      mb('Receita'+nsBadge, d.revVal>0?fmtBRL(d.revVal):'—') +
+      (d.nsSource && d.convQty>0 ? mb('Ticket Médio'+nsBadge, fmtBRL(d.revVal/d.convQty)) : '') +
       mb('CPA', d.cpa!=='—'?'R$ '+parseFloat(d.cpa).toFixed(2):'—') +
       mb('Cliques', parseInt(d.clicks).toLocaleString('pt-BR')) +
       mb('CTR', parseFloat(d.ctr).toFixed(2)+'%');
@@ -1767,15 +1950,22 @@ function buildCUPreview() {
   } else {
     rows = [
       ['Investido', fmtBRL(d.spend)],
-      ['Receita', d.revVal>0?fmtBRL(d.revVal):'—'],
+      ['Receita', d.revVal>0?fmtBRL(d.revVal)+(d.nsSource?' (Nuvemshop)':''):'—'],
       ['ROI', d.roi+'x'],
-      ['Conversões', d.convQty],
+      ['Conversões', String(d.convQty)+(d.nsSource?' (Nuvemshop)':'')],
       ['CPA', d.cpa!=='—'?'R$ '+parseFloat(d.cpa).toFixed(2):'—'],
       ['Cliques', d.clicks.toLocaleString('pt-BR')],
       ['Impressões', d.impr.toLocaleString('pt-BR')],
       ['CTR', parseFloat(d.ctr).toFixed(2)+'%'],
       ['Período', `${fmt2(d.from)} – ${fmt2(d.to)}`],
     ];
+    if (d.nsSource && d.convQty > 0) rows.push(['Ticket Médio (NS)', fmtBRL(d.revVal / d.convQty)]);
+    if (d.nsSource && (d.nsNewCustomers > 0 || d.nsReturningCustomers > 0)) {
+      rows.push(['Clientes Novos (NS)', d.nsNewCustomers]);
+      rows.push(['Clientes Recorrentes (NS)', d.nsReturningCustomers]);
+    }
+    if (d.nsSource && d.nsProductsSold > 0) rows.push(['Produtos Vendidos (NS)', d.nsProductsSold.toLocaleString('pt-BR')]);
+    if (d.nsSource && d.nsCouponsUsed > 0) rows.push(['Cupons Usados (NS)', d.nsCouponsUsed]);
     if (d.msgs > 0) rows.push(['Mensagens (Atacado)', d.msgs]);
   }
   if (obs) rows.push(['Observações', obs]);
@@ -1924,7 +2114,7 @@ async function sendClickUp() {
     weekHistory.push({
       client: selClient.name,
       investido: fmtBRL(d.spend),
-      col3: selTemplate==='mensagens' ? (_msgsR>0?_msgsR.toLocaleString('pt-BR'):'—') : d.roi+'x',
+      col3: selTemplate==='mensagens' ? (_msgsR>0?_msgsR.toLocaleString('pt-BR'):'—') : (d.roi!=='—'?d.roi+'x':'—'),
       col4: selTemplate==='mensagens' ? _custMsgR : String(d.convQty),
       template: selTemplate,
       status:'ok'
@@ -1987,15 +2177,19 @@ function buildRelatorio() {
       `_Relatório gerado pela Central de Relatórios_`,
     ].filter(v=>v!==null).join('\n');
   } else {
+    const ticketMedio = d.nsSource && d.convQty > 0 ? (d.revVal / d.convQty) : null;
     rel = [
       `📊 *Relatório Semanal — ${selClient.name}*`,
       `📅 ${fmt2(d.from)} a ${fmt2(d.to)}`,
       ``,
       `💰 Investido: *${fmtBRL(d.spend)}*`,
-      d.revVal > 0 ? `💵 Receita gerada: *${fmtBRL(d.revVal)}*` : null,
-      `📈 ROI: *${d.roi}x*`,
-      `🛒 Vendas/Conversões: *${d.convQty}*`,
+      d.revVal > 0 ? `💵 Receita gerada: *${fmtBRL(d.revVal)}*${d.nsSource?' _(Nuvemshop)_':''}` : null,
+      d.roi !== '—' ? `📈 ROI: *${d.roi}x*` : null,
+      `🛒 Vendas/Conversões: *${d.convQty}*${d.nsSource?' _(Nuvemshop)_':''}`,
+      ticketMedio ? `🎯 Ticket médio: *${fmtBRL(ticketMedio)}* _(Nuvemshop)_` : null,
       d.cpa !== '—' ? `💲 Custo por conversão: *R$ ${parseFloat(d.cpa).toFixed(2)}*` : null,
+      (d.nsSource && (d.nsNewCustomers > 0 || d.nsReturningCustomers > 0)) ? `👤 Clientes novos: *${d.nsNewCustomers}* | Recorrentes: *${d.nsReturningCustomers}* _(Nuvemshop)_` : null,
+      (d.nsSource && d.nsProductsSold > 0) ? `📦 Produtos vendidos: *${d.nsProductsSold.toLocaleString('pt-BR')}* _(Nuvemshop)_` : null,
       ``,
       `📉 Detalhes:`,
       `• Cliques: ${fmtN(d.clicks)}`,
@@ -2046,9 +2240,12 @@ ${msgsQty > 0 ? 'Mensagens iniciadas: '+msgsQty.toLocaleString('pt-BR') : ''}
 ${custoMsgAI ? 'Custo por mensagem: '+custoMsgAI : ''}
 Investido: R$ ${parseFloat(d.spend).toFixed(2)}`
     : `Investido: R$ ${parseFloat(d.spend).toFixed(2)}
-${d.revVal>0 ? 'Receita: R$ '+parseFloat(d.revVal).toFixed(2)+'\nROI: '+d.roi+'x' : 'Sem dados de receita'}
-Conversões/Vendas: ${d.convQty}
+${d.revVal>0 ? 'Receita: R$ '+parseFloat(d.revVal).toFixed(2)+'\nROI: '+(d.roi!=='—'?d.roi+'x':'—')+(d.nsSource?' (fonte: Nuvemshop)':'') : 'Sem dados de receita'}
+Conversões/Vendas: ${d.convQty}${d.nsSource?' (fonte: Nuvemshop)':''}
+${d.nsSource && d.convQty>0 ? 'Ticket médio: R$ '+(d.revVal/d.convQty).toFixed(2)+' (Nuvemshop)' : ''}
 ${d.cpa!=='—' ? 'Custo por venda: R$ '+parseFloat(d.cpa).toFixed(2) : ''}
+${d.nsSource && (d.nsNewCustomers>0||d.nsReturningCustomers>0) ? 'Clientes novos: '+d.nsNewCustomers+' | Clientes recorrentes: '+d.nsReturningCustomers+' (Nuvemshop)' : ''}
+${d.nsSource && d.nsProductsSold>0 ? 'Produtos vendidos: '+d.nsProductsSold+' (Nuvemshop)' : ''}
 Cliques: ${d.clicks} | CTR: ${parseFloat(d.ctr).toFixed(2)}%
 ${d.msgs>0 ? 'Mensagens iniciadas: '+d.msgs : ''}`;
 

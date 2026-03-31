@@ -31,8 +31,7 @@ export default async function handler(req, res) {
     const upstream = await fetch(url, {
       headers: {
         'Authentication': `bearer ${nsToken}`,
-        'User-Agent': 'Metricana (trafego@duacriativa.com.br)',
-        'Content-Type': 'application/json'
+        'User-Agent': 'Metricana/1.0 (trafego@duacriativa.com.br)'
       }
     });
 

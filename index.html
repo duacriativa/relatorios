@@ -626,6 +626,14 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 </div>
 </div>
 </div>
+<div class="card" id="card-ns" style="display:none">
+<div class="card-title">
+🛍️ Nuvemshop - <span id="lbl-client-ns" style="color:var(--green)">—</span>
+<span class="status-pill ok" style="margin-left:auto;font-size:10px;background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.25)">✓ Nuvemshop</span>
+</div>
+<div class="metrics-auto" id="ns-metrics-display"></div>
+<div id="ns-tables-display"></div>
+</div>
 <div class="card">
 <div class="card-title" style="justify-content:space-between">
 <span>📦 Campanha de Mensagens (Atacado)</span>
@@ -1779,20 +1787,32 @@ function renderMetrics(d) {
     const metaTicket = d.convQty > 0 && d.revVal > 0 ? fmtBRL(d.revVal / d.convQty) : null;
 
     // ── Seção Nuvemshop completa ──
-    let nsSection = '';
+    // Nuvemshop — métricas e tabelas para card separado
+    let nsMetricsHtml = '';
+    let nsTablesHtml  = '';
     if (d.nsSource) {
       const nsTicket = d.nsOrders > 0 ? fmtBRL(d.nsRevenue / d.nsOrders) : null;
-      const nsBadge = `<span style="display:inline-block;margin-left:5px;font-size:9px;font-weight:700;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:var(--green);border-radius:4px;padding:1px 5px;vertical-align:middle">🛍️ NS</span>`;
 
-      const stateTableHtml = d.nsStatePerf.length > 0 ? `
+      nsMetricsHtml = `
+        <div class="metric-box"><div class="mlabel">Receita Total</div><div class="mvalue">${fmtBRL(d.nsRevenue)}</div></div>
+        <div class="metric-box"><div class="mlabel">Pedidos</div><div class="mvalue">${d.nsOrders}</div></div>
+        ${nsTicket ? `<div class="metric-box"><div class="mlabel">Ticket Médio</div><div class="mvalue">${nsTicket}</div></div>` : ''}
+        ${(d.nsNewCustomers>0||d.nsReturningCustomers>0) ? `
+          <div class="metric-box"><div class="mlabel">Clientes Novos</div><div class="mvalue">${d.nsNewCustomers}</div></div>
+          <div class="metric-box"><div class="mlabel">Recorrentes</div><div class="mvalue">${d.nsReturningCustomers}</div></div>` : ''}
+        ${d.nsProductsSold>0 ? `<div class="metric-box"><div class="mlabel">Prod. Vendidos</div><div class="mvalue">${d.nsProductsSold.toLocaleString('pt-BR')}</div></div>` : ''}
+        ${d.nsCouponsUsed>0 ? `<div class="metric-box"><div class="mlabel">Cupons Usados</div><div class="mvalue">${d.nsCouponsUsed}</div></div>` : ''}
+      `;
+
+      if (d.nsStatePerf.length > 0) nsTablesHtml += `
         <div style="margin-top:12px">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px">🗺️ Por Estado</div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:6px">🗺️ Por Estado</div>
           <table style="width:100%;border-collapse:collapse;font-size:12px">
-            <thead><tr style="color:var(--muted);font-size:10px;text-transform:uppercase">
-              <th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--border)">Estado</th>
-              <th style="text-align:right;padding:4px 6px;border-bottom:1px solid var(--border)">Receita</th>
-              <th style="text-align:right;padding:4px 6px;border-bottom:1px solid var(--border)">Pedidos</th>
-              <th style="text-align:right;padding:4px 6px;border-bottom:1px solid var(--border)">Frete</th>
+            <thead><tr style="font-size:10px;text-transform:uppercase">
+              <th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--border);color:var(--text3)">Estado</th>
+              <th style="text-align:right;padding:4px 6px;border-bottom:1px solid var(--border);color:var(--text3)">Receita</th>
+              <th style="text-align:right;padding:4px 6px;border-bottom:1px solid var(--border);color:var(--text3)">Pedidos</th>
+              <th style="text-align:right;padding:4px 6px;border-bottom:1px solid var(--border);color:var(--text3)">Frete</th>
             </tr></thead>
             <tbody>${d.nsStatePerf.map((s,i)=>`
               <tr style="border-bottom:1px solid var(--border)${i===0?';font-weight:600':''}">
@@ -1803,16 +1823,16 @@ function renderMetrics(d) {
               </tr>`).join('')}
             </tbody>
           </table>
-        </div>` : '';
+        </div>`;
 
-      const trafficHtml = d.nsTrafficSources.length > 0 ? `
+      if (d.nsTrafficSources.length > 0) nsTablesHtml += `
         <div style="margin-top:12px">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px">📡 Fontes de Tráfego</div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:6px">📡 Fontes de Tráfego</div>
           <table style="width:100%;border-collapse:collapse;font-size:12px">
-            <thead><tr style="color:var(--muted);font-size:10px;text-transform:uppercase">
-              <th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--border)">Fonte</th>
-              <th style="text-align:right;padding:4px 6px;border-bottom:1px solid var(--border)">Pedidos</th>
-              <th style="text-align:right;padding:4px 6px;border-bottom:1px solid var(--border)">Receita</th>
+            <thead><tr style="font-size:10px;text-transform:uppercase">
+              <th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--border);color:var(--text3)">Fonte</th>
+              <th style="text-align:right;padding:4px 6px;border-bottom:1px solid var(--border);color:var(--text3)">Pedidos</th>
+              <th style="text-align:right;padding:4px 6px;border-bottom:1px solid var(--border);color:var(--text3)">Receita</th>
             </tr></thead>
             <tbody>${d.nsTrafficSources.map((t,i)=>`
               <tr style="border-bottom:1px solid var(--border)${i===0?';font-weight:600':''}">
@@ -1822,23 +1842,6 @@ function renderMetrics(d) {
               </tr>`).join('')}
             </tbody>
           </table>
-        </div>` : '';
-
-      nsSection = `
-        <div style="grid-column:1/-1;margin-top:18px;background:rgba(34,197,94,.04);border:1px solid rgba(34,197,94,.2);border-radius:var(--radius);padding:14px 16px">
-          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--green);margin-bottom:12px">🛍️ Dados da Loja — Nuvemshop</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:4px">
-            <div class="metric-box"><div class="mlabel">Receita Total ${nsBadge}</div><div class="mvalue">${fmtBRL(d.nsRevenue)}</div></div>
-            <div class="metric-box"><div class="mlabel">Pedidos ${nsBadge}</div><div class="mvalue">${d.nsOrders}</div></div>
-            ${nsTicket ? `<div class="metric-box"><div class="mlabel">Ticket Médio ${nsBadge}</div><div class="mvalue">${nsTicket}</div></div>` : ''}
-            ${(d.nsNewCustomers>0||d.nsReturningCustomers>0) ? `
-              <div class="metric-box"><div class="mlabel">Clientes Novos ${nsBadge}</div><div class="mvalue">${d.nsNewCustomers}</div></div>
-              <div class="metric-box"><div class="mlabel">Recorrentes ${nsBadge}</div><div class="mvalue">${d.nsReturningCustomers}</div></div>` : ''}
-            ${d.nsProductsSold>0 ? `<div class="metric-box"><div class="mlabel">Prod. Vendidos ${nsBadge}</div><div class="mvalue">${d.nsProductsSold.toLocaleString('pt-BR')}</div></div>` : ''}
-            ${d.nsCouponsUsed>0 ? `<div class="metric-box"><div class="mlabel">Cupons Usados ${nsBadge}</div><div class="mvalue">${d.nsCouponsUsed}</div></div>` : ''}
-          </div>
-          ${stateTableHtml}
-          ${trafficHtml}
         </div>`;
     }
 
@@ -1855,8 +1858,21 @@ function renderMetrics(d) {
       <div class="metric-box"><div class="mlabel">CPM</div><div class="mvalue">R$ ${parseFloat(d.cpm).toFixed(2)}</div></div>
       ${d.msgs>0?`<div class="metric-box"><div class="mlabel">Mensagens</div><div class="mvalue">${d.msgs}</div></div>`:''}
       ${d.leads>0?`<div class="metric-box"><div class="mlabel">Leads</div><div class="mvalue">${d.leads}</div></div>`:''}
-      ${nsSection}
     `;
+
+    // — Card Nuvemshop separado —
+    const cardNs = document.getElementById('card-ns');
+    if (cardNs) {
+      if (d.nsSource) {
+        cardNs.style.display = 'block';
+        const lblNs = document.getElementById('lbl-client-ns');
+        if (lblNs && selClient) lblNs.textContent = selClient.name;
+        document.getElementById('ns-metrics-display').innerHTML = nsMetricsHtml;
+        document.getElementById('ns-tables-display').innerHTML  = nsTablesHtml;
+      } else {
+        cardNs.style.display = 'none';
+      }
+    }
   }
   // Campanhas — sempre ativas primeiro
   if (d.camps && d.camps.length) {

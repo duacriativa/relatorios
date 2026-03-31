@@ -3,13 +3,8 @@
 // e este handler faz a chamada real para api.nuvemshop.com.br no servidor.
 
 export default async function handler(req, res) {
-  // Permite apenas GET
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const { storeId, from, to, perPage, page } = req.query;
   const nsToken = req.headers['x-ns-token'];
@@ -19,7 +14,7 @@ export default async function handler(req, res) {
   }
 
   const url = [
-    `https://api.nuvemshop.com.br/2025-03/${storeId}/orders`,
+    `https://api.nuvemshop.com.br/v1/${storeId}/orders`,
     `?payment_status=paid`,
     `&created_at_min=${from}`,
     `&created_at_max=${to}`,
@@ -42,7 +37,6 @@ export default async function handler(req, res) {
 
     const data = await upstream.json();
     return res.status(200).json(data);
-
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }

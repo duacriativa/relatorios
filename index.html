@@ -1497,7 +1497,8 @@ async function fetchNuvemshopRevenue(storeId, nsToken, dateFrom, dateTo) {
   const seenCustomers       = new Set();
   const newCustomerIds      = new Set();
   const returningCustomerIds = new Set();
-  const stateMap = {};
+  const stateMap   = {};
+  const trafficMap  = {};
   let page = 1;
   const perPage = 200;
   const fromDate = new Date(dateFrom + 'T00:00:00');
@@ -1546,6 +1547,17 @@ async function fetchNuvemshopRevenue(storeId, nsToken, dateFrom, dateTo) {
       stateMap[state].revenue     += orderTotal;
       stateMap[state].orders++;
       stateMap[state].shippingCost += parseFloat(o.shipping_cost_owner || o.shipping_cost_customer || 0);
+
+      // Fontes de tráfego (UTM / marketing)
+      const mktType = o.marketing?.type || o.utm_source || 'Direto/Desconhecido';
+      const mktLabel = ({
+        organic: 'Orgânico', direct: 'Direto', email: 'E-mail',
+        referral: 'Referência', social: 'Social', paid_search: 'Busca Paga',
+        display: 'Display', affiliate: 'Afiliado', sms: 'SMS'
+      })[mktType] || mktType;
+      if (!trafficMap[mktLabel]) trafficMap[mktLabel] = { orders: 0, revenue: 0 };
+      trafficMap[mktLabel].orders++;
+      trafficMap[mktLabel].revenue += orderTotal;
     }
     // Se retornou menos que perPage, acabaram as páginas
     if (orders.length < perPage) break;
@@ -1558,6 +1570,10 @@ async function fetchNuvemshopRevenue(storeId, nsToken, dateFrom, dateTo) {
     .map(([state, data]) => ({ state, ...data }))
     .sort((a, b) => b.revenue - a.revenue);
 
+  const trafficSources = Object.entries(trafficMap)
+    .map(([source, data]) => ({ source, ...data }))
+    .sort((a, b) => b.orders - a.orders);
+
   return {
     revenue: totalRevenue,
     orders: totalOrders,
@@ -1565,7 +1581,8 @@ async function fetchNuvemshopRevenue(storeId, nsToken, dateFrom, dateTo) {
     returningCustomers: returningCustomerIds.size,
     productsSold: totalProductsSold,
     couponsUsed,
-    statePerf
+    statePerf,
+    trafficSources
   };
 }
 
@@ -1636,39 +1653,40 @@ async function fetchData() {
     const revenue   = actVals.find(a=>a.action_type==='purchase');
     const msgs      = actions.find(a=>a.action_type==='onsite_conversion.messaging_conversation_started_7d');
     const leads     = actions.find(a=>a.action_type==='lead');
-    let convQty   = parseInt(purchases?.value||0);
-    let revVal    = parseFloat(revenue?.value||0);
-    let nsSource  = false; // flag: dados vieram da Nuvemshop?
-    let nsExtra   = null;  // dados extras da Nuvemshop
+    // Meta: conversões e receita atribuídas aos anúncios (pixel)
+    const convQty = parseInt(purchases?.value||0);
+    const revVal  = parseFloat(revenue?.value||0);
+    const roi = spend > 0 && revVal > 0 ? (revVal/spend).toFixed(2) : '—';
+    const cpa = convQty > 0 ? (spend/convQty).toFixed(2) : '—';
 
-    // ── Nuvemshop: puxar receita real se cliente tiver integração ──
+    // ── Nuvemshop: dados reais da loja (em paralelo ao Meta, NÃO substituem) ──
+    let nsSource = false;
+    let nsExtra  = null;
     const nsStoreId = selClient.nuvemshop_store_id;
     const nsToken   = selClient.nuvemshop_token;
     if (nsStoreId && nsToken) {
       try {
-        prog.style.width='90%'; progLbl.textContent='Buscando vendas na Nuvemshop...';
+        prog.style.width='90%'; progLbl.textContent='Buscando dados da loja na Nuvemshop...';
         document.getElementById('loading-msg').innerHTML='Conectando à Nuvemshop<span class="dots"></span>';
         const nsData = await fetchNuvemshopRevenue(nsStoreId, nsToken, from, to);
         if (nsData.revenue > 0 || nsData.orders > 0) {
-          revVal   = nsData.revenue;
-          convQty  = nsData.orders;
           nsSource = true;
           nsExtra  = {
+            revenue:           nsData.revenue,
+            orders:            nsData.orders,
             newCustomers:      nsData.newCustomers,
             returningCustomers: nsData.returningCustomers,
             productsSold:      nsData.productsSold,
             couponsUsed:       nsData.couponsUsed,
-            statePerf:         nsData.statePerf
+            statePerf:         nsData.statePerf,
+            trafficSources:    nsData.trafficSources
           };
         }
       } catch(nsErr) {
-        console.warn('Nuvemshop fetch falhou — usando dados Meta:', nsErr.message);
+        console.warn('Nuvemshop fetch falhou:', nsErr.message);
         toast('⚠️ Nuvemshop: ' + nsErr.message.slice(0,80), 4000);
       }
     }
-
-    const roi = spend > 0 && revVal > 0 ? (revVal/spend).toFixed(2) : '—';
-    const cpa = convQty > 0 ? (spend/convQty).toFixed(2) : '—';
 
     const camps = (campData.data||[]).map(c => {
       const ci = c.insights?.data?.[0]||{};
@@ -1689,14 +1707,21 @@ async function fetchData() {
     await new Promise(r=>setTimeout(r,400));
 
     fetchedData = {
-      spend,clicks,impr,reach,ctr,cpm,convQty,revVal,roi,cpa,
-      msgs:parseInt(msgs?.value||0),leads:parseInt(leads?.value||0),
-      camps,from,to,nsSource,
+      // ── Meta Ads (dados dos anúncios) ──
+      spend, clicks, impr, reach, ctr, cpm,
+      convQty, revVal, roi, cpa,
+      msgs: parseInt(msgs?.value||0), leads: parseInt(leads?.value||0),
+      camps, from, to,
+      // ── Nuvemshop (dados reais da loja) ──
+      nsSource,
+      nsRevenue:           nsExtra?.revenue           || 0,
+      nsOrders:            nsExtra?.orders            || 0,
       nsNewCustomers:      nsExtra?.newCustomers      || 0,
       nsReturningCustomers: nsExtra?.returningCustomers || 0,
       nsProductsSold:      nsExtra?.productsSold      || 0,
       nsCouponsUsed:       nsExtra?.couponsUsed       || 0,
-      nsStatePerf:         nsExtra?.statePerf         || []
+      nsStatePerf:         nsExtra?.statePerf         || [],
+      nsTrafficSources:    nsExtra?.trafficSources    || []
     };
     loading.style.display='none'; results.style.display='block';
     renderMetrics(fetchedData);
@@ -1751,60 +1776,86 @@ function renderMetrics(d) {
       ${msgsQty>0?`<div class="metric-box"><div class="mlabel">Custo/Msg</div><div class="mvalue">${custoMsg}</div></div>`:''}
     `;
   } else {
-    const nsBadge = d.nsSource ? `<span style="display:inline-block;margin-left:5px;font-size:9px;font-weight:700;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:var(--green);border-radius:4px;padding:1px 5px;vertical-align:middle">🛍️ Nuvemshop</span>` : '';
-    const ticketMedio = d.nsSource && d.convQty > 0 ? fmtBRL(d.revVal / d.convQty) : null;
+    const metaTicket = d.convQty > 0 && d.revVal > 0 ? fmtBRL(d.revVal / d.convQty) : null;
 
-    // Metric boxes extras da Nuvemshop
-    const nsExtraBoxes = d.nsSource ? `
-      ${ticketMedio ? `<div class="metric-box"><div class="mlabel">Ticket Médio ${nsBadge}</div><div class="mvalue">${ticketMedio}</div></div>` : ''}
-      ${(d.nsNewCustomers > 0 || d.nsReturningCustomers > 0) ? `
-        <div class="metric-box"><div class="mlabel">Clientes Novos ${nsBadge}</div><div class="mvalue">${d.nsNewCustomers}</div></div>
-        <div class="metric-box"><div class="mlabel">Clientes Recorrentes ${nsBadge}</div><div class="mvalue">${d.nsReturningCustomers}</div></div>
-      ` : ''}
-      ${d.nsProductsSold > 0 ? `<div class="metric-box"><div class="mlabel">Produtos Vendidos ${nsBadge}</div><div class="mvalue">${d.nsProductsSold.toLocaleString('pt-BR')}</div></div>` : ''}
-      ${d.nsCouponsUsed > 0 ? `<div class="metric-box"><div class="mlabel">Cupons Usados ${nsBadge}</div><div class="mvalue">${d.nsCouponsUsed}</div></div>` : ''}
-    ` : `${ticketMedio ? `<div class="metric-box"><div class="mlabel">Ticket Médio</div><div class="mvalue">${ticketMedio}</div></div>` : ''}`;
+    // ── Seção Nuvemshop completa ──
+    let nsSection = '';
+    if (d.nsSource) {
+      const nsTicket = d.nsOrders > 0 ? fmtBRL(d.nsRevenue / d.nsOrders) : null;
+      const nsBadge = `<span style="display:inline-block;margin-left:5px;font-size:9px;font-weight:700;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:var(--green);border-radius:4px;padding:1px 5px;vertical-align:middle">🛍️ NS</span>`;
 
-    // Tabela de desempenho por estado
-    const stateTable = (d.nsSource && d.nsStatePerf && d.nsStatePerf.length > 0) ? `
-      <div style="grid-column:1/-1;margin-top:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--accent2);margin-bottom:10px">🗺️ Desempenho por Estado ${nsBadge}</div>
-        <table style="width:100%;border-collapse:collapse;font-size:13px">
-          <thead>
-            <tr style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em">
-              <th style="text-align:left;padding:5px 8px;border-bottom:1px solid var(--border)">Estado</th>
-              <th style="text-align:right;padding:5px 8px;border-bottom:1px solid var(--border)">Receita</th>
-              <th style="text-align:right;padding:5px 8px;border-bottom:1px solid var(--border)">Pedidos</th>
-              <th style="text-align:right;padding:5px 8px;border-bottom:1px solid var(--border)">Frete</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${d.nsStatePerf.map((s, i) => `
-              <tr style="border-bottom:1px solid var(--border)${i === 0 ? ';font-weight:600' : ''}">
-                <td style="padding:6px 8px">${s.state}</td>
-                <td style="padding:6px 8px;text-align:right">${fmtBRL(s.revenue)}</td>
-                <td style="padding:6px 8px;text-align:right">${s.orders}</td>
-                <td style="padding:6px 8px;text-align:right">${s.shippingCost > 0 ? fmtBRL(s.shippingCost) : '—'}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    ` : '';
+      const stateTableHtml = d.nsStatePerf.length > 0 ? `
+        <div style="margin-top:12px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px">🗺️ Por Estado</div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="color:var(--muted);font-size:10px;text-transform:uppercase">
+              <th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--border)">Estado</th>
+              <th style="text-align:right;padding:4px 6px;border-bottom:1px solid var(--border)">Receita</th>
+              <th style="text-align:right;padding:4px 6px;border-bottom:1px solid var(--border)">Pedidos</th>
+              <th style="text-align:right;padding:4px 6px;border-bottom:1px solid var(--border)">Frete</th>
+            </tr></thead>
+            <tbody>${d.nsStatePerf.map((s,i)=>`
+              <tr style="border-bottom:1px solid var(--border)${i===0?';font-weight:600':''}">
+                <td style="padding:5px 6px">${s.state}</td>
+                <td style="padding:5px 6px;text-align:right">${fmtBRL(s.revenue)}</td>
+                <td style="padding:5px 6px;text-align:right">${s.orders}</td>
+                <td style="padding:5px 6px;text-align:right">${s.shippingCost>0?fmtBRL(s.shippingCost):'—'}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>` : '';
+
+      const trafficHtml = d.nsTrafficSources.length > 0 ? `
+        <div style="margin-top:12px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px">📡 Fontes de Tráfego</div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="color:var(--muted);font-size:10px;text-transform:uppercase">
+              <th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--border)">Fonte</th>
+              <th style="text-align:right;padding:4px 6px;border-bottom:1px solid var(--border)">Pedidos</th>
+              <th style="text-align:right;padding:4px 6px;border-bottom:1px solid var(--border)">Receita</th>
+            </tr></thead>
+            <tbody>${d.nsTrafficSources.map((t,i)=>`
+              <tr style="border-bottom:1px solid var(--border)${i===0?';font-weight:600':''}">
+                <td style="padding:5px 6px">${t.source}</td>
+                <td style="padding:5px 6px;text-align:right">${t.orders}</td>
+                <td style="padding:5px 6px;text-align:right">${fmtBRL(t.revenue)}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>` : '';
+
+      nsSection = `
+        <div style="grid-column:1/-1;margin-top:18px;background:rgba(34,197,94,.04);border:1px solid rgba(34,197,94,.2);border-radius:var(--radius);padding:14px 16px">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--green);margin-bottom:12px">🛍️ Dados da Loja — Nuvemshop</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:4px">
+            <div class="metric-box"><div class="mlabel">Receita Total ${nsBadge}</div><div class="mvalue">${fmtBRL(d.nsRevenue)}</div></div>
+            <div class="metric-box"><div class="mlabel">Pedidos ${nsBadge}</div><div class="mvalue">${d.nsOrders}</div></div>
+            ${nsTicket ? `<div class="metric-box"><div class="mlabel">Ticket Médio ${nsBadge}</div><div class="mvalue">${nsTicket}</div></div>` : ''}
+            ${(d.nsNewCustomers>0||d.nsReturningCustomers>0) ? `
+              <div class="metric-box"><div class="mlabel">Clientes Novos ${nsBadge}</div><div class="mvalue">${d.nsNewCustomers}</div></div>
+              <div class="metric-box"><div class="mlabel">Recorrentes ${nsBadge}</div><div class="mvalue">${d.nsReturningCustomers}</div></div>` : ''}
+            ${d.nsProductsSold>0 ? `<div class="metric-box"><div class="mlabel">Prod. Vendidos ${nsBadge}</div><div class="mvalue">${d.nsProductsSold.toLocaleString('pt-BR')}</div></div>` : ''}
+            ${d.nsCouponsUsed>0 ? `<div class="metric-box"><div class="mlabel">Cupons Usados ${nsBadge}</div><div class="mvalue">${d.nsCouponsUsed}</div></div>` : ''}
+          </div>
+          ${stateTableHtml}
+          ${trafficHtml}
+        </div>`;
+    }
 
     box.innerHTML = `
       <div class="metric-box"><div class="mlabel">Investido</div><div class="mvalue hi">${fmtBRL(d.spend)}</div></div>
-      <div class="metric-box"><div class="mlabel">Receita ${nsBadge}</div><div class="mvalue">${d.revVal>0?fmtBRL(d.revVal):'—'}</div></div>
-      <div class="metric-box"><div class="mlabel">ROI</div><div class="mvalue">${d.roi !== '—' ? d.roi+'x' : '—'}</div></div>
-      <div class="metric-box"><div class="mlabel">Conversões ${nsBadge}</div><div class="mvalue">${d.convQty}</div></div>
+      <div class="metric-box"><div class="mlabel">Receita (Meta)</div><div class="mvalue">${d.revVal>0?fmtBRL(d.revVal):'—'}</div></div>
+      <div class="metric-box"><div class="mlabel">ROI (Meta)</div><div class="mvalue">${d.roi !== '—' ? d.roi+'x' : '—'}</div></div>
+      <div class="metric-box"><div class="mlabel">Conversões (Meta)</div><div class="mvalue">${d.convQty}</div></div>
       <div class="metric-box"><div class="mlabel">CPA</div><div class="mvalue">${d.cpa!=='—'?'R$ '+parseFloat(d.cpa).toFixed(2):'—'}</div></div>
-      ${nsExtraBoxes}
+      ${metaTicket ? `<div class="metric-box"><div class="mlabel">Ticket Médio (Meta)</div><div class="mvalue">${metaTicket}</div></div>` : ''}
       <div class="metric-box"><div class="mlabel">Cliques</div><div class="mvalue">${d.clicks.toLocaleString('pt-BR')}</div></div>
       <div class="metric-box"><div class="mlabel">Impressões</div><div class="mvalue">${d.impr.toLocaleString('pt-BR')}</div></div>
       <div class="metric-box"><div class="mlabel">CTR</div><div class="mvalue">${parseFloat(d.ctr).toFixed(2)}%</div></div>
+      <div class="metric-box"><div class="mlabel">CPM</div><div class="mvalue">R$ ${parseFloat(d.cpm).toFixed(2)}</div></div>
       ${d.msgs>0?`<div class="metric-box"><div class="mlabel">Mensagens</div><div class="mvalue">${d.msgs}</div></div>`:''}
       ${d.leads>0?`<div class="metric-box"><div class="mlabel">Leads</div><div class="mvalue">${d.leads}</div></div>`:''}
-      ${stateTable}
+      ${nsSection}
     `;
   }
   // Campanhas — sempre ativas primeiro
@@ -2072,19 +2123,29 @@ async function sendClickUp() {
       ].filter(Boolean).join('\n');
     } else {
       // Template E-commerce (padrão)
+      const nsTicketCU = d.nsSource && d.nsOrders > 0 ? fmtBRL(d.nsRevenue / d.nsOrders) : null;
       commentLines = [
         `📊 *Relatório Meta Ads — ${selClient.name}*`,
         `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,
         ``,
+        `📣 *Meta Ads*`,
         `💰 Investido: ${fmtBRL(d.spend)}`,
-        d.revVal > 0 ? `💵 Receita: ${fmtBRL(d.revVal)}` : null,
+        d.revVal > 0 ? `💵 Receita (anúncios): ${fmtBRL(d.revVal)}` : null,
         `📈 ROI: ${d.roi}x`,
         `🛒 Conversões: ${d.convQty}`,
         d.cpa !== '—' ? `💲 CPA: R$ ${parseFloat(d.cpa).toFixed(2)}` : null,
         `👆 Cliques: ${d.clicks.toLocaleString('pt-BR')}`,
         `👁️ Impressões: ${d.impr.toLocaleString('pt-BR')}`,
         `🎯 CTR: ${parseFloat(d.ctr).toFixed(2)}%`,
-        d.msgs > 0 ? `💬 Mensagens Atacado: ${d.msgs}` : null,
+        `💡 CPM: R$ ${parseFloat(d.cpm).toFixed(2)}`,
+        d.msgs > 0 ? `💬 Mensagens: ${d.msgs}` : null,
+        d.nsSource ? `\n🛍️ *Nuvemshop — Dados da Loja*` : null,
+        d.nsSource ? `📦 Pedidos totais: ${d.nsOrders}` : null,
+        d.nsSource ? `💵 Receita total: ${fmtBRL(d.nsRevenue)}` : null,
+        nsTicketCU ? `🎯 Ticket médio: ${nsTicketCU}` : null,
+        (d.nsSource && (d.nsNewCustomers>0||d.nsReturningCustomers>0)) ? `👤 Clientes novos: ${d.nsNewCustomers} | Recorrentes: ${d.nsReturningCustomers}` : null,
+        (d.nsSource && d.nsProductsSold>0) ? `📦 Produtos vendidos: ${d.nsProductsSold.toLocaleString('pt-BR')}` : null,
+        (d.nsSource && d.nsCouponsUsed>0) ? `🏷️ Cupons usados: ${d.nsCouponsUsed}` : null,
         obs ? `\n📝 Obs: ${obs}` : null,
       ].filter(Boolean).join('\n');
     }
@@ -2177,19 +2238,26 @@ function buildRelatorio() {
       `_Relatório gerado pela Central de Relatórios_`,
     ].filter(v=>v!==null).join('\n');
   } else {
-    const ticketMedio = d.nsSource && d.convQty > 0 ? (d.revVal / d.convQty) : null;
+    // Ticket médio Meta (baseado em pixel)
+    const metaTicketRel = d.convQty > 0 && d.revVal > 0 ? fmtBRL(d.revVal / d.convQty) : null;
+    // Dados Nuvemshop
+    const nsTicketRel = d.nsSource && d.nsOrders > 0 ? fmtBRL(d.nsRevenue / d.nsOrders) : null;
     rel = [
       `📊 *Relatório Semanal — ${selClient.name}*`,
       `📅 ${fmt2(d.from)} a ${fmt2(d.to)}`,
       ``,
       `💰 Investido: *${fmtBRL(d.spend)}*`,
-      d.revVal > 0 ? `💵 Receita gerada: *${fmtBRL(d.revVal)}*${d.nsSource?' _(Nuvemshop)_':''}` : null,
+      d.revVal > 0 ? `💵 Receita gerada (anúncios): *${fmtBRL(d.revVal)}*` : null,
       d.roi !== '—' ? `📈 ROI: *${d.roi}x*` : null,
-      `🛒 Vendas/Conversões: *${d.convQty}*${d.nsSource?' _(Nuvemshop)_':''}`,
-      ticketMedio ? `🎯 Ticket médio: *${fmtBRL(ticketMedio)}* _(Nuvemshop)_` : null,
+      `🛒 Vendas/Conversões (anúncios): *${d.convQty}*`,
+      metaTicketRel ? `🎯 Ticket Médio (anúncios): *${metaTicketRel}*` : null,
       d.cpa !== '—' ? `💲 Custo por conversão: *R$ ${parseFloat(d.cpa).toFixed(2)}*` : null,
-      (d.nsSource && (d.nsNewCustomers > 0 || d.nsReturningCustomers > 0)) ? `👤 Clientes novos: *${d.nsNewCustomers}* | Recorrentes: *${d.nsReturningCustomers}* _(Nuvemshop)_` : null,
-      (d.nsSource && d.nsProductsSold > 0) ? `📦 Produtos vendidos: *${d.nsProductsSold.toLocaleString('pt-BR')}* _(Nuvemshop)_` : null,
+      d.nsSource ? `` : null,
+      d.nsSource ? `🏪 *Vendas totais do Site (Nuvemshop)*` : null,
+      d.nsSource ? `🛒 Pedidos: *${d.nsOrders}* — Receita: *${fmtBRL(d.nsRevenue)}*` : null,
+      nsTicketRel ? `🎯 Ticket Médio: *${nsTicketRel}*` : null,
+      (d.nsSource && (d.nsNewCustomers>0||d.nsReturningCustomers>0)) ? `👤 Clientes novos: *${d.nsNewCustomers}* | Recorrentes: *${d.nsReturningCustomers}*` : null,
+      (d.nsSource && d.nsProductsSold>0) ? `📦 Produtos vendidos: *${d.nsProductsSold.toLocaleString('pt-BR')}*` : null,
       ``,
       `📉 Detalhes:`,
       `• Cliques: ${fmtN(d.clicks)}`,
@@ -2239,19 +2307,29 @@ CTR: ${parseFloat(d.ctr).toFixed(2)}%
 ${msgsQty > 0 ? 'Mensagens iniciadas: '+msgsQty.toLocaleString('pt-BR') : ''}
 ${custoMsgAI ? 'Custo por mensagem: '+custoMsgAI : ''}
 Investido: R$ ${parseFloat(d.spend).toFixed(2)}`
-    : `Investido: R$ ${parseFloat(d.spend).toFixed(2)}
-${d.revVal>0 ? 'Receita: R$ '+parseFloat(d.revVal).toFixed(2)+'\nROI: '+(d.roi!=='—'?d.roi+'x':'—')+(d.nsSource?' (fonte: Nuvemshop)':'') : 'Sem dados de receita'}
-Conversões/Vendas: ${d.convQty}${d.nsSource?' (fonte: Nuvemshop)':''}
-${d.nsSource && d.convQty>0 ? 'Ticket médio: R$ '+(d.revVal/d.convQty).toFixed(2)+' (Nuvemshop)' : ''}
-${d.cpa!=='—' ? 'Custo por venda: R$ '+parseFloat(d.cpa).toFixed(2) : ''}
-${d.nsSource && (d.nsNewCustomers>0||d.nsReturningCustomers>0) ? 'Clientes novos: '+d.nsNewCustomers+' | Clientes recorrentes: '+d.nsReturningCustomers+' (Nuvemshop)' : ''}
-${d.nsSource && d.nsProductsSold>0 ? 'Produtos vendidos: '+d.nsProductsSold+' (Nuvemshop)' : ''}
-Cliques: ${d.clicks} | CTR: ${parseFloat(d.ctr).toFixed(2)}%
-${d.msgs>0 ? 'Mensagens iniciadas: '+d.msgs : ''}`;
+    : `[META ADS — Anúncios]
+Investido: R$ ${parseFloat(d.spend).toFixed(2)}
+${d.revVal>0 ? 'Receita atribuída aos anúncios: R$ '+parseFloat(d.revVal).toFixed(2) : 'Sem receita rastreada pelo pixel'}
+ROI (Meta): ${d.roi!=='—'?d.roi+'x':'—'}
+Conversões (Meta/pixel): ${d.convQty}
+${d.convQty>0&&d.revVal>0 ? 'Ticket médio (Meta): R$ '+(d.revVal/d.convQty).toFixed(2) : ''}
+${d.cpa!=='—' ? 'CPA: R$ '+parseFloat(d.cpa).toFixed(2) : ''}
+Cliques: ${d.clicks} | CTR: ${parseFloat(d.ctr).toFixed(2)}% | CPM: R$ ${parseFloat(d.cpm).toFixed(2)}
+${d.msgs>0 ? 'Mensagens iniciadas: '+d.msgs : ''}
+${d.nsSource ? `
+[NUVEMSHOP — Dados reais da loja]
+Pedidos totais no site: ${d.nsOrders}
+Receita total da loja: R$ ${parseFloat(d.nsRevenue).toFixed(2)}
+${d.nsOrders>0 ? 'Ticket médio real: R$ '+(d.nsRevenue/d.nsOrders).toFixed(2) : ''}
+${(d.nsNewCustomers>0||d.nsReturningCustomers>0) ? 'Clientes novos: '+d.nsNewCustomers+' | Recorrentes: '+d.nsReturningCustomers : ''}
+${d.nsProductsSold>0 ? 'Produtos vendidos: '+d.nsProductsSold : ''}
+${d.nsTrafficSources.length>0 ? 'Principais fontes: '+d.nsTrafficSources.slice(0,3).map(t=>t.source+' ('+t.orders+' pedidos)').join(', ') : ''}` : ''}`;
 
   const regrasExtra = isMsgs
     ? '- Este cliente trabalha com tráfego para perfil e mensagens no WhatsApp, NÃO com e-commerce. Fale sobre alcance, cliques, mensagens geradas e custo por mensagem.'
-    : '- Este cliente tem e-commerce com vendas rastreadas. Foque em ROI, conversões e custo por venda.';
+    : d.nsSource
+      ? '- Este cliente tem e-commerce. Você tem dados de DOIS lugares: Meta Ads (anúncios/pixel) e Nuvemshop (loja real). Destaque a diferença entre conversões rastreadas pelos anúncios e o total real da loja. Mencione ticket médio e de onde vêm os clientes.'
+      : '- Este cliente tem e-commerce com vendas rastreadas. Foque em ROI, conversões e custo por venda.';
 
   const prompt = `Você é gestor de tráfego e vai escrever um resumo semanal para o cliente "${selClient.name}", estilo mensagem de WhatsApp — próximo, humano e direto.
 

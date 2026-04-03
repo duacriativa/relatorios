@@ -333,6 +333,28 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 .tab{padding:11px 10px;font-size:12px;} .metrics-auto{grid-template-columns:repeat(2,1fr);}
 .topbar-brand{font-size:14px;} .week-badge{display:none;}
 }
+
+/* ══════════ CAMPAIGN SELECTOR ══════════ */
+.camp-filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.camp-filter-chip{background:var(--s3);border:1px solid var(--border);border-radius:50px;padding:5px 13px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;transition:var(--transition);}
+.camp-filter-chip:hover{border-color:var(--accent2);color:var(--accent2);}
+.camp-filter-chip.active{background:var(--accentbg);border-color:var(--accent);color:var(--accent2);}
+.camp-list{display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto;padding-right:2px;}
+.camp-item{display:flex;align-items:center;gap:10px;background:var(--s2);border:1.5px solid var(--border);border-radius:var(--radius2);padding:10px 13px;cursor:pointer;transition:var(--transition);}
+.camp-item:hover{border-color:var(--accent2);}
+.camp-item.selected{border-color:var(--accent);background:var(--accentbg);}
+.camp-item input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);flex-shrink:0;cursor:pointer;}
+.camp-item .ci-name{font-size:13px;font-weight:600;flex:1;line-height:1.3;}
+.camp-item .ci-obj{font-size:10px;color:var(--text3);margin-top:2px;}
+.camp-status-pill{font-size:9px;font-weight:700;letter-spacing:.05em;border-radius:4px;padding:2px 7px;white-space:nowrap;flex-shrink:0;}
+.camp-status-pill.active{background:var(--greenbg);border:1px solid rgba(34,197,94,.2);color:var(--green);}
+.camp-status-pill.paused{background:var(--s3);border:1px solid var(--border);color:var(--text3);}
+.camp-count-badge{background:var(--accent);color:#fff;border-radius:50px;padding:1px 8px;font-size:10px;font-weight:700;margin-left:6px;}
+.camp-select-actions{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+.camp-select-label{font-size:12px;color:var(--text2);}
+.camp-quick-btns{display:flex;gap:6px;}
+.camp-quick-btn{background:transparent;border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;color:var(--text3);cursor:pointer;transition:var(--transition);}
+.camp-quick-btn:hover{border-color:var(--accent2);color:var(--accent2);}
 </style>
 </head>
 <body>
@@ -591,6 +613,36 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <button onclick="applyCustomDate()" style="background:var(--yellow);border:none;border-radius:6px;padding:5px 12px;color:#000;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🔄 Atualizar</button>
 </div>
 </div>
+<!-- ══ SELETOR DE CAMPANHAS ══ -->
+<div class="card" id="card-camp-select" style="display:none">
+  <div class="card-title" style="margin-bottom:12px">
+    🎯 Selecionar campanhas
+    <span id="camp-sel-badge" class="camp-count-badge" style="display:none">0</span>
+    <span class="status-pill ok" style="margin-left:auto;font-size:10px">✓ Campanhas carregadas</span>
+  </div>
+  <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">Escolha quais campanhas entram no relatório. Útil para separar WhatsApp de e-commerce e não diluir o ROI.</p>
+  <div class="camp-filter-bar">
+    <div class="camp-filter-chip active" onclick="filterCampaignList('all')" id="cf-all">Todas</div>
+    <div class="camp-filter-chip" onclick="filterCampaignList('active')" id="cf-active">Ativas</div>
+    <div class="camp-filter-chip" onclick="filterCampaignList('messages')" id="cf-messages">💬 Mensagens</div>
+    <div class="camp-filter-chip" onclick="filterCampaignList('sales')" id="cf-sales">🛍️ Vendas</div>
+    <div class="camp-filter-chip" onclick="filterCampaignList('traffic')" id="cf-traffic">🔗 Tráfego</div>
+  </div>
+  <div class="camp-select-actions">
+    <span class="camp-select-label"><span id="camp-sel-count">0</span> de <span id="camp-total-count">0</span> campanhas selecionadas</span>
+    <div class="camp-quick-btns">
+      <button class="camp-quick-btn" onclick="toggleAllCampaigns(true)">Selecionar todas</button>
+      <button class="camp-quick-btn" onclick="selectActiveCampaigns()">Só ativas</button>
+      <button class="camp-quick-btn" onclick="toggleAllCampaigns(false)">Limpar</button>
+    </div>
+  </div>
+  <div class="camp-list" id="camp-list"></div>
+  <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <button class="btn-act" onclick="document.getElementById('card-camp-select').style.display='none';document.getElementById('btn-fetch').disabled=false">← Voltar</button>
+    <button class="btn-act accent" id="btn-confirm-camps" onclick="confirmCampaignSelection()" disabled>Analisar selecionadas →</button>
+  </div>
+</div>
+
 <div class="card" id="card-loading" style="display:none">
 <div class="spinner-wrap">
 <div class="spinner"></div>
@@ -942,6 +994,9 @@ let fetchedData = null;
 let weekHistory = [];
 let selTemplate = 'ecommerce'; // 'ecommerce' | 'mensagens'
 let tokenStatuses = {}; // { clientId: 'checking'|'valid'|'expired'|'permission'|'invalid' }
+let allCampaigns = [];        // campanhas carregadas da API
+let selectedCampaignIds = []; // IDs selecionados pelo usuário
+let campFilterMode = 'all';   // filtro ativo na UI do seletor
 
 // ════════ TOKEN VALIDATION ════════
 async function validateToken(token, accountId) {
@@ -1589,100 +1644,274 @@ async function fetchNuvemshopRevenue(storeId, nsToken, dateFrom, dateTo) {
   };
 }
 
-// ════════ FETCH META ════════
+// ════════ FETCH META — FASE 1: LISTAR CAMPANHAS ════════
 async function fetchData() {
   if (!selClient) { toast('⚠️ Selecione um cliente.'); return; }
   const from = document.getElementById('date-from').value;
   const to   = document.getElementById('date-to').value;
   if (!from||!to) { toast('⚠️ Defina o período.'); return; }
 
-  const loading = document.getElementById('card-loading');
-  const results = document.getElementById('card-results');
-  const errBox  = document.getElementById('card-error');
-  const btn     = document.getElementById('btn-fetch');
-  const prog    = document.getElementById('prog-bar');
-  const progLbl = document.getElementById('prog-lbl');
+  const loading  = document.getElementById('card-loading');
+  const results  = document.getElementById('card-results');
+  const errBox   = document.getElementById('card-error');
+  const campCard = document.getElementById('card-camp-select');
+  const btn      = document.getElementById('btn-fetch');
+  const prog     = document.getElementById('prog-bar');
+  const progLbl  = document.getElementById('prog-lbl');
 
-  loading.style.display='block'; results.style.display='none';
-  errBox.style.display='none'; btn.disabled=true;
-  document.getElementById('btn-to-cu').style.display='none';
+  loading.style.display  = 'block';
+  results.style.display  = 'none';
+  errBox.style.display   = 'none';
+  campCard.style.display = 'none';
+  btn.disabled = true;
+  document.getElementById('btn-to-cu').style.display = 'none';
+  selectedCampaignIds = [];
+  allCampaigns = [];
 
+  // ── DEMO ──
   if (cfg.isDemo || selClient.token === 'DEMO') {
-    await new Promise(r => setTimeout(r, 1200));
-    fetchedData = genDemoData(selClient.name, from, to);
-    loading.style.display='none'; results.style.display='block';
-    renderMetrics(fetchedData); btn.disabled=false;
-    document.getElementById('btn-to-cu').style.display='flex';
+    prog.style.width = '60%'; progLbl.textContent = 'Carregando campanhas demo...';
+    document.getElementById('loading-msg').innerHTML = 'Carregando campanhas<span class="dots"></span>';
+    await new Promise(r => setTimeout(r, 800));
+    allCampaigns = [
+      { id: 'demo1', name: '[DEMO] Campanha Produto A', status: 'ACTIVE',  objective: 'OUTCOME_SALES'   },
+      { id: 'demo2', name: '[DEMO] Mensagens WhatsApp',  status: 'ACTIVE',  objective: 'MESSAGES'        },
+      { id: 'demo3', name: '[DEMO] Retargeting',         status: 'ACTIVE',  objective: 'OUTCOME_SALES'   },
+      { id: 'demo4', name: '[DEMO] Tráfego Instagram',   status: 'PAUSED', objective: 'OUTCOME_TRAFFIC' },
+    ];
+    prog.style.width = '100%'; progLbl.textContent = 'Campanhas carregadas!';
+    await new Promise(r => setTimeout(r, 300));
+    loading.style.display = 'none';
+    btn.disabled = false;
+    campFilterMode = 'all';
+    document.getElementById('camp-total-count').textContent = allCampaigns.length;
+    renderCampaignList();
+    updateCampSelCount();
+    campCard.style.display = 'block';
+    document.getElementById('btn-confirm-camps').onclick = async () => {
+      if (!selectedCampaignIds.length) { toast('⚠️ Selecione ao menos uma campanha.'); return; }
+      campCard.style.display = 'none';
+      loading.style.display  = 'block';
+      await new Promise(r => setTimeout(r, 900));
+      fetchedData = genDemoData(selClient.name, from, to);
+      loading.style.display = 'none';
+      results.style.display = 'block';
+      renderMetrics(fetchedData);
+      btn.disabled = false;
+      document.getElementById('btn-to-cu').style.display = 'flex';
+    };
     return;
   }
 
-  // Resolve token: usa o do cliente ou o token global
+  // ── TOKEN ──
   const token = resolveToken(selClient);
   if (!token) {
-    loading.style.display='none'; btn.disabled=false;
-    errBox.style.display='block';
-    errBox.innerHTML=`<div class="err-box">❌ Nenhum token configurado para este cliente.<br><small style="opacity:.7">Configure um token global em ⚙️ Config ou adicione um token individual ao cliente.</small></div>`;
+    loading.style.display = 'none'; btn.disabled = false;
+    errBox.style.display = 'block';
+    errBox.innerHTML = `<div class="err-box">❌ Nenhum token configurado para este cliente.<br><small style="opacity:.7">Configure um token global em ⚙️ Config ou adicione um token individual ao cliente.</small></div>`;
     return;
   }
 
   try {
-    prog.style.width='20%'; progLbl.textContent='Buscando conta...';
-    document.getElementById('loading-msg').innerHTML='Conectando à API do Meta<span class="dots"></span>';
+    prog.style.width = '30%'; progLbl.textContent = 'Buscando campanhas...';
+    document.getElementById('loading-msg').innerHTML = 'Carregando campanhas do Meta<span class="dots"></span>';
 
     const accountId = selClient.accountId || selClient.account_id;
+    const campUrl = `https://graph.facebook.com/v18.0/${accountId}/campaigns?fields=name,status,objective&limit=200&access_token=${token}`;
+    const campRes  = await fetch(campUrl);
+    const campData = await campRes.json();
+    if (campData.error) throw new Error(campData.error.message);
 
-    prog.style.width='40%'; progLbl.textContent='Buscando insights...';
-    const insightsUrl = `https://graph.facebook.com/v18.0/${accountId}/insights?fields=spend,clicks,impressions,reach,ctr,cpm,actions,action_values,cost_per_action_type&time_range={"since":"${from}","until":"${to}"}&level=account&access_token=${token}`;
-    const insRes = await fetch(insightsUrl);
+    prog.style.width = '100%'; progLbl.textContent = 'Campanhas carregadas!';
+    await new Promise(r => setTimeout(r, 300));
+
+    allCampaigns = campData.data || [];
+    loading.style.display = 'none';
+    btn.disabled = false;
+    campFilterMode = 'all';
+    document.getElementById('camp-total-count').textContent = allCampaigns.length;
+    renderCampaignList();
+    updateCampSelCount();
+    campCard.style.display = 'block';
+    document.getElementById('btn-confirm-camps').onclick = confirmCampaignSelection;
+
+  } catch(e) {
+    loading.style.display = 'none'; btn.disabled = false;
+    errBox.style.display = 'block';
+    errBox.innerHTML = `<div class="err-box">❌ Erro ao carregar campanhas: ${e.message}<br><small style="opacity:.7">Verifique o token do cliente e o Ad Account ID.</small></div>`;
+  }
+}
+
+// ════════ CAMPAIGN SELECTOR ════════
+function objLabel(obj) {
+  const map = {
+    MESSAGES: '💬 Mensagens', OUTCOME_TRAFFIC: '🔗 Tráfego', LINK_CLICKS: '🔗 Tráfego',
+    OUTCOME_SALES: '🛍️ Vendas', CONVERSIONS: '🛍️ Vendas', OUTCOME_LEADS: '📋 Leads',
+    LEAD_GENERATION: '📋 Leads', OUTCOME_ENGAGEMENT: '❤️ Engajamento',
+    POST_ENGAGEMENT: '❤️ Engajamento', OUTCOME_AWARENESS: '👁️ Awareness',
+    REACH: '👁️ Awareness', VIDEO_VIEWS: '▶️ Vídeos', APP_INSTALLS: '📱 App',
+  };
+  return map[obj] || obj || '—';
+}
+
+function matchCampFilter(camp, filter) {
+  if (filter === 'all') return true;
+  if (filter === 'active') return camp.status === 'ACTIVE';
+  const obj = camp.objective || '';
+  if (filter === 'messages') return obj.includes('MESSAGE');
+  if (filter === 'sales')    return obj.includes('SALES') || obj.includes('CONVERSION');
+  if (filter === 'traffic')  return obj.includes('TRAFFIC') || obj.includes('CLICK');
+  return true;
+}
+
+function updateCampSelCount() {
+  const count = selectedCampaignIds.length;
+  document.getElementById('camp-sel-count').textContent = count;
+  const badge = document.getElementById('camp-sel-badge');
+  badge.textContent = count;
+  badge.style.display = count > 0 ? 'inline' : 'none';
+  document.getElementById('btn-confirm-camps').disabled = count === 0;
+}
+
+function renderCampaignList() {
+  const list    = document.getElementById('camp-list');
+  const visible = allCampaigns.filter(c => matchCampFilter(c, campFilterMode));
+  document.getElementById('camp-total-count').textContent = allCampaigns.length;
+
+  if (!visible.length) {
+    list.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Nenhuma campanha neste filtro.</div>`;
+    return;
+  }
+
+  list.innerHTML = visible.map(camp => {
+    const isSel     = selectedCampaignIds.includes(camp.id);
+    const isActive  = camp.status === 'ACTIVE';
+    const statusCls = isActive ? 'active' : 'paused';
+    const statusLbl = isActive ? 'ATIVA' : (camp.status || 'PAUSADA');
+    return `<div class="camp-item ${isSel ? 'selected' : ''}" onclick="toggleCampaign('${camp.id}')">
+      <input type="checkbox" ${isSel ? 'checked' : ''} onclick="event.stopPropagation();toggleCampaign('${camp.id}')"/>
+      <div style="flex:1;min-width:0">
+        <div class="ci-name">${camp.name}</div>
+        <div class="ci-obj">${objLabel(camp.objective)}</div>
+      </div>
+      <span class="camp-status-pill ${statusCls}">${statusLbl}</span>
+    </div>`;
+  }).join('');
+}
+
+function toggleCampaign(id) {
+  const idx = selectedCampaignIds.indexOf(id);
+  if (idx >= 0) selectedCampaignIds.splice(idx, 1);
+  else selectedCampaignIds.push(id);
+  renderCampaignList();
+  updateCampSelCount();
+}
+
+function filterCampaignList(filter) {
+  campFilterMode = filter;
+  ['all','active','messages','sales','traffic'].forEach(f => {
+    document.getElementById('cf-' + f)?.classList.toggle('active', f === filter);
+  });
+  renderCampaignList();
+}
+
+function toggleAllCampaigns(select) {
+  const visible    = allCampaigns.filter(c => matchCampFilter(c, campFilterMode));
+  const visibleIds = visible.map(c => c.id);
+  if (select) {
+    visibleIds.forEach(id => { if (!selectedCampaignIds.includes(id)) selectedCampaignIds.push(id); });
+  } else {
+    selectedCampaignIds = selectedCampaignIds.filter(id => !visibleIds.includes(id));
+  }
+  renderCampaignList();
+  updateCampSelCount();
+}
+
+function selectActiveCampaigns() {
+  allCampaigns.filter(c => c.status === 'ACTIVE').forEach(c => {
+    if (!selectedCampaignIds.includes(c.id)) selectedCampaignIds.push(c.id);
+  });
+  renderCampaignList();
+  updateCampSelCount();
+}
+
+// ════════ FETCH META — FASE 2: INSIGHTS DAS CAMPANHAS SELECIONADAS ════════
+async function confirmCampaignSelection() {
+  if (!selectedCampaignIds.length) { toast('⚠️ Selecione ao menos uma campanha.'); return; }
+
+  const from     = document.getElementById('date-from').value;
+  const to       = document.getElementById('date-to').value;
+  const loading  = document.getElementById('card-loading');
+  const results  = document.getElementById('card-results');
+  const errBox   = document.getElementById('card-error');
+  const campCard = document.getElementById('card-camp-select');
+  const prog     = document.getElementById('prog-bar');
+  const progLbl  = document.getElementById('prog-lbl');
+
+  campCard.style.display = 'none';
+  loading.style.display  = 'block';
+  results.style.display  = 'none';
+  errBox.style.display   = 'none';
+
+  const token     = resolveToken(selClient);
+  const accountId = selClient.accountId || selClient.account_id;
+
+  try {
+    prog.style.width = '25%'; progLbl.textContent = 'Buscando insights agregados...';
+    document.getElementById('loading-msg').innerHTML = 'Buscando dados das campanhas selecionadas<span class="dots"></span>';
+
+    // ── Insights agregados filtrados pelos IDs selecionados ──
+    const filtering = encodeURIComponent(JSON.stringify([
+      { field: 'campaign.id', operator: 'IN', value: selectedCampaignIds }
+    ]));
+    const insightsUrl = `https://graph.facebook.com/v18.0/${accountId}/insights?fields=spend,clicks,impressions,reach,ctr,cpm,actions,action_values,cost_per_action_type&time_range={"since":"${from}","until":"${to}"}&filtering=${filtering}&level=account&access_token=${token}`;
+    const insRes  = await fetch(insightsUrl);
     const insData = await insRes.json();
     if (insData.error) throw new Error(insData.error.message);
 
-    prog.style.width='65%'; progLbl.textContent='Buscando campanhas...';
-    const campUrl = `https://graph.facebook.com/v18.0/${accountId}/campaigns?fields=name,status,insights.date_preset(last_7d){spend,clicks,ctr,actions,cost_per_action_type}&access_token=${token}`;
-    const campRes = await fetch(campUrl);
-    const campData = await campRes.json();
+    prog.style.width = '55%'; progLbl.textContent = 'Buscando detalhes por campanha...';
 
-    prog.style.width='85%'; progLbl.textContent='Processando...';
-    const ins = insData.data?.[0] || {};
-    const spend   = parseFloat(ins.spend||0);
-    const clicks  = parseInt(ins.clicks||0);
-    const impr    = parseInt(ins.impressions||0);
-    const reach   = parseInt(ins.reach||0);
-    const ctr     = parseFloat(ins.ctr||0);
-    const cpm     = parseFloat(ins.cpm||0);
+    // ── Insights por campanha (para a tabela de campanhas) ──
+    const campInsUrl = `https://graph.facebook.com/v18.0/${accountId}/insights?fields=campaign_name,campaign_id,spend,clicks,ctr,actions,cost_per_action_type&time_range={"since":"${from}","until":"${to}"}&filtering=${filtering}&level=campaign&access_token=${token}`;
+    const campInsRes  = await fetch(campInsUrl);
+    const campInsData = await campInsRes.json();
+
+    prog.style.width = '75%'; progLbl.textContent = 'Processando métricas...';
+
+    const ins   = insData.data?.[0] || {};
+    const spend = parseFloat(ins.spend||0);
+    const clicks= parseInt(ins.clicks||0);
+    const impr  = parseInt(ins.impressions||0);
+    const reach = parseInt(ins.reach||0);
+    const ctr   = parseFloat(ins.ctr||0);
+    const cpm   = parseFloat(ins.cpm||0);
     const actions = ins.actions||[];
     const actVals = ins.action_values||[];
     const purchases = actions.find(a=>a.action_type==='purchase');
     const revenue   = actVals.find(a=>a.action_type==='purchase');
     const msgs      = actions.find(a=>a.action_type==='onsite_conversion.messaging_conversation_started_7d');
     const leads     = actions.find(a=>a.action_type==='lead');
-    // Meta: conversões e receita atribuídas aos anúncios (pixel)
-    const convQty = parseInt(purchases?.value||0);
-    const revVal  = parseFloat(revenue?.value||0);
+    const convQty   = parseInt(purchases?.value||0);
+    const revVal    = parseFloat(revenue?.value||0);
     const roi = spend > 0 && revVal > 0 ? (revVal/spend).toFixed(2) : '—';
     const cpa = convQty > 0 ? (spend/convQty).toFixed(2) : '—';
 
-    // ── Nuvemshop: dados reais da loja (em paralelo ao Meta, NÃO substituem) ──
-    let nsSource = false;
-    let nsExtra  = null;
+    // ── Nuvemshop ──
+    let nsSource = false, nsExtra = null;
     const nsStoreId = selClient.nuvemshop_store_id;
     const nsToken   = selClient.nuvemshop_token;
     if (nsStoreId && nsToken) {
       try {
-        prog.style.width='90%'; progLbl.textContent='Buscando dados da loja na Nuvemshop...';
-        document.getElementById('loading-msg').innerHTML='Conectando à Nuvemshop<span class="dots"></span>';
+        prog.style.width = '88%'; progLbl.textContent = 'Buscando dados da loja na Nuvemshop...';
+        document.getElementById('loading-msg').innerHTML = 'Conectando à Nuvemshop<span class="dots"></span>';
         const nsData = await fetchNuvemshopRevenue(nsStoreId, nsToken, from, to);
         if (nsData.revenue > 0 || nsData.orders > 0) {
           nsSource = true;
           nsExtra  = {
-            revenue:           nsData.revenue,
-            orders:            nsData.orders,
-            newCustomers:      nsData.newCustomers,
-            returningCustomers: nsData.returningCustomers,
-            productsSold:      nsData.productsSold,
-            couponsUsed:       nsData.couponsUsed,
-            statePerf:         nsData.statePerf,
-            trafficSources:    nsData.trafficSources
+            revenue: nsData.revenue, orders: nsData.orders,
+            newCustomers: nsData.newCustomers, returningCustomers: nsData.returningCustomers,
+            productsSold: nsData.productsSold, couponsUsed: nsData.couponsUsed,
+            statePerf: nsData.statePerf, trafficSources: nsData.trafficSources
           };
         }
       } catch(nsErr) {
@@ -1691,50 +1920,49 @@ async function fetchData() {
       }
     }
 
-    const camps = (campData.data||[]).map(c => {
-      const ci = c.insights?.data?.[0]||{};
-      const ca = ci.actions||[];
-      const cp = ca.find(a=>a.action_type==='purchase');
-      const cc = ca.find(a=>a.action_type==='onsite_conversion.messaging_conversation_started_7d');
+    // ── Tabela de campanhas a partir dos insights por campanha ──
+    const camps = (campInsData.data||[]).map(ci => {
+      const ca  = ci.actions||[];
+      const cp  = ca.find(a=>a.action_type==='purchase');
+      const cc  = ca.find(a=>a.action_type==='onsite_conversion.messaging_conversation_started_7d');
+      const obj = allCampaigns.find(c => c.id === ci.campaign_id);
       return {
-        name: c.name, status: c.status,
-        spend: parseFloat(ci.spend||0),
-        clicks: parseInt(ci.clicks||0),
-        ctr: parseFloat(ci.ctr||0),
-        conv: parseInt(cp?.value||cc?.value||0),
+        name: ci.campaign_name, status: obj?.status || 'ACTIVE',
+        spend: parseFloat(ci.spend||0), clicks: parseInt(ci.clicks||0),
+        ctr: parseFloat(ci.ctr||0), conv: parseInt(cp?.value||cc?.value||0),
         cpa_val: ci.cost_per_action_type?.[0]?.value||'—'
       };
     });
 
-    prog.style.width='100%'; progLbl.textContent='Concluído!';
-    await new Promise(r=>setTimeout(r,400));
+    prog.style.width = '100%'; progLbl.textContent = 'Concluído!';
+    await new Promise(r => setTimeout(r, 400));
 
     fetchedData = {
-      // ── Meta Ads (dados dos anúncios) ──
       spend, clicks, impr, reach, ctr, cpm,
       convQty, revVal, roi, cpa,
       msgs: parseInt(msgs?.value||0), leads: parseInt(leads?.value||0),
-      camps, from, to,
-      // ── Nuvemshop (dados reais da loja) ──
-      nsSource,
-      nsRevenue:           nsExtra?.revenue           || 0,
-      nsOrders:            nsExtra?.orders            || 0,
-      nsNewCustomers:      nsExtra?.newCustomers      || 0,
+      camps, from, to, nsSource,
+      nsRevenue:            nsExtra?.revenue            || 0,
+      nsOrders:             nsExtra?.orders             || 0,
+      nsNewCustomers:       nsExtra?.newCustomers       || 0,
       nsReturningCustomers: nsExtra?.returningCustomers || 0,
-      nsProductsSold:      nsExtra?.productsSold      || 0,
-      nsCouponsUsed:       nsExtra?.couponsUsed       || 0,
-      nsStatePerf:         nsExtra?.statePerf         || [],
-      nsTrafficSources:    nsExtra?.trafficSources    || []
+      nsProductsSold:       nsExtra?.productsSold       || 0,
+      nsCouponsUsed:        nsExtra?.couponsUsed        || 0,
+      nsStatePerf:          nsExtra?.statePerf          || [],
+      nsTrafficSources:     nsExtra?.trafficSources     || []
     };
-    loading.style.display='none'; results.style.display='block';
+
+    loading.style.display = 'none';
+    results.style.display = 'block';
     renderMetrics(fetchedData);
-    btn.disabled=false;
-    document.getElementById('btn-to-cu').style.display='flex';
+    document.getElementById('btn-fetch').disabled = false;
+    document.getElementById('btn-to-cu').style.display = 'flex';
 
   } catch(e) {
-    loading.style.display='none'; btn.disabled=false;
-    errBox.style.display='block';
-    errBox.innerHTML=`<div class="err-box">❌ Erro ao buscar dados: ${e.message}<br><small style="opacity:.7">Verifique o token do cliente e o Ad Account ID.</small></div>`;
+    loading.style.display  = 'none';
+    errBox.style.display   = 'block';
+    campCard.style.display = 'block';
+    errBox.innerHTML = `<div class="err-box">❌ Erro ao buscar dados: ${e.message}<br><small style="opacity:.7">Verifique o token do cliente e o Ad Account ID.</small></div>`;
   }
 }
 

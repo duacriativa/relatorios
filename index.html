@@ -334,6 +334,41 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 .topbar-brand{font-size:14px;} .week-badge{display:none;}
 }
 
+/* ══════════ METRIC DRAG & DROP ══════════ */
+.metrics-auto .metric-box{position:relative;cursor:default;transition:var(--transition),opacity .15s,transform .15s;}
+.metrics-edit-mode .metric-box{cursor:grab;border-style:dashed;}
+.metrics-edit-mode .metric-box:active{cursor:grabbing;}
+.metric-box.dragging{opacity:.3;transform:scale(.97);}
+.metric-box.drag-over{border-color:var(--accent)!important;border-style:solid!important;box-shadow:0 0 0 3px var(--accentbg);}
+.drag-handle{position:absolute;top:8px;right:8px;width:16px;height:14px;display:none;flex-direction:column;gap:3px;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;pointer-events:none;}
+.drag-handle span{display:block;width:11px;height:1.5px;background:var(--text3);border-radius:2px;}
+.metric-box:hover .drag-handle{opacity:.65;}
+.metrics-edit-mode .drag-handle{display:flex;}
+.metric-remove-btn{position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;background:var(--red);border:2px solid var(--bg);color:#fff;font-size:10px;cursor:pointer;display:none;align-items:center;justify-content:center;line-height:1;font-weight:900;z-index:5;padding:0;transition:transform .15s,box-shadow .15s;}
+.metric-remove-btn:hover{transform:scale(1.15);box-shadow:0 2px 8px rgba(239,68,68,.4);}
+.metrics-edit-mode .metric-remove-btn{display:flex;}
+.metric-edit-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.btn-metric-edit{background:transparent;border:1px solid var(--border);border-radius:6px;padding:4px 11px;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;gap:5px;}
+.btn-metric-edit:hover{border-color:var(--accent2);color:var(--accent2);}
+.btn-metric-edit.editing{background:var(--accentbg);border-color:var(--accent);color:var(--accent2);}
+.metrics-edit-hint{font-size:11px;color:var(--text3);font-style:italic;}
+
+/* ══════════ METRIC PICKER SHEET ══════════ */
+#metric-picker-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:700;display:none;align-items:flex-end;justify-content:center;padding:0;}
+#metric-picker-bg.open{display:flex;}
+.picker-sheet{background:var(--modal-bg);border:1px solid var(--border);border-bottom:none;border-radius:20px 20px 0 0;padding:24px 24px 32px;width:100%;max-width:660px;max-height:88vh;overflow-y:auto;animation:slideUp .25s ease;}
+@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.picker-sheet h3{font-family:'Bricolage Grotesque',sans-serif;font-size:17px;font-weight:800;margin-bottom:4px;}
+.picker-group-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin:14px 0 6px;}
+.picker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:7px;}
+.picker-item{background:var(--s2);border:1.5px solid var(--border);border-radius:var(--radius2);padding:11px 12px;cursor:pointer;transition:var(--transition);display:flex;flex-direction:column;gap:4px;position:relative;}
+.picker-item:hover{border-color:var(--accent2);transform:translateY(-1px);}
+.picker-item.active{border-color:var(--accent);background:var(--accentbg);}
+.picker-item.active::after{content:'✓';position:absolute;top:7px;right:9px;font-size:10px;font-weight:800;color:var(--accent2);}
+.picker-item .pi-icon{font-size:17px;line-height:1;}
+.picker-item .pi-label{font-size:12px;font-weight:700;line-height:1.3;}
+.picker-item .pi-desc{font-size:10px;color:var(--text3);line-height:1.4;}
+
 /* ══════════ CAMPAIGN SELECTOR ══════════ */
 .camp-filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
 .camp-filter-chip{background:var(--s3);border:1px solid var(--border);border-radius:50px;padding:5px 13px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;transition:var(--transition);}
@@ -659,6 +694,12 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 📊 Meta Ads - <span id="lbl-client2" style="color:var(--accent2)">—</span>
 <span class="status-pill ok" style="margin-left:auto;font-size:10px">✓ API Meta</span>
 </div>
+<div class="metric-edit-bar">
+  <button class="btn-metric-edit" id="btn-metric-edit-toggle" onclick="toggleMetricEditMode()">✏️ Personalizar métricas</button>
+  <button class="btn-metric-edit" onclick="openMetricPicker()" id="btn-metric-add" style="display:none">＋ Adicionar métrica</button>
+  <button class="btn-metric-edit" onclick="resetMetricLayout()" id="btn-metric-reset" style="display:none" title="Restaurar padrão">↺ Restaurar padrão</button>
+  <span class="metrics-edit-hint" id="metric-edit-hint" style="display:none">Arraste para reordenar • clique em ✕ para remover</span>
+</div>
 <div class="metrics-auto" id="metrics-display"></div>
 <div id="camp-section" style="display:none">
 <div class="sec-label" style="margin-top:6px">Campanhas no período</div>
@@ -780,6 +821,21 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <button class="btn-act accent" onclick="nextClient()">▶ Próximo cliente</button>
 </div>
 </div>
+</div>
+
+<!-- ══════════ METRIC PICKER MODAL ══════════ -->
+<div id="metric-picker-bg" onclick="if(event.target===this)closeMetricPicker()">
+  <div class="picker-sheet">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <h3>📊 Escolha as métricas do relatório</h3>
+      <button onclick="closeMetricPicker()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;line-height:1;padding:0 4px" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text3)'">✕</button>
+    </div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:4px;line-height:1.6">Clique para ativar/desativar. A ordem pode ser ajustada arrastando no relatório.</p>
+    <div id="picker-content"></div>
+    <div style="margin-top:18px;display:flex;gap:8px">
+      <button class="btn-main" style="flex:1" onclick="closeMetricPicker()">Confirmar →</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -997,6 +1053,180 @@ let tokenStatuses = {}; // { clientId: 'checking'|'valid'|'expired'|'permission'
 let allCampaigns = [];        // campanhas carregadas da API
 let selectedCampaignIds = []; // IDs selecionados pelo usuário
 let campFilterMode = 'all';   // filtro ativo na UI do seletor
+let metricsEditMode = false;  // modo edição de métricas ativo
+let dragSrcId = null;         // ID da métrica sendo arrastada
+
+// ════════ METRIC CATALOG ════════
+const fmtBRL = v => 'R$ '+parseFloat(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+const METRIC_CATALOG = [
+  { id:'spend',     label:'Investido',       icon:'💰', group:'Geral',      hi:true,  desc:'Total investido em anúncios no período',
+    getValue: d => d.spend,
+    fmt: v => fmtBRL(v) },
+  { id:'revenue',   label:'Receita (Meta)',  icon:'📈', group:'E-commerce', hi:false, desc:'Receita atribuída aos anúncios pelo pixel',
+    getValue: d => d.revVal > 0 ? d.revVal : null,
+    fmt: v => fmtBRL(v) },
+  { id:'roi',       label:'ROI',             icon:'🎯', group:'E-commerce', hi:false, desc:'Retorno sobre o investimento (Receita ÷ Gasto)',
+    getValue: d => d.roi !== '—' ? parseFloat(d.roi) : null,
+    fmt: v => parseFloat(v).toFixed(2) + 'x' },
+  { id:'convQty',   label:'Conversões',      icon:'🛒', group:'E-commerce', hi:false, desc:'Compras/conversões rastreadas pelo pixel',
+    getValue: d => d.convQty,
+    fmt: v => parseInt(v).toLocaleString('pt-BR') },
+  { id:'cpa',       label:'CPA',             icon:'💳', group:'E-commerce', hi:false, desc:'Custo por aquisição (Gasto ÷ Conversões)',
+    getValue: d => d.cpa !== '—' ? parseFloat(d.cpa) : null,
+    fmt: v => fmtBRL(v) },
+  { id:'ticket',    label:'Ticket Médio',    icon:'🏷️', group:'E-commerce', hi:false, desc:'Valor médio por conversão (Receita ÷ Compras)',
+    getValue: d => d.convQty > 0 && d.revVal > 0 ? d.revVal / d.convQty : null,
+    fmt: v => fmtBRL(v) },
+  { id:'clicks',    label:'Cliques',         icon:'👆', group:'Geral',      hi:false, desc:'Total de cliques no link do anúncio',
+    getValue: d => d.clicks,
+    fmt: v => parseInt(v).toLocaleString('pt-BR') },
+  { id:'impr',      label:'Impressões',      icon:'👁️', group:'Geral',      hi:false, desc:'Total de vezes que o anúncio foi exibido',
+    getValue: d => d.impr,
+    fmt: v => parseInt(v).toLocaleString('pt-BR') },
+  { id:'reach',     label:'Alcance',         icon:'📡', group:'Geral',      hi:false, desc:'Pessoas únicas que viram o anúncio',
+    getValue: d => d.reach || d.impr,
+    fmt: v => parseInt(v).toLocaleString('pt-BR') },
+  { id:'ctr',       label:'CTR',             icon:'📊', group:'Geral',      hi:false, desc:'Taxa de cliques (Cliques ÷ Impressões)',
+    getValue: d => d.ctr,
+    fmt: v => parseFloat(v).toFixed(2) + '%' },
+  { id:'cpm',       label:'CPM',             icon:'💵', group:'Geral',      hi:false, desc:'Custo por mil impressões',
+    getValue: d => d.cpm,
+    fmt: v => fmtBRL(v) },
+  { id:'msgs',      label:'Mensagens',       icon:'💬', group:'WhatsApp',   hi:true,  desc:'Conversas iniciadas no WhatsApp',
+    getValue: d => d.msgs > 0 ? d.msgs : null,
+    fmt: v => parseInt(v).toLocaleString('pt-BR') },
+  { id:'costMsg',   label:'Custo/Msg',       icon:'📲', group:'WhatsApp',   hi:false, desc:'Custo médio por mensagem iniciada',
+    getValue: d => d._costMsg != null ? d._costMsg : (d.msgs > 0 ? d.spend / d.msgs : null),
+    fmt: v => fmtBRL(v) },
+  { id:'leads',     label:'Leads',           icon:'📋', group:'Geral',      hi:false, desc:'Leads gerados no período',
+    getValue: d => d.leads > 0 ? d.leads : null,
+    fmt: v => parseInt(v).toLocaleString('pt-BR') },
+];
+
+const DEFAULT_METRICS = {
+  ecommerce: ['spend','revenue','roi','convQty','cpa','ticket','clicks','impr','ctr','cpm','msgs','leads'],
+  mensagens: ['spend','reach','clicks','ctr','cpm','msgs','costMsg'],
+};
+
+function getActiveMetrics() {
+  const key = 'metricana_metrics_' + selTemplate;
+  try {
+    const saved = localStorage.getItem(key);
+    if (saved) return JSON.parse(saved);
+  } catch(_) {}
+  return [...DEFAULT_METRICS[selTemplate]];
+}
+
+function saveActiveMetrics(list) {
+  localStorage.setItem('metricana_metrics_' + selTemplate, JSON.stringify(list));
+}
+
+// ════════ METRIC EDIT MODE ════════
+function toggleMetricEditMode() {
+  metricsEditMode = !metricsEditMode;
+  const box  = document.getElementById('metrics-display');
+  const btn  = document.getElementById('btn-metric-edit-toggle');
+  const add  = document.getElementById('btn-metric-add');
+  const rst  = document.getElementById('btn-metric-reset');
+  const hint = document.getElementById('metric-edit-hint');
+  box.classList.toggle('metrics-edit-mode', metricsEditMode);
+  btn.classList.toggle('editing', metricsEditMode);
+  btn.textContent = metricsEditMode ? '✓ Concluir edição' : '✏️ Personalizar métricas';
+  add.style.display  = metricsEditMode ? 'inline-flex' : 'none';
+  rst.style.display  = metricsEditMode ? 'inline-flex' : 'none';
+  hint.style.display = metricsEditMode ? 'inline' : 'none';
+}
+
+function removeMetric(id) {
+  const active = getActiveMetrics().filter(m => m !== id);
+  saveActiveMetrics(active);
+  if (fetchedData) renderMetrics(fetchedData);
+  // keep edit mode on
+  const box = document.getElementById('metrics-display');
+  box.classList.add('metrics-edit-mode');
+}
+
+function resetMetricLayout() {
+  localStorage.removeItem('metricana_metrics_' + selTemplate);
+  if (fetchedData) renderMetrics(fetchedData);
+  const box = document.getElementById('metrics-display');
+  box.classList.add('metrics-edit-mode');
+  toast('✓ Layout restaurado para o padrão.');
+}
+
+// ════════ DRAG & DROP METRICS ════════
+function onMetricDragStart(e) {
+  if (!metricsEditMode) { e.preventDefault(); return; }
+  dragSrcId = e.currentTarget.dataset.metricId;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => e.currentTarget.classList.add('dragging'), 0);
+}
+function onMetricDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.metric-box.drag-over').forEach(el => el.classList.remove('drag-over'));
+  e.currentTarget.classList.add('drag-over');
+}
+function onMetricDrop(e) {
+  e.preventDefault();
+  const targetId = e.currentTarget.dataset.metricId;
+  if (!dragSrcId || dragSrcId === targetId) return;
+  let active = getActiveMetrics();
+  const srcIdx = active.indexOf(dragSrcId);
+  const tgtIdx = active.indexOf(targetId);
+  if (srcIdx < 0 || tgtIdx < 0) return;
+  active.splice(srcIdx, 1);
+  active.splice(tgtIdx, 0, dragSrcId);
+  saveActiveMetrics(active);
+  if (fetchedData) renderMetrics(fetchedData);
+  const box = document.getElementById('metrics-display');
+  box.classList.add('metrics-edit-mode');
+  dragSrcId = null;
+}
+function onMetricDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.metric-box.drag-over').forEach(el => el.classList.remove('drag-over'));
+}
+
+// ════════ METRIC PICKER ════════
+function openMetricPicker() {
+  const active  = getActiveMetrics();
+  const groups  = [...new Set(METRIC_CATALOG.map(m => m.group))];
+  const content = document.getElementById('picker-content');
+  content.innerHTML = groups.map(group => {
+    const items = METRIC_CATALOG.filter(m => m.group === group);
+    return `<div class="picker-group-label">${group}</div>
+    <div class="picker-grid">${items.map(m => `
+      <div class="picker-item ${active.includes(m.id) ? 'active' : ''}" id="picker-item-${m.id}" onclick="togglePickerMetric('${m.id}')">
+        <div class="pi-icon">${m.icon}</div>
+        <div class="pi-label">${m.label}</div>
+        <div class="pi-desc">${m.desc}</div>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+  document.getElementById('metric-picker-bg').classList.add('open');
+}
+
+function closeMetricPicker() {
+  document.getElementById('metric-picker-bg').classList.remove('open');
+  if (fetchedData) renderMetrics(fetchedData);
+  const box = document.getElementById('metrics-display');
+  if (metricsEditMode) box.classList.add('metrics-edit-mode');
+}
+
+function togglePickerMetric(id) {
+  let active = getActiveMetrics();
+  const idx  = active.indexOf(id);
+  if (idx >= 0) {
+    if (active.length <= 1) { toast('⚠️ Mantenha ao menos uma métrica.'); return; }
+    active.splice(idx, 1);
+  } else {
+    active.push(id);
+  }
+  saveActiveMetrics(active);
+  document.getElementById('picker-item-' + id)?.classList.toggle('active', active.includes(id));
+}
 
 // ════════ TOKEN VALIDATION ════════
 async function validateToken(token, accountId) {
@@ -1986,37 +2216,50 @@ function genDemoData(name, from, to) {
 }
 
 function renderMetrics(d) {
-  const box = document.getElementById('metrics-display');
-  const fmtBRL = v => 'R$ '+parseFloat(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const box       = document.getElementById('metrics-display');
   const isMsgsTpl = selTemplate === 'mensagens';
-  const msgsQty = document.getElementById('atk-toggle').checked
-    ? parseInt(document.getElementById('atk-msgs').value||'0')
-    : d.msgs;
-  const atkInv = document.getElementById('atk-toggle').checked
-    ? parseFloat(document.getElementById('atk-inv').value||'0') : 0;
-  const custoMsg = msgsQty > 0 ? fmtBRL((atkInv || parseFloat(d.spend)) / msgsQty) : '—';
+  const atkOn     = document.getElementById('atk-toggle').checked;
+  const msgsQty   = atkOn ? parseInt(document.getElementById('atk-msgs').value||'0') : d.msgs;
+  const atkInv    = atkOn ? parseFloat(document.getElementById('atk-inv').value||'0') : 0;
+  const costMsgVal= msgsQty > 0 ? (atkInv || d.spend) / msgsQty : null;
+  const custoMsg  = costMsgVal != null ? fmtBRL(costMsgVal) : '—';
 
-  if (isMsgsTpl) {
-    box.innerHTML = `
-      <div class="metric-box"><div class="mlabel">Investido</div><div class="mvalue hi">${fmtBRL(d.spend)}</div></div>
-      <div class="metric-box"><div class="mlabel">Alcance</div><div class="mvalue">${(d.reach||d.impr).toLocaleString('pt-BR')}</div></div>
-      <div class="metric-box"><div class="mlabel">Cliques</div><div class="mvalue">${parseInt(d.clicks).toLocaleString('pt-BR')}</div></div>
-      <div class="metric-box"><div class="mlabel">CTR</div><div class="mvalue">${parseFloat(d.ctr).toFixed(2)}%</div></div>
-      <div class="metric-box"><div class="mlabel">CPM</div><div class="mvalue">R$ ${parseFloat(d.cpm).toFixed(2)}</div></div>
-      ${msgsQty>0?`<div class="metric-box"><div class="mlabel">Msgs Iniciadas</div><div class="mvalue hi">${msgsQty.toLocaleString('pt-BR')}</div></div>`:''}
-      ${msgsQty>0?`<div class="metric-box"><div class="mlabel">Custo/Msg</div><div class="mvalue">${custoMsg}</div></div>`:''}
-    `;
-  } else {
-    const metaTicket = d.convQty > 0 && d.revVal > 0 ? fmtBRL(d.revVal / d.convQty) : null;
+  // Contexto enriquecido passado ao catalog getValue
+  const ctx = { ...d, msgs: msgsQty, _costMsg: costMsgVal };
 
-    // ── Seção Nuvemshop completa ──
-    // Nuvemshop — métricas e tabelas para card separado
-    let nsMetricsHtml = '';
-    let nsTablesHtml  = '';
+  // Renderizar métricas a partir do catálogo
+  const active = getActiveMetrics();
+  box.innerHTML = active.map(id => {
+    const m = METRIC_CATALOG.find(m => m.id === id);
+    if (!m) return '';
+    const val = m.getValue(ctx);
+    if (val === null || val === undefined) return '';
+    const display = m.fmt(val);
+    return `<div class="metric-box" draggable="true" data-metric-id="${id}"
+        ondragstart="onMetricDragStart(event)"
+        ondragover="onMetricDragOver(event)"
+        ondrop="onMetricDrop(event)"
+        ondragend="onMetricDragEnd(event)">
+      <div class="drag-handle"><span></span><span></span><span></span></div>
+      <button class="metric-remove-btn" onclick="removeMetric('${id}')" title="Remover métrica">✕</button>
+      <div class="mlabel">${m.label}</div>
+      <div class="mvalue${m.hi ? ' hi' : ''}">${display}</div>
+    </div>`;
+  }).filter(Boolean).join('');
+
+  // Restaura modo edição se estava ativo
+  if (metricsEditMode) box.classList.add('metrics-edit-mode');
+
+  // ── Card Nuvemshop (e-commerce) ──
+  const cardNs = document.getElementById('card-ns');
+  if (cardNs) {
     if (d.nsSource) {
-      const nsTicket = d.nsOrders > 0 ? fmtBRL(d.nsRevenue / d.nsOrders) : null;
+      cardNs.style.display = 'block';
+      const lblNs = document.getElementById('lbl-client-ns');
+      if (lblNs && selClient) lblNs.textContent = selClient.name;
 
-      nsMetricsHtml = `
+      const nsTicket = d.nsOrders > 0 ? fmtBRL(d.nsRevenue / d.nsOrders) : null;
+      document.getElementById('ns-metrics-display').innerHTML = `
         <div class="metric-box"><div class="mlabel">Receita Total</div><div class="mvalue">${fmtBRL(d.nsRevenue)}</div></div>
         <div class="metric-box"><div class="mlabel">Pedidos</div><div class="mvalue">${d.nsOrders}</div></div>
         ${nsTicket ? `<div class="metric-box"><div class="mlabel">Ticket Médio</div><div class="mvalue">${nsTicket}</div></div>` : ''}
@@ -2027,6 +2270,7 @@ function renderMetrics(d) {
         ${d.nsCouponsUsed>0 ? `<div class="metric-box"><div class="mlabel">Cupons Usados</div><div class="mvalue">${d.nsCouponsUsed}</div></div>` : ''}
       `;
 
+      let nsTablesHtml = '';
       if (d.nsStatePerf.length > 0) nsTablesHtml += `
         <div style="margin-top:12px">
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:6px">🗺️ Por Estado</div>
@@ -2047,7 +2291,6 @@ function renderMetrics(d) {
             </tbody>
           </table>
         </div>`;
-
       if (d.nsTrafficSources.length > 0) nsTablesHtml += `
         <div style="margin-top:12px">
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:6px">📡 Fontes de Tráfego</div>
@@ -2066,46 +2309,20 @@ function renderMetrics(d) {
             </tbody>
           </table>
         </div>`;
-    }
-
-    box.innerHTML = `
-      <div class="metric-box"><div class="mlabel">Investido</div><div class="mvalue hi">${fmtBRL(d.spend)}</div></div>
-      <div class="metric-box"><div class="mlabel">Receita (Meta)</div><div class="mvalue">${d.revVal>0?fmtBRL(d.revVal):'—'}</div></div>
-      <div class="metric-box"><div class="mlabel">ROI (Meta)</div><div class="mvalue">${d.roi !== '—' ? d.roi+'x' : '—'}</div></div>
-      <div class="metric-box"><div class="mlabel">Conversões (Meta)</div><div class="mvalue">${d.convQty}</div></div>
-      <div class="metric-box"><div class="mlabel">CPA</div><div class="mvalue">${d.cpa!=='—'?'R$ '+parseFloat(d.cpa).toFixed(2):'—'}</div></div>
-      ${metaTicket ? `<div class="metric-box"><div class="mlabel">Ticket Médio (Meta)</div><div class="mvalue">${metaTicket}</div></div>` : ''}
-      <div class="metric-box"><div class="mlabel">Cliques</div><div class="mvalue">${d.clicks.toLocaleString('pt-BR')}</div></div>
-      <div class="metric-box"><div class="mlabel">Impressões</div><div class="mvalue">${d.impr.toLocaleString('pt-BR')}</div></div>
-      <div class="metric-box"><div class="mlabel">CTR</div><div class="mvalue">${parseFloat(d.ctr).toFixed(2)}%</div></div>
-      <div class="metric-box"><div class="mlabel">CPM</div><div class="mvalue">R$ ${parseFloat(d.cpm).toFixed(2)}</div></div>
-      ${d.msgs>0?`<div class="metric-box"><div class="mlabel">Mensagens</div><div class="mvalue">${d.msgs}</div></div>`:''}
-      ${d.leads>0?`<div class="metric-box"><div class="mlabel">Leads</div><div class="mvalue">${d.leads}</div></div>`:''}
-    `;
-
-    // — Card Nuvemshop separado —
-    const cardNs = document.getElementById('card-ns');
-    if (cardNs) {
-      if (d.nsSource) {
-        cardNs.style.display = 'block';
-        const lblNs = document.getElementById('lbl-client-ns');
-        if (lblNs && selClient) lblNs.textContent = selClient.name;
-        document.getElementById('ns-metrics-display').innerHTML = nsMetricsHtml;
-        document.getElementById('ns-tables-display').innerHTML  = nsTablesHtml;
-      } else {
-        cardNs.style.display = 'none';
-      }
+      document.getElementById('ns-tables-display').innerHTML = nsTablesHtml;
+    } else {
+      cardNs.style.display = 'none';
     }
   }
+
   // Campanhas — sempre ativas primeiro
   if (d.camps && d.camps.length) {
-    document.getElementById('camp-section').style.display='block';
+    document.getElementById('camp-section').style.display = 'block';
     campSortCol = 'status'; campSortAsc = true;
-    sortCamps('status', true); // força ativas primeiro
+    sortCamps('status', true);
   }
-  // Atualizar nome do cliente na topbar
+
   updateTopbarClient();
-  // Preencher resumo no step 3 (ClickUp)
   renderCuSummary(d, isMsgsTpl, msgsQty, custoMsg, fmtBRL);
 }
 

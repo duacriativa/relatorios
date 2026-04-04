@@ -2586,7 +2586,7 @@ function buildRelatorio() {
       ``,
       `💰 *Valor Geral Investido: ${fmtBRL(d.spend)}*`,
       ``,
-      `_Relatório gerado pela Central de Relatórios_`,
+      `_Relatório gerado por Metricana_`,
     ].filter(v => v !== null).join('\n');
   } else {
     const metaTicketRel = d.convQty > 0 && d.revVal > 0 ? fmtBRL(d.revVal / d.convQty) : null;
@@ -2616,7 +2616,7 @@ function buildRelatorio() {
       d.msgs > 0  ? `• Mensagens iniciadas: ${d.msgs}` : null,
       d.leads > 0 ? `• Leads: ${d.leads}` : null,
       ``,
-      `_Relatório gerado pela Central de Relatórios_`,
+      `_Relatório gerado por Metricana_`,
     ].filter(v => v !== null).join('\n');
   }
 

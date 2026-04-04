@@ -597,6 +597,19 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 
 </div>
 <div class="card">
+<div class="card-title" style="font-size:14px">📋 Relatórios desta semana</div>
+<div style="overflow-x:auto">
+<table class="data-table" id="hist-table">
+<thead id="hist-head"><tr><th>Cliente</th><th>Investido</th><th id="hist-col3">ROI</th><th id="hist-col4">Vendas</th><th>Status</th></tr></thead>
+<tbody id="hist-body"><tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Nenhum relatório enviado ainda.</td></tr></tbody>
+</table>
+</div>
+</div>
+</div>
+
+<!-- STEP 1 -->
+<div class="panel" id="panel1">
+<div class="card">
 <div class="card-title" style="font-size:15px;margin-bottom:12px">📋 Template do Relatório</div>
 <div class="sec-label" style="margin-bottom:10px">Escolha o modelo que melhor representa este cliente</div>
 <div class="tpl-grid" id="tpl-grid">
@@ -612,22 +625,6 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
   </div>
 </div>
 </div>
-<div class="card">
-<div class="card-title" style="font-size:14px">📋 Relatórios desta semana</div>
-<div style="overflow-x:auto">
-<table class="data-table" id="hist-table">
-<thead id="hist-head"><tr><th>Cliente</th><th>Investido</th><th id="hist-col3">ROI</th><th id="hist-col4">Vendas</th><th>Status</th></tr></thead>
-<tbody id="hist-body"><tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Nenhum relatório enviado ainda.</td></tr></tbody>
-</table>
-</div>
-</div>
-<div class="action-row">
-<button class="btn-act accent" onclick="goStep(1)">Buscar dados →</button>
-</div>
-</div>
-
-<!-- STEP 1 -->
-<div class="panel" id="panel1">
 <div class="card">
 <div class="card-title">📅 Período</div>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
@@ -1520,6 +1517,7 @@ function selectClient(i) {
   document.getElementById('btn-to-cu').style.display = 'none';
   renderClients();
   updateTopbarClient();
+  goStep(1);
 }
 
 function openAddClient() {

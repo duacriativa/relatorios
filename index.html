@@ -744,7 +744,13 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 </div>
 <div class="card">
 <div class="card-title">🔗 Campos para o ClickUp</div>
-<p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">A tarefa do cliente será atualizada. Os dados preencherão campos customizados existentes e serão postados como comentário.</p>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+  <span style="font-size:13px;color:var(--text2);flex-shrink:0">Tipo de relatório:</span>
+  <div style="display:flex;gap:6px">
+    <button id="btn-type-semanal" onclick="setReportType('semanal')" style="padding:5px 14px;border-radius:20px;border:1.5px solid var(--accent2);background:var(--accent2);color:#fff;font-size:12px;font-weight:700;cursor:pointer">📅 Semanal</button>
+    <button id="btn-type-mensal"  onclick="setReportType('mensal')"  style="padding:5px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:700;cursor:pointer">📆 Mensal</button>
+  </div>
+</div>
 <div id="cu-rows"></div>
 <div id="cu-result" style="margin-top:12px"></div>
 </div>
@@ -1008,6 +1014,7 @@ let selectedCampaignIds = []; // IDs selecionados pelo usuário
 let campFilterMode = 'all';   // filtro ativo na UI do seletor
 let metricsEditMode = false;  // modo edição de métricas ativo
 let dragSrcId = null;         // ID da métrica sendo arrastada
+let selReportType = 'semanal'; // 'semanal' | 'mensal'
 
 // ════════ METRIC CATALOG ════════
 const fmtBRL = v => 'R$ '+parseFloat(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -2364,6 +2371,19 @@ function sortCamps(col, forceAsc) {
 
 
 // ════════ CLICKUP PREVIEW ════════
+function setReportType(type) {
+  selReportType = type;
+  const btnS = document.getElementById('btn-type-semanal');
+  const btnM = document.getElementById('btn-type-mensal');
+  if (type === 'semanal') {
+    btnS.style.background = 'var(--accent2)'; btnS.style.color = '#fff'; btnS.style.borderColor = 'var(--accent2)';
+    btnM.style.background = 'transparent';    btnM.style.color = 'var(--text2)'; btnM.style.borderColor = 'var(--border)';
+  } else {
+    btnM.style.background = 'var(--accent2)'; btnM.style.color = '#fff'; btnM.style.borderColor = 'var(--accent2)';
+    btnS.style.background = 'transparent';    btnS.style.color = 'var(--text2)'; btnS.style.borderColor = 'var(--border)';
+  }
+}
+
 function buildCUPreview() {
   if (!fetchedData) return;
   const d = fetchedData;
@@ -2477,10 +2497,14 @@ async function sendClickUp() {
     // 3. Busca a tarefa que contém o nome do cliente
     const clientLower = selClient.name.toLowerCase().trim();
     const clientWords = clientLower.split(/\s+/).filter(w => w.length > 2);
-    const task = allTasks.find(t => {
+    const reportWord  = selReportType; // 'semanal' ou 'mensal'
+    const matchesClient = t => {
       const tl = t.name.toLowerCase();
       return tl.includes(clientLower) || clientWords.some(w => tl.includes(w));
-    });
+    };
+    // Primeiro tenta achar tarefa com tipo + cliente; fallback só pelo cliente
+    const task = allTasks.find(t => matchesClient(t) && t.name.toLowerCase().includes(reportWord))
+              || allTasks.find(t => matchesClient(t));
 
     // Monta comentário conforme template selecionado
     let commentLines;
@@ -2489,7 +2513,7 @@ async function sendClickUp() {
       const msgs     = d.msgs;
       const custoMsg = msgs > 0 ? fmtBRL(parseFloat(d.spend) / msgs) : '—';
       commentLines = [
-        `📊 *Relatório Meta Ads — ${selClient.name}*`,
+        `📊 *Relatório ${selReportType === 'mensal' ? 'Mensal' : 'Semanal'} Meta Ads — ${selClient.name}*`,
         `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,
         ``,
         `📱 *Tráfego p/ Perfil IG*`,
@@ -2505,7 +2529,7 @@ async function sendClickUp() {
       // Template E-commerce (padrão)
       const nsTicketCU = d.nsSource && d.nsOrders > 0 ? fmtBRL(d.nsRevenue / d.nsOrders) : null;
       commentLines = [
-        `📊 *Relatório Meta Ads — ${selClient.name}*`,
+        `📊 *Relatório ${selReportType === 'mensal' ? 'Mensal' : 'Semanal'} Meta Ads — ${selClient.name}*`,
         `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,
         ``,
         `📣 *Meta Ads*`,
@@ -2577,7 +2601,7 @@ function buildRelatorio() {
     const msgs     = d.msgs;
     const custoMsg = msgs > 0 ? fmtBRL(d.spend / msgs) : '—';
     rel = [
-      `📊 *Relatório Semanal — ${selClient.name}*`,
+      `📊 *Relatório ${selReportType === 'mensal' ? 'Mensal' : 'Semanal'} — ${selClient.name}*`,
       `📅 ${fmt2(d.from)} a ${fmt2(d.to)}`,
       ``,
       `📱 *Tráfego p/ Perfil IG*`,
@@ -2596,7 +2620,7 @@ function buildRelatorio() {
     const metaTicketRel = d.convQty > 0 && d.revVal > 0 ? fmtBRL(d.revVal / d.convQty) : null;
     const nsTicketRel   = d.nsSource && d.nsOrders > 0   ? fmtBRL(d.nsRevenue / d.nsOrders) : null;
     rel = [
-      `📊 *Relatório Semanal — ${selClient.name}*`,
+      `📊 *Relatório ${selReportType === 'mensal' ? 'Mensal' : 'Semanal'} — ${selClient.name}*`,
       `📅 ${fmt2(d.from)} a ${fmt2(d.to)}`,
       ``,
       `💰 Investido: *${fmtBRL(d.spend)}*`,
@@ -2722,7 +2746,7 @@ function copyAI() {
 
 // ════════ NEXT CLIENT ════════
 function nextClient() {
-  selClient=null; fetchedData=null;
+  selClient=null; fetchedData=null; selReportType='semanal';
   renderHistory();
   goStep(0);
 }

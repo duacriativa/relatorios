@@ -727,42 +727,6 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div class="metrics-auto" id="ns-metrics-display"></div>
 <div id="ns-tables-display"></div>
 </div>
-<div class="card">
-<div class="card-title" style="justify-content:space-between">
-<span>📦 Campanha de Mensagens (Atacado)</span>
-<label style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:400;color:var(--text2);cursor:pointer">
-<input type="checkbox" id="atk-toggle" style="accent-color:var(--accent);width:13px;height:13px"/> Incluir
-</label>
-</div>
-<div id="atk-section" style="display:none">
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
-<div class="field" style="margin:0"><label>Total mensagens</label><input id="atk-msgs" type="number" placeholder="425" oninput="calcAtk()"/></div>
-<div class="field" style="margin:0"><label>Investido atacado</label><input id="atk-inv" placeholder="467,50" oninput="calcAtk()"/></div>
-<div class="field" style="margin:0"><label>Custo/msg <span class="badge auto">AUTO</span></label><input id="atk-cpm" readonly style="color:var(--accent2);font-weight:700"/></div>
-</div>
-<div id="atk-items">
-<div class="atk-row" style="display:grid;grid-template-columns:1fr 1fr 70px auto;gap:8px;margin-bottom:7px;align-items:end">
-<div class="field" style="margin:0"><label>Vendedora</label><input placeholder="Ivyna"/></div>
-<div class="field" style="margin:0"><label>Mensagens</label><input type="number" placeholder="176"/></div>
-<div class="field" style="margin:0"><label>Emoji</label><input placeholder="👗"/></div>
-<button onclick="this.closest('.atk-row').remove()" style="height:36px;width:34px;background:var(--redbg);border:1px solid rgba(239,68,68,.2);color:var(--red);border-radius:var(--radius2);cursor:pointer;font-size:13px;align-self:end">✕</button>
-</div>
-<div class="atk-row" style="display:grid;grid-template-columns:1fr 1fr 70px auto;gap:8px;margin-bottom:7px;align-items:end">
-<div class="field" style="margin:0"><label>Vendedora</label><input placeholder="Thalya"/></div>
-<div class="field" style="margin:0"><label>Mensagens</label><input type="number" placeholder="249"/></div>
-<div class="field" style="margin:0"><label>Emoji</label><input placeholder="👗"/></div>
-<button onclick="this.closest('.atk-row').remove()" style="height:36px;width:34px;background:var(--redbg);border:1px solid rgba(239,68,68,.2);color:var(--red);border-radius:var(--radius2);cursor:pointer;font-size:13px;align-self:end">✕</button>
-</div>
-</div>
-<button onclick="addAtkRow()" style="width:100%;background:transparent;border:1px dashed var(--border2);border-radius:var(--radius2);padding:7px;color:var(--text3);font-size:13px;cursor:pointer;transition:var(--transition)" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='var(--text3)'">+ Adicionar produto</button>
-</div>
-</div>
-<div class="card">
-<div class="card-title" style="font-size:14px">📝 Observações do Gestor</div>
-<div class="field" style="margin:0">
-<textarea id="obs-field" placeholder="Anotações que aparecem no ClickUp e na análise da IA..." style="min-height:70px;font-size:13px;line-height:1.5"></textarea>
-</div>
-</div>
 </div>
 <div id="card-error" style="display:none"></div>
 <div class="action-row">
@@ -800,15 +764,7 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <button class="btn-act green" onclick="copyRel()">📋 Copiar para WhatsApp</button>
 </div>
 </div>
-<div class="card">
-<div class="card-title">🗓️ Planejamento da Semana <span style="font-size:12px;font-weight:400;color:var(--text3)">(escreva manualmente)</span></div>
-<div class="field" style="margin:0">
-<textarea id="plan-field" placeholder="Descreva o que planejamos para a próxima semana... ex: Otimizar a campanha de mensagens do atacado, preparar campanhas para o lançamento..." style="min-height:90px;font-size:13px;line-height:1.6" oninput="buildRelatorio()"></textarea>
-</div>
-<div class="action-row" style="margin-top:10px">
-<button class="btn-act green" onclick="copyRel()">📋 Copiar relatório completo</button>
-</div>
-</div>
+
 <div class="card">
 <div class="card-title">🤖 Resumo IA <span style="font-size:12px;font-weight:400;color:var(--text3)">(estilo WhatsApp — gerado pela IA)</span></div>
 <div class="ai-box loading" id="ai-box">Gerando análise<span class="dots"></span></div>
@@ -1033,9 +989,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   }
   applyQuickPeriod();
-  document.getElementById('atk-toggle').addEventListener('change', function(){
-    document.getElementById('atk-section').style.display = this.checked ? 'block' : 'none';
-  });
 });
 
 const style = document.createElement('style');
@@ -2218,14 +2171,11 @@ function genDemoData(name, from, to) {
 function renderMetrics(d) {
   const box       = document.getElementById('metrics-display');
   const isMsgsTpl = selTemplate === 'mensagens';
-  const atkOn     = document.getElementById('atk-toggle').checked;
-  const msgsQty   = atkOn ? parseInt(document.getElementById('atk-msgs').value||'0') : d.msgs;
-  const atkInv    = atkOn ? parseFloat(document.getElementById('atk-inv').value||'0') : 0;
-  const costMsgVal= msgsQty > 0 ? (atkInv || d.spend) / msgsQty : null;
-  const custoMsg  = costMsgVal != null ? fmtBRL(costMsgVal) : '—';
+  const msgsQty   = d.msgs;
+  const custoMsg  = msgsQty > 0 ? fmtBRL(d.spend / msgsQty) : '—';
 
   // Contexto enriquecido passado ao catalog getValue
-  const ctx = { ...d, msgs: msgsQty, _costMsg: costMsgVal };
+  const ctx = { ...d, msgs: msgsQty, _costMsg: msgsQty > 0 ? d.spend / msgsQty : null };
 
   // Renderizar métricas a partir do catálogo
   const active = getActiveMetrics();
@@ -2412,70 +2362,47 @@ function sortCamps(col, forceAsc) {
     </tr>`).join('');
 }
 
-// ════════ ATACADO ════════
-function calcAtk() {
-  const msgs = parseInt(document.getElementById('atk-msgs').value)||0;
-  const inv  = parseFloat((document.getElementById('atk-inv').value||'0').replace(',','.'))||0;
-  document.getElementById('atk-cpm').value = msgs > 0 ? 'R$' + (inv/msgs).toFixed(2).replace('.',',') : '';
-}
-
-function addAtkRow() {
-  const row = document.createElement('div');
-  row.className='atk-row';
-  row.style.cssText='display:grid;grid-template-columns:1fr 1fr 70px auto;gap:8px;margin-bottom:7px;align-items:end';
-  row.innerHTML=`
-    <div class="field" style="margin:0"><label>Vendedora</label><input placeholder="Nome"/></div>
-    <div class="field" style="margin:0"><label>Mensagens</label><input type="number" placeholder="0"/></div>
-    <div class="field" style="margin:0"><label>Emoji</label><input placeholder="👗"/></div>
-    <button onclick="this.closest('.atk-row').remove()" style="height:36px;width:34px;background:var(--redbg);border:1px solid rgba(239,68,68,.2);color:var(--red);border-radius:var(--radius2);cursor:pointer;font-size:13px;align-self:end">✕</button>`;
-  document.getElementById('atk-items').appendChild(row);
-}
 
 // ════════ CLICKUP PREVIEW ════════
 function buildCUPreview() {
   if (!fetchedData) return;
   const d = fetchedData;
-  const fmtBRL = v => 'R$ '+parseFloat(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-  const atkOn = document.getElementById('atk-toggle').checked;
-  const msgsQty = atkOn ? parseInt(document.getElementById('atk-msgs').value||'0') : d.msgs;
-  const atkInvVal = atkOn ? parseFloat(document.getElementById('atk-inv').value||'0') : 0;
-  const custoMsg = msgsQty > 0 ? fmtBRL((atkInvVal || parseFloat(d.spend)) / msgsQty) : '—';
-  const obs = document.getElementById('obs-field').value.trim();
+  const msgsQty  = d.msgs;
+  const custoMsg = msgsQty > 0 ? fmtBRL(d.spend / msgsQty) : '—';
 
   let rows;
   if (selTemplate === 'mensagens') {
     rows = [
-      ['Investido', fmtBRL(d.spend)],
-      ['Alcance', (d.reach||d.impr).toLocaleString('pt-BR')],
+      ['Investido',       fmtBRL(d.spend)],
+      ['Alcance',         (d.reach||d.impr).toLocaleString('pt-BR')],
       ['Cliques no link', parseInt(d.clicks).toLocaleString('pt-BR')],
-      ['CTR', parseFloat(d.ctr).toFixed(2)+'%'],
-      ['CPM', 'R$ '+parseFloat(d.cpm).toFixed(2)],
-      ['Período', `${fmt2(d.from)} – ${fmt2(d.to)}`],
+      ['CTR',             parseFloat(d.ctr).toFixed(2)+'%'],
+      ['CPM',             fmtBRL(d.cpm)],
+      ['Período',         `${fmt2(d.from)} – ${fmt2(d.to)}`],
     ];
     if (msgsQty > 0) rows.push(['Mensagens Iniciadas', msgsQty.toLocaleString('pt-BR')]);
     if (msgsQty > 0) rows.push(['Custo por Msg', custoMsg]);
   } else {
     rows = [
-      ['Investido', fmtBRL(d.spend)],
-      ['Receita', d.revVal>0?fmtBRL(d.revVal)+(d.nsSource?' (Nuvemshop)':''):'—'],
-      ['ROI', d.roi+'x'],
-      ['Conversões', String(d.convQty)+(d.nsSource?' (Nuvemshop)':'')],
-      ['CPA', d.cpa!=='—'?'R$ '+parseFloat(d.cpa).toFixed(2):'—'],
-      ['Cliques', d.clicks.toLocaleString('pt-BR')],
-      ['Impressões', d.impr.toLocaleString('pt-BR')],
-      ['CTR', parseFloat(d.ctr).toFixed(2)+'%'],
-      ['Período', `${fmt2(d.from)} – ${fmt2(d.to)}`],
+      ['Investido',   fmtBRL(d.spend)],
+      ['Receita',     d.revVal>0 ? fmtBRL(d.revVal)+(d.nsSource?' (Nuvemshop)':'') : '—'],
+      ['ROI',         d.roi+'x'],
+      ['Conversões',  String(d.convQty)+(d.nsSource?' (Nuvemshop)':'')],
+      ['CPA',         d.cpa!=='—' ? fmtBRL(parseFloat(d.cpa)) : '—'],
+      ['Cliques',     d.clicks.toLocaleString('pt-BR')],
+      ['Impressões',  d.impr.toLocaleString('pt-BR')],
+      ['CTR',         parseFloat(d.ctr).toFixed(2)+'%'],
+      ['Período',     `${fmt2(d.from)} – ${fmt2(d.to)}`],
     ];
     if (d.nsSource && d.convQty > 0) rows.push(['Ticket Médio (NS)', fmtBRL(d.revVal / d.convQty)]);
     if (d.nsSource && (d.nsNewCustomers > 0 || d.nsReturningCustomers > 0)) {
-      rows.push(['Clientes Novos (NS)', d.nsNewCustomers]);
+      rows.push(['Clientes Novos (NS)',      d.nsNewCustomers]);
       rows.push(['Clientes Recorrentes (NS)', d.nsReturningCustomers]);
     }
     if (d.nsSource && d.nsProductsSold > 0) rows.push(['Produtos Vendidos (NS)', d.nsProductsSold.toLocaleString('pt-BR')]);
-    if (d.nsSource && d.nsCouponsUsed > 0) rows.push(['Cupons Usados (NS)', d.nsCouponsUsed]);
-    if (d.msgs > 0) rows.push(['Mensagens (Atacado)', d.msgs]);
+    if (d.nsSource && d.nsCouponsUsed  > 0) rows.push(['Cupons Usados (NS)', d.nsCouponsUsed]);
+    if (d.msgs > 0) rows.push(['Mensagens', d.msgs]);
   }
-  if (obs) rows.push(['Observações', obs]);
   document.getElementById('cu-rows').innerHTML = rows.map(([k,v])=>`
     <div class="cu-row"><span class="crk">${k}</span><span class="crv">${v}</span></div>`).join('');
 }
@@ -2491,10 +2418,8 @@ async function sendClickUp() {
     res.innerHTML='<div class="status-pill ok" style="font-size:13px;padding:8px 14px">✓ [DEMO] Enviado com sucesso!</div>';
     btn.disabled=false; btn.textContent='✓ Enviar ao ClickUp';
     const _d0 = fetchedData;
-    const _atkOn0 = document.getElementById('atk-toggle').checked;
-    const _msgs0 = _atkOn0 ? parseInt(document.getElementById('atk-msgs').value||'0') : _d0.msgs;
-    const _atkInv0 = _atkOn0 ? parseFloat(document.getElementById('atk-inv').value||'0') : 0;
-    const _custMsg0 = _msgs0>0 ? 'R$ '+((_atkInv0||parseFloat(_d0.spend))/_msgs0).toFixed(2) : '—';
+    const _msgs0 = _d0.msgs;
+    const _custMsg0 = _msgs0>0 ? fmtBRL(parseFloat(_d0.spend)/_msgs0) : '—';
     weekHistory.push({
       client: selClient.name,
       investido: 'R$ '+parseFloat(_d0.spend).toFixed(2),
@@ -2511,8 +2436,6 @@ async function sendClickUp() {
 
   try {
     const d = fetchedData;
-    const fmtBRL = v => 'R$ '+parseFloat(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-    const obs = document.getElementById('obs-field').value.trim();
 
     // Helper para fazer request ao ClickUp com tratamento de erro detalhado
     const cuFetch = async (url, options = {}) => {
@@ -2559,10 +2482,8 @@ async function sendClickUp() {
     let commentLines;
     if (selTemplate === 'mensagens') {
       // Template Mensagens / Tráfego IG
-      const atkEnabled = document.getElementById('atk-toggle').checked;
-      const msgs      = atkEnabled ? parseInt(document.getElementById('atk-msgs').value||'0') : d.msgs;
-      const atkInv    = atkEnabled ? parseFloat(document.getElementById('atk-inv').value||'0') : 0;
-      const custoMsg  = msgs > 0 ? fmtBRL((atkInv || parseFloat(d.spend)) / msgs) : '—';
+      const msgs     = d.msgs;
+      const custoMsg = msgs > 0 ? fmtBRL(parseFloat(d.spend) / msgs) : '—';
       commentLines = [
         `📊 *Relatório Meta Ads — ${selClient.name}*`,
         `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,
@@ -2575,7 +2496,6 @@ async function sendClickUp() {
         msgs > 0 ? `💲 Custo por Msg: ${custoMsg}` : null,
         ``,
         `💰 *Valor Geral Investido: ${fmtBRL(d.spend)}*`,
-        obs ? `\n📝 Obs: ${obs}` : null,
       ].filter(Boolean).join('\n');
     } else {
       // Template E-commerce (padrão)
@@ -2602,7 +2522,6 @@ async function sendClickUp() {
         (d.nsSource && (d.nsNewCustomers>0||d.nsReturningCustomers>0)) ? `👤 Clientes novos: ${d.nsNewCustomers} | Recorrentes: ${d.nsReturningCustomers}` : null,
         (d.nsSource && d.nsProductsSold>0) ? `📦 Produtos vendidos: ${d.nsProductsSold.toLocaleString('pt-BR')}` : null,
         (d.nsSource && d.nsCouponsUsed>0) ? `🏷️ Cupons usados: ${d.nsCouponsUsed}` : null,
-        obs ? `\n📝 Obs: ${obs}` : null,
       ].filter(Boolean).join('\n');
     }
 
@@ -2624,10 +2543,8 @@ async function sendClickUp() {
       res.innerHTML = `<div class="status-pill ok" style="font-size:13px;padding:8px 14px">✓ Nova tarefa criada para ${selClient.name}</div>`;
     }
 
-    const _atkOnR = document.getElementById('atk-toggle').checked;
-    const _msgsR = _atkOnR ? parseInt(document.getElementById('atk-msgs').value||'0') : d.msgs;
-    const _atkInvR = _atkOnR ? parseFloat(document.getElementById('atk-inv').value||'0') : 0;
-    const _custMsgR = _msgsR>0 ? fmtBRL((_atkInvR||parseFloat(d.spend))/_msgsR) : '—';
+    const _msgsR = d.msgs;
+    const _custMsgR = _msgsR>0 ? fmtBRL(parseFloat(d.spend)/_msgsR) : '—';
     weekHistory.push({
       client: selClient.name,
       investido: fmtBRL(d.spend),
@@ -2648,32 +2565,13 @@ async function sendClickUp() {
 // ════════ RELATÓRIO ════════
 function buildRelatorio() {
   if (!fetchedData) return;
-  const d = fetchedData;
-  const fmtBRL = v => 'R$ '+parseFloat(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-  const fmtN   = v => parseFloat(v).toLocaleString('pt-BR');
-  const obs    = document.getElementById('obs-field').value.trim();
-
-  const atkEnabled = document.getElementById('atk-toggle').checked;
-  let atkSection = '';
-  if (atkEnabled) {
-    const msgs  = document.getElementById('atk-msgs').value||'0';
-    const inv   = document.getElementById('atk-inv').value||'0';
-    const cpm   = document.getElementById('atk-cpm').value||'—';
-    const rows  = Array.from(document.querySelectorAll('#atk-items .atk-row')).map(r => {
-      const inputs = r.querySelectorAll('input');
-      const prod = inputs[0]?.value; const n = inputs[1]?.value; const em = inputs[2]?.value||'👗';
-      return prod && n ? `${em} *${prod}* — ${n} msgs` : null;
-    }).filter(Boolean);
-    atkSection = `\n📦 *Atacado*\nTotal mensagens: ${msgs} | Investido: R$ ${inv} | Custo/msg: ${cpm}\n${rows.join('\n')}`;
-  }
-
-  const plan = (document.getElementById('plan-field')?.value||'').trim();
+  const d    = fetchedData;
+  const fmtN = v => parseFloat(v).toLocaleString('pt-BR');
 
   let rel;
   if (selTemplate === 'mensagens') {
-    const msgs      = atkEnabled ? parseInt(document.getElementById('atk-msgs').value||'0') : d.msgs;
-    const atkInv    = atkEnabled ? parseFloat(document.getElementById('atk-inv').value||'0') : 0;
-    const custoMsg  = msgs > 0 ? fmtBRL((atkInv || parseFloat(d.spend)) / msgs) : '—';
+    const msgs     = d.msgs;
+    const custoMsg = msgs > 0 ? fmtBRL(d.spend / msgs) : '—';
     rel = [
       `📊 *Relatório Semanal — ${selClient.name}*`,
       `📅 ${fmt2(d.from)} a ${fmt2(d.to)}`,
@@ -2682,36 +2580,31 @@ function buildRelatorio() {
       `• Alcance: *${fmtN(d.reach||d.impr)}*`,
       `• Cliques no link: *${fmtN(d.clicks)}*`,
       `• CTR: *${parseFloat(d.ctr).toFixed(2)}%*`,
-      `• CPM: *R$ ${parseFloat(d.cpm).toFixed(2)}*`,
+      `• CPM: *${fmtBRL(d.cpm)}*`,
       msgs > 0 ? `• Mensagens Iniciadas: *${msgs.toLocaleString('pt-BR')}*` : null,
       msgs > 0 ? `• Custo por Msg: *${custoMsg}*` : null,
       ``,
       `💰 *Valor Geral Investido: ${fmtBRL(d.spend)}*`,
-      atkSection || null,
-      obs ? `\n📝 Observações:\n${obs}` : null,
-      plan ? `\n🗓️ O que planejamos para a semana:\n${plan}` : null,
       ``,
       `_Relatório gerado pela Central de Relatórios_`,
-    ].filter(v=>v!==null).join('\n');
+    ].filter(v => v !== null).join('\n');
   } else {
-    // Ticket médio Meta (baseado em pixel)
     const metaTicketRel = d.convQty > 0 && d.revVal > 0 ? fmtBRL(d.revVal / d.convQty) : null;
-    // Dados Nuvemshop
-    const nsTicketRel = d.nsSource && d.nsOrders > 0 ? fmtBRL(d.nsRevenue / d.nsOrders) : null;
+    const nsTicketRel   = d.nsSource && d.nsOrders > 0   ? fmtBRL(d.nsRevenue / d.nsOrders) : null;
     rel = [
       `📊 *Relatório Semanal — ${selClient.name}*`,
       `📅 ${fmt2(d.from)} a ${fmt2(d.to)}`,
       ``,
       `💰 Investido: *${fmtBRL(d.spend)}*`,
-      d.revVal > 0 ? `💵 Receita gerada (anúncios): *${fmtBRL(d.revVal)}*` : null,
-      d.roi !== '—' ? `📈 ROI: *${d.roi}x*` : null,
+      d.revVal > 0    ? `💵 Receita gerada (anúncios): *${fmtBRL(d.revVal)}*` : null,
+      d.roi !== '—'   ? `📈 ROI: *${d.roi}x*` : null,
       `🛒 Vendas/Conversões (anúncios): *${d.convQty}*`,
-      metaTicketRel ? `🎯 Ticket Médio (anúncios): *${metaTicketRel}*` : null,
-      d.cpa !== '—' ? `💲 Custo por conversão: *R$ ${parseFloat(d.cpa).toFixed(2)}*` : null,
-      d.nsSource ? `` : null,
-      d.nsSource ? `🏪 *Vendas totais do Site (Nuvemshop)*` : null,
-      d.nsSource ? `🛒 Pedidos: *${d.nsOrders}* — Receita: *${fmtBRL(d.nsRevenue)}*` : null,
-      nsTicketRel ? `🎯 Ticket Médio: *${nsTicketRel}*` : null,
+      metaTicketRel   ? `🎯 Ticket Médio (anúncios): *${metaTicketRel}*` : null,
+      d.cpa !== '—'   ? `💲 Custo por conversão: *${fmtBRL(parseFloat(d.cpa))}*` : null,
+      d.nsSource      ? `` : null,
+      d.nsSource      ? `🏪 *Vendas totais do Site (Nuvemshop)*` : null,
+      d.nsSource      ? `🛒 Pedidos: *${d.nsOrders}* — Receita: *${fmtBRL(d.nsRevenue)}*` : null,
+      nsTicketRel     ? `🎯 Ticket Médio: *${nsTicketRel}*` : null,
       (d.nsSource && (d.nsNewCustomers>0||d.nsReturningCustomers>0)) ? `👤 Clientes novos: *${d.nsNewCustomers}* | Recorrentes: *${d.nsReturningCustomers}*` : null,
       (d.nsSource && d.nsProductsSold>0) ? `📦 Produtos vendidos: *${d.nsProductsSold.toLocaleString('pt-BR')}*` : null,
       ``,
@@ -2719,15 +2612,12 @@ function buildRelatorio() {
       `• Cliques: ${fmtN(d.clicks)}`,
       `• Impressões: ${fmtN(d.impr)}`,
       `• CTR: ${parseFloat(d.ctr).toFixed(2)}%`,
-      `• CPM: R$ ${parseFloat(d.cpm).toFixed(2)}`,
-      d.msgs > 0 ? `• Mensagens iniciadas: ${d.msgs}` : null,
+      `• CPM: ${fmtBRL(d.cpm)}`,
+      d.msgs > 0  ? `• Mensagens iniciadas: ${d.msgs}` : null,
       d.leads > 0 ? `• Leads: ${d.leads}` : null,
-      atkSection || null,
-      obs ? `\n📝 Observações:\n${obs}` : null,
-      plan ? `\n🗓️ O que planejamos para a semana:\n${plan}` : null,
       ``,
       `_Relatório gerado pela Central de Relatórios_`,
-    ].filter(v=>v!==null).join('\n');
+    ].filter(v => v !== null).join('\n');
   }
 
   document.getElementById('rel-preview').textContent = rel;
@@ -2747,14 +2637,10 @@ async function genAnalysis() {
     return;
   }
 
-  const d = fetchedData;
-  const obs = document.getElementById('obs-field').value.trim();
-  const plan = (document.getElementById('plan-field')?.value||'').trim();
+  const d      = fetchedData;
   const isMsgs = selTemplate === 'mensagens';
-  const atkOn = document.getElementById('atk-toggle').checked;
-  const msgsQty = isMsgs ? (atkOn ? parseInt(document.getElementById('atk-msgs').value||'0') : d.msgs) : d.msgs;
-  const atkInvVal = atkOn ? parseFloat(document.getElementById('atk-inv').value||'0') : 0;
-  const custoMsgAI = msgsQty > 0 ? 'R$ ' + ((atkInvVal || parseFloat(d.spend)) / msgsQty).toFixed(2) : null;
+  const msgsQty    = d.msgs;
+  const custoMsgAI = msgsQty > 0 ? 'R$ ' + (d.spend / msgsQty).toFixed(2) : null;
 
   const dadosAI = isMsgs
     ? `Alcance: ${(d.reach||d.impr).toLocaleString('pt-BR')}
@@ -2796,14 +2682,11 @@ REGRAS OBRIGATÓRIAS:
 - Incorpore os dados reais naturalmente no texto (não liste, use na narrativa)
 - Comece com "Resumo da semana:" e inclua dados reais
 - Termine com uma pergunta ou gancho que gere resposta do cliente
-- Se houver planejamento informado, finalize com "🗓️ O que planejamos para a semana:" seguido do planejamento em prosa curta
 ${regrasExtra}
 
 Dados da semana:
 Período: ${fmt2(d.from)} a ${fmt2(d.to)}
 ${dadosAI}
-${obs ? 'Contexto extra do gestor: '+obs : ''}
-${plan ? 'Planejamento informado pelo gestor para a próxima semana: '+plan : ''}
 
 Escreva APENAS o texto final, sem introdução ou explicação.`;
 
@@ -2836,10 +2719,6 @@ function copyAI() {
 // ════════ NEXT CLIENT ════════
 function nextClient() {
   selClient=null; fetchedData=null;
-  document.getElementById('obs-field').value='';
-  if (document.getElementById('plan-field')) document.getElementById('plan-field').value='';
-  document.getElementById('atk-toggle').checked=false;
-  document.getElementById('atk-section').style.display='none';
   renderHistory();
   goStep(0);
 }

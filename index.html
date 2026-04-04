@@ -2476,7 +2476,11 @@ async function sendClickUp() {
 
     // 3. Busca a tarefa que contém o nome do cliente
     const clientLower = selClient.name.toLowerCase().trim();
-    const task = allTasks.find(t => t.name.toLowerCase().includes(clientLower));
+    const clientWords = clientLower.split(/\s+/).filter(w => w.length > 2);
+    const task = allTasks.find(t => {
+      const tl = t.name.toLowerCase();
+      return tl.includes(clientLower) || clientWords.some(w => tl.includes(w));
+    });
 
     // Monta comentário conforme template selecionado
     let commentLines;

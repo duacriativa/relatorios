@@ -1900,7 +1900,7 @@ async function fetchData() {
     document.getElementById('loading-msg').innerHTML = 'Carregando campanhas do Meta<span class="dots"></span>';
 
     const accountId = selClient.accountId || selClient.account_id;
-    const campUrl = `https://graph.facebook.com/v18.0/${accountId}/campaigns?fields=name,status,objective&limit=200&access_token=${token}`;
+    const campUrl = `https://graph.facebook.com/v18.0/${accountId}/campaigns?fields=name,status,effective_status,objective&limit=200&access_token=${token}`;
     const campRes  = await fetch(campUrl);
     const campData = await campRes.json();
     if (campData.error) throw new Error(campData.error.message);
@@ -1939,7 +1939,7 @@ function objLabel(obj) {
 
 function matchCampFilter(camp, filter) {
   if (filter === 'all') return true;
-  if (filter === 'active') return camp.status === 'ACTIVE';
+  if (filter === 'active') return camp.effective_status === 'ACTIVE';
   const obj = camp.objective || '';
   if (filter === 'messages') return obj.includes('MESSAGE');
   if (filter === 'sales')    return obj.includes('SALES') || obj.includes('CONVERSION');
@@ -1968,9 +1968,9 @@ function renderCampaignList() {
 
   list.innerHTML = visible.map(camp => {
     const isSel     = selectedCampaignIds.includes(camp.id);
-    const isActive  = camp.status === 'ACTIVE';
+    const isActive  = camp.effective_status === 'ACTIVE';
     const statusCls = isActive ? 'active' : 'paused';
-    const statusLbl = isActive ? 'ATIVA' : (camp.status || 'PAUSADA');
+    const statusLbl = isActive ? 'ATIVA' : 'PAUSADA';
     return `<div class="camp-item ${isSel ? 'selected' : ''}" onclick="toggleCampaign('${camp.id}')">
       <input type="checkbox" ${isSel ? 'checked' : ''} onclick="event.stopPropagation();toggleCampaign('${camp.id}')"/>
       <div style="flex:1;min-width:0">
@@ -2011,7 +2011,7 @@ function toggleAllCampaigns(select) {
 }
 
 function selectActiveCampaigns() {
-  allCampaigns.filter(c => c.status === 'ACTIVE').forEach(c => {
+  allCampaigns.filter(c => c.effective_status === 'ACTIVE').forEach(c => {
     if (!selectedCampaignIds.includes(c.id)) selectedCampaignIds.push(c.id);
   });
   renderCampaignList();

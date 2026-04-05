@@ -1121,24 +1121,33 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 
 // ════════ SUPABASE HELPER ════════
 async function sbFetch(path, options = {}) {
-  const res = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
-    ...options,
-    headers: {
-      'apikey': SUPA_KEY,
-      'Authorization': `Bearer ${SUPA_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': options.prefer || '',
-      ...options.headers,
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 12000);
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
+      ...options,
+      signal: ctrl.signal,
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': `Bearer ${SUPA_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': options.prefer || '',
+        ...options.headers,
+      }
+    });
+    clearTimeout(timer);
+    const text = await res.text();
+    if (!res.ok) {
+      let msg = 'Erro no Supabase (status ' + res.status + ')';
+      try { msg = JSON.parse(text)?.message || text || msg; } catch(_) {}
+      throw new Error(msg);
     }
-  });
-  const text = await res.text();
-  if (!res.ok) {
-    let msg = 'Erro no Supabase (status ' + res.status + ')';
-    try { msg = JSON.parse(text)?.message || text || msg; } catch(_) {}
-    throw new Error(msg);
+    if (!text || res.status === 204) return null;
+    try { return JSON.parse(text); } catch(_) { return null; }
+  } catch(e) {
+    clearTimeout(timer);
+    throw e;
   }
-  if (!text || res.status === 204) return null;
-  try { return JSON.parse(text); } catch(_) { return null; }
 }
 
 // ════════ CARREGAR CONFIG DO SUPABASE ════════
@@ -1775,10 +1784,22 @@ function launch() {
   renderClients();
   renderHistory();
   renderClientSwitcher();
-  renderDashClientTable();   // clientes — imediato, sem API
+  renderDashClientTable();      // clientes — imediato, sem API
   renderDashMetricsFromCache(); // mostra cache se tiver, senão "—"
-  loadClientStatuses();      // ClickUp status em background
+  loadClientStatuses();         // ClickUp status em background
   if (!cfg.isDemo) checkAllTokens();
+
+  // Se clientes ainda não carregaram (timeout aconteceu), tentar novamente em background
+  if (!Array.isArray(clients) || !clients.length) {
+    loadClients().then(() => {
+      if (Array.isArray(clients) && clients.length) {
+        renderClients();
+        renderClientSwitcher();
+        renderDashClientTable();
+        if (!cfg.isDemo) checkAllTokens();
+      }
+    }).catch(() => {});
+  }
 }
 
 // ════════ DASHBOARD ════════

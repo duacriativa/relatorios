@@ -1169,7 +1169,8 @@ async function saveConfigToSupabase(clickup, listId, openaiKey, metaToken) {
 
 async function loadClients() {
   try {
-    clients = await sbFetch('clientes?select=*&order=name.asc');
+    const result = await sbFetch('clientes?select=*&order=name.asc');
+    clients = Array.isArray(result) ? result : [];
   } catch(e) {
     console.error('Erro ao carregar clientes:', e);
     clients = [];
@@ -1274,15 +1275,20 @@ async function doLogin() {
   sessionStorage.setItem('auth', '1');
   document.getElementById('login-screen').style.display = 'none';
 
-  // Tenta carregar config do Supabase (funciona em qualquer computador)
-  const hasConfig = await loadConfig();
+  const withTimeout = (promise, ms) => Promise.race([
+    promise,
+    new Promise(resolve => setTimeout(() => resolve(null), ms))
+  ]);
+
+  let hasConfig = false;
+  try { hasConfig = await withTimeout(loadConfig(), 8000); } catch(e) {}
+  try { await withTimeout(loadClients(), 8000); } catch(e) { clients = clients || []; }
 
   if (hasConfig && cfg.clickup && cfg.listId) {
-    // Config encontrada no Supabase — entra direto
-    await loadClients();
+    launch();
+  } else if (Array.isArray(clients) && clients.length) {
     launch();
   } else {
-    // Primeira vez ou config não encontrada — mostra setup
     btn.textContent = 'Entrar →';
     btn.disabled = false;
     document.getElementById('setup-screen').classList.add('open');
@@ -1297,9 +1303,21 @@ function doLogout() {
 window.addEventListener('DOMContentLoaded', async () => {
   if (sessionStorage.getItem('auth') === '1') {
     document.getElementById('login-screen').style.display = 'none';
-    const hasConfig = await loadConfig();
+
+    // Timeout geral de 8s para não ficar preso eternamente
+    const withTimeout = (promise, ms) => Promise.race([
+      promise,
+      new Promise(resolve => setTimeout(() => resolve(null), ms))
+    ]);
+
+    let hasConfig = false;
+    try { hasConfig = await withTimeout(loadConfig(), 8000); } catch(e) {}
+    try { await withTimeout(loadClients(), 8000); } catch(e) { clients = clients || []; }
+
     if (hasConfig && cfg.clickup && cfg.listId) {
-      await loadClients();
+      launch();
+    } else if (Array.isArray(clients) && clients.length) {
+      // Tem clientes mas config incompleta — lança mesmo assim
       launch();
     } else {
       document.getElementById('setup-screen').classList.add('open');
@@ -1857,7 +1875,7 @@ let dashTaskMap = {}; // { clientIdx: { id, statusCls, statusLabel } }
 function renderDashClientTable() {
   const tbody = document.getElementById('dash-client-tbody');
   if (!tbody) return;
-  if (!clients.length) {
+  if (!Array.isArray(clients) || !clients.length) {
     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">Nenhum cliente cadastrado.</td></tr>`;
     return;
   }
@@ -1930,7 +1948,7 @@ async function loadClientStatuses() {
   const pending = document.getElementById('dash-pending-txt');
   const pendingNum = document.getElementById('dm-pending');
   if (!cfg.clickup || !cfg.listId) {
-    if (pending) pending.textContent = 'Configure o ClickUp nas configurações para ver os status.';
+    if (pending) pending.textContent = '';
     if (pendingNum) pendingNum.textContent = '—';
     clients.forEach((_,i) => {
       const el = document.getElementById(`dstatus-${i}`);
@@ -1939,8 +1957,11 @@ async function loadClientStatuses() {
     return;
   }
   try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10000);
     const res = await fetch(`https://api.clickup.com/api/v2/list/${cfg.listId}/task?page=0&limit=100`,
-      { headers: { Authorization: cfg.clickup } });
+      { headers: { Authorization: cfg.clickup }, signal: ctrl.signal });
+    clearTimeout(timer);
     const json = await res.json();
     const tasks = json.tasks || [];
     let pendCount = 0;

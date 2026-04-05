@@ -838,9 +838,10 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
   </div>
 
   <!-- Período das métricas (fixo: mês anterior) -->
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:22px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px;flex-wrap:wrap;">
     <span style="font-size:13px;color:var(--text3);font-weight:600;">Período das métricas:</span>
     <span style="font-size:13px;color:var(--accent2);font-weight:700;" id="dash-period-label"></span>
+    <button id="btn-dash-refresh" onclick="refreshDashMetrics()" style="background:transparent;border:1px solid var(--border);border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700;color:var(--text3);cursor:pointer;transition:var(--transition);" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">↺ Atualizar dados</button>
   </div>
 
   <!-- Metric cards row 1 -->
@@ -1756,10 +1757,9 @@ function launch() {
   renderClients();
   renderHistory();
   renderClientSwitcher();
-  // Clientes na tabela do dashboard — IMEDIATO, antes de qualquer API
-  renderDashClientTable();
-  // Cards de métricas e status em background
-  setTimeout(() => loadDashboard(), 0);
+  renderDashClientTable();   // clientes — imediato, sem API
+  renderDashMetricsFromCache(); // mostra cache se tiver, senão "—"
+  loadClientStatuses();      // ClickUp status em background
   if (!cfg.isDemo) checkAllTokens();
 }
 
@@ -1771,47 +1771,40 @@ function getWeekKey() {
   return `${now.getFullYear()}-W${String(week).padStart(2,'0')}`;
 }
 
-function loadDashboard() {
-  setGreeting();
-
-  // Mês anterior fixo
+function getDashPeriod() {
   const now = new Date();
-  let prevMonth = now.getMonth(); // 0-based → mês atual = mês anterior em 1-based
+  let prevMonth = now.getMonth(); // 0-based → já é o mês anterior em 1-based
   let prevYear  = now.getFullYear();
   if (prevMonth === 0) { prevMonth = 12; prevYear--; }
   const lastDay = new Date(prevYear, prevMonth, 0).getDate();
   const since = `${prevYear}-${String(prevMonth).padStart(2,'0')}-01`;
   const until = `${prevYear}-${String(prevMonth).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
   const monthNames = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  return { prevMonth, prevYear, since, until, label: `${monthNames[prevMonth]} ${prevYear}` };
+}
+
+function renderDashMetricsFromCache() {
+  const { prevYear, prevMonth, label } = getDashPeriod();
   const lbl = document.getElementById('dash-period-label');
-  if (lbl) lbl.textContent = `${monthNames[prevMonth]} ${prevYear}`;
-
-  // 1. Mostra clientes IMEDIATAMENTE (não depende de API)
-  renderDashClientTable();
-
-  // 2. Tenta cache primeiro — mostra IMEDIATAMENTE se existir
+  if (lbl) lbl.textContent = label;
   const cacheKey = `metricana_dash_${prevYear}_${prevMonth}`;
   const cached = localStorage.getItem(cacheKey);
   if (cached) {
     try {
       const m = JSON.parse(cached);
-      if (m && m.spend > 0) {
-        renderDashMetrics(m);
-        // Mesmo com cache, busca ClickUp em background (leve)
-        loadClientStatuses();
-        return;
-      }
+      if (m) { renderDashMetrics(m); return; }
     } catch(e) {}
   }
+  renderDashMetrics(null); // mostra "—" sem travar
+}
 
-  // 3. Sem cache: mostra "—" imediatamente e busca em background
-  renderDashMetrics(null);
-  loadClientStatuses();
-
-  if (!clients.length || cfg.isDemo) return;
-
-  // Busca em background — não bloqueia UI
-  fetchDashMetrics(since, until, cacheKey);
+async function refreshDashMetrics() {
+  const btn = document.getElementById('btn-dash-refresh');
+  if (btn) { btn.disabled = true; btn.textContent = 'Atualizando...'; }
+  const { prevYear, prevMonth, since, until } = getDashPeriod();
+  const cacheKey = `metricana_dash_${prevYear}_${prevMonth}`;
+  await fetchDashMetrics(since, until, cacheKey);
+  if (btn) { btn.disabled = false; btn.textContent = '↺ Atualizar dados'; }
 }
 
 async function fetchDashMetrics(since, until, cacheKey) {

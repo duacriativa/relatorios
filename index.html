@@ -177,8 +177,8 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 #app{display:none;}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:58px;background:var(--topbar-bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;transition:var(--transition);}
 .topbar-left{display:flex;align-items:center;gap:12px;}
-.topbar-brand{font-family:'Bricolage Grotesque',sans-serif;font-size:17px;font-weight:800;color:var(--accent);letter-spacing:-.01em;display:flex;align-items:center;gap:7px;}
-.topbar-brand::before{content:'▲';font-size:13px;opacity:.8;}
+.topbar-brand{display:flex;align-items:center;gap:7px;}
+.topbar-brand img{height:32px;width:auto;object-fit:contain;}
 .week-badge{background:var(--accentbg);border:1px solid rgba(99,102,241,.2);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--accent2);letter-spacing:.02em;}
 .topbar-right{display:flex;align-items:center;gap:6px;}
 .topbar-center{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;pointer-events:none;}
@@ -513,7 +513,7 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
     </div>
     <div class="login-card">
       <!-- Ícone / logo -->
-      <div class="login-icon">M</div>
+      <img src="https://drive.google.com/uc?export=view&id=1MVeX6fLa9V-GJfgrPHM_F4_CvF_EbsU2" alt="Metricana" style="height:48px;width:auto;margin:0 auto 12px;display:block;filter:brightness(0) invert(1)"/>
       <div class="login-title">Bem-vindo de volta.</div>
       <div class="login-sub">Metricana · Acesso restrito à equipe</div>
 
@@ -537,7 +537,7 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <!-- ══════════ SETUP (apenas admin, nunca aparece para equipe) ══════════ -->
 <div id="setup-screen">
 <div class="setup-wrap">
-<div class="setup-logo">▲ Metricana</div>
+<div class="setup-logo"><img src="https://drive.google.com/uc?export=view&id=1MVeX6fLa9V-GJfgrPHM_F4_CvF_EbsU2" alt="Metricana" style="height:36px;width:auto;filter:brightness(0) invert(1)"/></div>
 <div class="setup-title">Configuração inicial — Metricana</div>
 <div class="setup-sub">Conecte o ClickUp. Feito uma vez, fica salvo para toda a equipe.</div>
 <div class="setup-box">
@@ -612,7 +612,9 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div id="app">
 <div class="topbar">
 <div class="topbar-left">
-<div class="topbar-brand" onclick="goStep(0)" style="cursor:pointer" title="Voltar ao início">Metricana</div>
+<div class="topbar-brand" onclick="goStep(0)" style="cursor:pointer" title="Voltar ao início">
+  <img src="https://drive.google.com/uc?export=view&id=1MVeX6fLa9V-GJfgrPHM_F4_CvF_EbsU2" alt="Metricana"/>
+</div>
 <div class="week-badge" id="week-label">—</div>
 </div>
 <div class="topbar-center" id="topbar-client-name" style="display:none"></div>

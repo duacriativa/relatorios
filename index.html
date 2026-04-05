@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" data-theme="light">
+<html lang="pt-BR" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -9,14 +9,16 @@
 <style>
 /* ══════════ TOKENS ══════════ */
 [data-theme="dark"] {
---bg:#09090b; --s1:#111113; --s2:#18181c; --s3:#222228;
---border:#2e2e38; --border2:#3a3a48;
---text:#f1f1f3; --text2:#a0a0b0; --text3:#5a5a70;
---card-shadow:0 2px 12px rgba(0,0,0,.4);
---topbar-bg:#111113;
---input-bg:#18181c;
---chip-bg:#18181c;
---modal-bg:#111113;
+--bg:#0d0b18; --s1:#13111f; --s2:#1a1730; --s3:#221f3a;
+--border:#2d2850; --border2:#3d3870;
+--text:#f0eeff; --text2:#a09cc0; --text3:#605c80;
+--card-shadow:0 2px 16px rgba(0,0,0,.5);
+--topbar-bg:#13111f;
+--input-bg:#1a1730;
+--chip-bg:#1a1730;
+--modal-bg:#13111f;
+--sidebar-bg:#13111f;
+--sidebar-width:220px;
 }
 [data-theme="light"] {
 --bg:#f5f0e8; --s1:#ffffff; --s2:#faf7f2; --s3:#f0ebe0;
@@ -27,6 +29,8 @@
 --input-bg:#faf7f2;
 --chip-bg:#f5f0e8;
 --modal-bg:#ffffff;
+--sidebar-bg:#ffffff;
+--sidebar-width:220px;
 }
 :root {
 --accent:#7c3aed; --accent2:#9333ea; --accentbg:rgba(124,58,237,.1);
@@ -173,33 +177,104 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 .badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.04em;}
 .badge.auto{background:var(--yellowbg);border:1px solid rgba(245,158,11,.2);color:var(--yellow);}
 
-/* ══════════ APP ══════════ */
-#app{display:none;}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:58px;background:var(--topbar-bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;transition:var(--transition);}
+/* ══════════ APP LAYOUT ══════════ */
+#app{display:none;min-height:100vh;background:var(--bg);}
+.app-layout{display:flex;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{
+  width:var(--sidebar-width);
+  min-height:100vh;
+  background:var(--sidebar-bg);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  position:fixed;left:0;top:0;bottom:0;
+  z-index:200;
+  transition:width .25s cubic-bezier(.4,0,.2,1);
+  overflow:hidden;
+}
+.sidebar.collapsed{width:64px;}
+.sidebar-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 14px;
+  border-bottom:1px solid var(--border);
+  min-height:64px;flex-shrink:0;
+}
+.sidebar-logo{height:28px;width:auto;object-fit:contain;flex-shrink:0;transition:opacity .2s;}
+.sidebar.collapsed .sidebar-logo{opacity:0;width:0;}
+.sidebar-toggle{
+  background:none;border:none;cursor:pointer;
+  color:var(--text3);padding:4px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  transition:color .15s,background .15s;flex-shrink:0;
+  font-size:18px;line-height:1;
+}
+.sidebar-toggle:hover{color:var(--text);background:var(--s3);}
+.sidebar.collapsed .sidebar-header{justify-content:center;padding:16px 8px;}
+
+.sidebar-nav{flex:1;padding:12px 8px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+.sidebar-item{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 12px;border-radius:10px;
+  cursor:pointer;transition:background .15s,color .15s;
+  color:var(--text3);font-size:13px;font-weight:600;
+  white-space:nowrap;overflow:hidden;
+  font-family:'Bricolage Grotesque',sans-serif;
+  border:none;background:none;width:100%;text-align:left;
+}
+.sidebar-item:hover{background:var(--s3);color:var(--text);}
+.sidebar-item.active{background:var(--accentbg);color:var(--accent2);}
+.sidebar-item.active .si-icon{color:var(--accent);}
+.sidebar-item .si-icon{font-size:18px;flex-shrink:0;width:24px;text-align:center;}
+.sidebar-item .si-label{transition:opacity .2s;}
+.sidebar.collapsed .si-label{opacity:0;width:0;overflow:hidden;}
+.sidebar-item .si-num{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--s3);border:1.5px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:800;flex-shrink:0;
+  font-family:'Bricolage Grotesque',sans-serif;
+  transition:background .15s,border-color .15s;
+}
+.sidebar-item.active .si-num{background:var(--accent);border-color:var(--accent);color:#fff;}
+.sidebar-item.done .si-num{background:var(--greenbg);border-color:var(--green);color:var(--green);}
+.sidebar.collapsed .si-num{margin-left:auto;margin-right:auto;}
+
+.sidebar-divider{border:none;border-top:1px solid var(--border);margin:8px 0;flex-shrink:0;}
+.sidebar-bottom{padding:8px;display:flex;flex-direction:column;gap:2px;flex-shrink:0;}
+.sidebar-bottom .sidebar-item{font-size:12px;}
+
+/* MAIN CONTENT */
+.main-content{
+  margin-left:var(--sidebar-width);
+  flex:1;min-width:0;
+  transition:margin-left .25s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;
+}
+.sidebar.collapsed ~ .main-content{margin-left:64px;}
+
+/* TOPBAR dentro do main */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;height:58px;
+  background:var(--topbar-bg);
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+  transition:var(--transition);
+  flex-shrink:0;
+}
 .topbar-left{display:flex;align-items:center;gap:12px;}
-.topbar-brand{display:flex;align-items:center;gap:7px;}
-.topbar-brand img{height:32px;width:auto;object-fit:contain;}
-.week-badge{background:var(--accentbg);border:1px solid rgba(99,102,241,.2);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--accent2);letter-spacing:.02em;}
-.topbar-right{display:flex;align-items:center;gap:6px;}
-.topbar-center{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;pointer-events:none;}
+.topbar-center{display:flex;align-items:center;gap:8px;}
 .topbar-client-badge{font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:7px;}
 .topbar-client-badge .tca{width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;}
+.topbar-right{display:flex;align-items:center;gap:6px;}
+.week-badge{background:var(--accentbg);border:1px solid rgba(124,58,237,.2);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--accent2);letter-spacing:.02em;}
 .btn-top{background:transparent;border:1px solid transparent;border-radius:var(--radius2);padding:6px 12px;color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);white-space:nowrap;}
 .btn-top:hover{background:var(--s2);border-color:var(--border);color:var(--text);}
 .btn-top.danger:hover{color:var(--red);background:var(--redbg);border-color:rgba(239,68,68,.2);}
 
-/* Tabs — stepper pill (Lovable style) */
-.tabs{display:flex;align-items:center;justify-content:center;background:var(--topbar-bg);border-bottom:1px solid var(--border);padding:0 24px;overflow-x:auto;transition:var(--transition);gap:0;}
-.tab{display:flex;align-items:center;gap:8px;padding:12px 22px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:var(--transition);white-space:nowrap;position:relative;}
-.tab:not(:last-child)::after{content:'';position:absolute;right:-16px;top:50%;margin-top:-6px;width:32px;height:1px;background:var(--border);z-index:1;pointer-events:none;}
-.tab .tnum{width:26px;height:26px;border-radius:50%;background:var(--s3);border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;transition:var(--transition);flex-shrink:0;font-family:'Bricolage Grotesque',sans-serif;}
-.tab.active{color:var(--text);border-bottom-color:var(--accent);}
-.tab.active .tnum{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 4px var(--accentbg);}
-.tab.done{color:var(--green);}
-.tab.done .tnum{background:var(--greenbg);border-color:var(--green);color:var(--green);}
-
 /* Panels */
-.panel{display:none;padding:24px;max-width:960px;margin:0 auto;animation:fadeUp .2s ease;}
+.panel{display:none;padding:24px;max-width:960px;margin:0 auto;width:100%;animation:fadeUp .2s ease;}
 .panel.active{display:block;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .action-row{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;align-items:center;}
@@ -610,11 +685,57 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 
 <!-- ══════════ APP ══════════ -->
 <div id="app">
+<div class="app-layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <img src="https://i.imgur.com/drcW25i.png" alt="Metricana" class="sidebar-logo"/>
+    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Retrair menu">☰</button>
+  </div>
+  <nav class="sidebar-nav">
+    <button class="sidebar-item active" id="tab0" onclick="goStep(0)">
+      <span class="si-icon">🏠</span>
+      <span class="si-label">Clientes</span>
+      <span class="si-num">1</span>
+    </button>
+    <button class="sidebar-item" id="tab1" onclick="goStep(1)">
+      <span class="si-icon">📊</span>
+      <span class="si-label">Buscar Dados</span>
+      <span class="si-num">2</span>
+    </button>
+    <button class="sidebar-item" id="tab2" onclick="goStep(2)">
+      <span class="si-icon">🔗</span>
+      <span class="si-label">ClickUp</span>
+      <span class="si-num">3</span>
+    </button>
+    <button class="sidebar-item" id="tab3" onclick="goStep(3)">
+      <span class="si-icon">📤</span>
+      <span class="si-label">Relatório + IA</span>
+      <span class="si-num">4</span>
+    </button>
+  </nav>
+  <hr class="sidebar-divider"/>
+  <div class="sidebar-bottom">
+    <button class="sidebar-item" onclick="openConfig()">
+      <span class="si-icon">⚙️</span>
+      <span class="si-label">Config</span>
+    </button>
+    <button class="sidebar-item" onclick="openClientManager()">
+      <span class="si-icon">👤</span>
+      <span class="si-label">Clientes</span>
+    </button>
+    <button class="sidebar-item" onclick="doLogout()">
+      <span class="si-icon">🚪</span>
+      <span class="si-label">Sair</span>
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main-content" id="main-content">
 <div class="topbar">
 <div class="topbar-left">
-<div class="topbar-brand" onclick="goStep(0)" style="cursor:pointer" title="Voltar ao início">
-  <img src="https://i.imgur.com/drcW25i.png" alt="Metricana"/>
-</div>
 <div class="week-badge" id="week-label">—</div>
 </div>
 <div class="topbar-center" id="topbar-client-name" style="display:none"></div>
@@ -624,16 +745,7 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div class="theme-track"></div>
 <div class="theme-thumb"><span class="theme-icon-moon">🌙</span><span class="theme-icon-sun">☀️</span></div>
 </label>
-<button class="btn-top" onclick="openConfig()">⚙️ Config</button>
-<button class="btn-top" onclick="openClientManager()">👤 Clientes</button>
-<button class="btn-top danger" onclick="doLogout()">Sair</button>
 </div>
-</div>
-<div class="tabs">
-<div class="tab active" id="tab0" onclick="goStep(0)"><div class="tnum">1</div>Cliente</div>
-<div class="tab" id="tab1" onclick="goStep(1)"><div class="tnum">2</div>Buscar Dados</div>
-<div class="tab" id="tab2" onclick="goStep(2)"><div class="tnum">3</div>ClickUp</div>
-<div class="tab" id="tab3" onclick="goStep(3)"><div class="tnum">4</div>Relatório + IA</div>
 </div>
 
 <!-- STEP 0 -->
@@ -828,8 +940,10 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div class="action-row">
 <button class="btn-act accent" onclick="nextClient()">▶ Próximo cliente</button>
 </div>
-</div>
-</div>
+</div> <!-- fim panel3 -->
+  </div> <!-- fim main-content -->
+</div> <!-- fim app-layout -->
+</div> <!-- fim #app -->
 
 <!-- ══════════ METRIC PICKER MODAL ══════════ -->
 <div id="metric-picker-bg" onclick="if(event.target===this)closeMetricPicker()">
@@ -979,7 +1093,7 @@ function toggleTheme(checkbox) {
   localStorage.setItem('theme', isDark ? 'dark' : 'light');
 }
 (function(){
-  const saved = localStorage.getItem('theme') || 'light';
+  const saved = localStorage.getItem('theme') || 'dark';
   document.documentElement.setAttribute('data-theme', saved);
   window.addEventListener('DOMContentLoaded', () => {
     const isLight = saved === 'light';
@@ -1496,6 +1610,16 @@ function launch() {
   if (!cfg.isDemo) checkAllTokens();
 }
 
+// ════════ SIDEBAR ════════
+let sidebarCollapsed = false;
+function toggleSidebar() {
+  sidebarCollapsed = !sidebarCollapsed;
+  const sidebar = document.getElementById('sidebar');
+  const main = document.getElementById('main-content');
+  sidebar.classList.toggle('collapsed', sidebarCollapsed);
+  if (main) main.style.marginLeft = sidebarCollapsed ? '64px' : 'var(--sidebar-width)';
+}
+
 // ════════ STEPS ════════
 let step = 0;
 function goStep(n) {
@@ -1505,10 +1629,10 @@ function goStep(n) {
   if (n === 3) { buildRelatorio(); setTimeout(genAnalysis, 300); }
   if (n === 0) renderHistory();
   document.querySelectorAll('.panel').forEach((p,i) => p.classList.toggle('active', i===n));
-  document.querySelectorAll('.tab').forEach((t,i) => {
+  document.querySelectorAll('.sidebar-item[id^="tab"]').forEach((t,i) => {
     t.classList.remove('active','done');
-    if (i===n) t.classList.add('active');
-    else if (i<n) t.classList.add('done');
+    if(i===n) t.classList.add('active');
+    else if(i<n) t.classList.add('done');
   });
   step = n;
   window.scrollTo({top:0,behavior:'smooth'});

@@ -332,6 +332,15 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 .tcs-opt-name{font-size:13px;font-weight:600;}
 .tcs-opt-seg{font-size:11px;color:var(--text3);}
 
+/* Period picker dropdown */
+.dash-period-wrap{position:relative;display:inline-block;}
+.dash-period-btn{display:flex;align-items:center;gap:6px;background:var(--accentbg);border:1px solid var(--accent);border-radius:20px;padding:4px 12px;font-size:13px;font-weight:700;color:var(--accent2);cursor:pointer;transition:var(--transition);}
+.dash-period-btn:hover{background:rgba(124,58,237,.2);}
+.dash-period-dd{position:absolute;top:calc(100% + 8px);left:0;z-index:500;background:var(--modal-bg);border:1px solid var(--border);border-radius:14px;padding:6px;min-width:180px;max-height:280px;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,.4);display:none;}
+.dash-period-dd.open{display:block;animation:fadeUp .15s ease both;}
+.dash-period-opt{padding:9px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:background .12s;color:var(--text2);}
+.dash-period-opt:hover{background:var(--s3);color:var(--text);}
+.dash-period-opt.active{background:var(--accentbg);color:var(--accent2);}
 /* Status dropdown */
 .dash-status-wrap{position:relative;display:inline-block;}
 .dash-status{cursor:pointer;}
@@ -837,10 +846,16 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
     <div class="dash-pending-txt" id="dash-pending-txt">Carregando...</div>
   </div>
 
-  <!-- Período das métricas (fixo: mês anterior) -->
+  <!-- Período das métricas (selecionável) -->
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px;flex-wrap:wrap;">
     <span style="font-size:13px;color:var(--text3);font-weight:600;">Período das métricas:</span>
-    <span style="font-size:13px;color:var(--accent2);font-weight:700;" id="dash-period-label"></span>
+    <div class="dash-period-wrap" id="dash-period-wrap">
+      <button class="dash-period-btn" id="dash-period-btn" onclick="toggleDashPeriodDd(event)">
+        <span id="dash-period-label">—</span>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="dash-period-dd" id="dash-period-dd"></div>
+    </div>
     <button id="btn-dash-refresh" onclick="refreshDashMetrics()" style="background:transparent;border:1px solid var(--border);border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700;color:var(--text3);cursor:pointer;transition:var(--transition);" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">↺ Atualizar dados</button>
   </div>
 
@@ -1814,16 +1829,64 @@ function getWeekKey() {
   return `${now.getFullYear()}-W${String(week).padStart(2,'0')}`;
 }
 
+// Período selecionado no dashboard (mês/ano)
+let dashPeriodMonth = null; // 1-based
+let dashPeriodYear  = null;
+
 function getDashPeriod() {
-  const now = new Date();
-  let prevMonth = now.getMonth(); // 0-based → já é o mês anterior em 1-based
-  let prevYear  = now.getFullYear();
-  if (prevMonth === 0) { prevMonth = 12; prevYear--; }
-  const lastDay = new Date(prevYear, prevMonth, 0).getDate();
-  const since = `${prevYear}-${String(prevMonth).padStart(2,'0')}-01`;
-  const until = `${prevYear}-${String(prevMonth).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
   const monthNames = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  return { prevMonth, prevYear, since, until, label: `${monthNames[prevMonth]} ${prevYear}` };
+  // Usa o selecionado, ou calcula mês anterior
+  let m = dashPeriodMonth, y = dashPeriodYear;
+  if (!m || !y) {
+    const now = new Date();
+    m = now.getMonth(); // 0-based = mês anterior em 1-based
+    y = now.getFullYear();
+    if (m === 0) { m = 12; y--; }
+    dashPeriodMonth = m; dashPeriodYear = y;
+  }
+  const lastDay = new Date(y, m, 0).getDate();
+  const since = `${y}-${String(m).padStart(2,'0')}-01`;
+  const until = `${y}-${String(m).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  return { prevMonth: m, prevYear: y, since, until, label: `${monthNames[m]} ${y}` };
+}
+
+function renderDashPeriodDropdown() {
+  const dd = document.getElementById('dash-period-dd');
+  if (!dd) return;
+  const monthNames = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  // Gera últimos 18 meses
+  const options = [];
+  const now = new Date();
+  for (let i = 1; i <= 18; i++) {
+    let m = now.getMonth() - i + 1; // getMonth() é 0-based, queremos 1-based do mês anterior
+    let y = now.getFullYear();
+    // ajuste: mês anterior em 1-based
+    m = now.getMonth() - i + 1;
+    if (m <= 0) { m += 12; y--; }
+    if (m <= 0) { m += 12; y--; }
+    options.push({ m, y, label: `${monthNames[m]} ${y}` });
+  }
+  const curM = dashPeriodMonth, curY = dashPeriodYear;
+  dd.innerHTML = options.map(o =>
+    `<div class="dash-period-opt ${o.m===curM&&o.y===curY?'active':''}" onclick="selectDashPeriod(${o.m},${o.y},event)">${o.label}</div>`
+  ).join('');
+}
+
+function toggleDashPeriodDd(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('dash-period-dd');
+  if (!dd) return;
+  const isOpen = dd.classList.contains('open');
+  document.querySelectorAll('.dash-period-dd.open').forEach(d => d.classList.remove('open'));
+  if (!isOpen) { renderDashPeriodDropdown(); dd.classList.add('open'); }
+}
+document.addEventListener('click', () => document.querySelectorAll('.dash-period-dd.open').forEach(d => d.classList.remove('open')));
+
+function selectDashPeriod(m, y, e) {
+  if (e) e.stopPropagation();
+  dashPeriodMonth = m; dashPeriodYear = y;
+  document.querySelectorAll('.dash-period-dd.open').forEach(d => d.classList.remove('open'));
+  renderDashMetricsFromCache(); // mostra cache ou "—"
 }
 
 function renderDashMetricsFromCache() {
@@ -1838,7 +1901,9 @@ function renderDashMetricsFromCache() {
       if (m) { renderDashMetrics(m); return; }
     } catch(e) {}
   }
-  renderDashMetrics(null); // mostra "—" sem travar
+  renderDashMetrics(null);
+  // Sem cache: auto-busca na API
+  refreshDashMetrics();
 }
 
 async function refreshDashMetrics() {

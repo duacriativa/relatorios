@@ -316,6 +316,22 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 .btn-view:hover{border-color:var(--accent);color:var(--accent2);background:var(--accentbg);}
 .dash-client-avatar{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;flex-shrink:0;margin-right:8px;}
 .dash-client-cell{display:flex;align-items:center;}
+
+/* ══ TOPBAR CLIENT SWITCHER ══ */
+.topbar-client-switcher{position:relative;}
+.tcs-btn{display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--border);border-radius:50px;padding:6px 14px 6px 8px;cursor:pointer;transition:var(--transition);color:var(--text);}
+.tcs-btn:hover{border-color:var(--accent);background:var(--accentbg);}
+.tcs-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;}
+.tcs-name{font-family:'Bricolage Grotesque',sans-serif;font-size:13px;font-weight:700;white-space:nowrap;}
+.tcs-dropdown{position:absolute;top:calc(100% + 8px);left:0;z-index:500;background:var(--modal-bg);border:1px solid var(--border);border-radius:14px;padding:6px;min-width:200px;max-height:320px;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,.4);display:none;}
+.tcs-dropdown.open{display:block;}
+.tcs-opt{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;cursor:pointer;transition:background .12s;}
+.tcs-opt:hover{background:var(--s3);}
+.tcs-opt.active{background:var(--accentbg);}
+.tcs-opt-avatar{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;}
+.tcs-opt-name{font-size:13px;font-weight:600;}
+.tcs-opt-seg{font-size:11px;color:var(--text3);}
+
 /* Status dropdown */
 .dash-status-wrap{position:relative;display:inline-block;}
 .dash-status{cursor:pointer;}
@@ -789,7 +805,15 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div class="main-content" id="main-content">
 <div class="topbar">
 <div class="topbar-left">
-<div class="week-badge" id="week-label">—</div>
+  <!-- seletor de cliente no topbar -->
+  <div class="topbar-client-switcher" id="topbar-switcher" style="display:none">
+    <button class="tcs-btn" id="tcs-btn" onclick="toggleClientSwitcher(event)">
+      <span class="tcs-avatar" id="tcs-avatar"></span>
+      <span class="tcs-name" id="tcs-name">Selecione</span>
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="tcs-dropdown" id="tcs-dropdown"></div>
+  </div>
 </div>
 <div class="topbar-center" id="topbar-client-name" style="display:none"></div>
 <div class="topbar-right">
@@ -811,6 +835,21 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
     <div class="dash-h1"><span id="greeting-time">Bom dia</span>, Time!</div>
     <div class="dash-h2">Vamos analisar os resultados de hoje?</div>
     <div class="dash-pending-txt" id="dash-pending-txt">Carregando...</div>
+  </div>
+
+  <!-- Seletor mês/ano -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px;flex-wrap:wrap;">
+    <span style="font-size:13px;color:var(--text3);font-weight:600;">Período das métricas:</span>
+    <select id="dash-month" onchange="loadDashboard()" style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);font-size:13px;font-family:'Lato',sans-serif;cursor:pointer;">
+      <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+      <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+      <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+      <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+    </select>
+    <select id="dash-year" onchange="loadDashboard()" style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);font-size:13px;font-family:'Lato',sans-serif;cursor:pointer;">
+      <option value="2025">2025</option><option value="2026">2026</option>
+    </select>
+    <span style="font-size:11px;color:var(--text3);font-style:italic;" id="dash-period-label"></span>
   </div>
 
   <!-- Metric cards row 1 -->
@@ -848,14 +887,13 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
       <thead>
         <tr>
           <th>Cliente</th>
-          <th>Segmento</th>
           <th>Relatório Recente</th>
           <th>Status</th>
           <th></th>
         </tr>
       </thead>
       <tbody id="dash-client-tbody">
-        <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">Carregando clientes...</td></tr>
+        <tr><td colspan="4" style="text-align:center;padding:32px;color:var(--text3)">Carregando clientes...</td></tr>
       </tbody>
     </table>
   </div>
@@ -878,13 +916,11 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div class="sec-label" style="margin-bottom:10px">Escolha o modelo que melhor representa este cliente</div>
 <div class="tpl-grid" id="tpl-grid">
   <div class="tpl-card sel" onclick="selectTemplate('ecommerce')" id="tpl-ecommerce">
-    <div class="tpl-icon">🛍️</div>
-    <div class="tpl-name">E-commerce</div>
+    <div class="tpl-name" style="font-size:20px;font-weight:800;font-family:'Bricolage Grotesque',sans-serif;">E-commerce</div>
     <div class="tpl-desc">ROI, Conversões, CPA, Cliques, CTR, Impressões. Ideal para lojas com vendas rastreadas.</div>
   </div>
   <div class="tpl-card" onclick="selectTemplate('mensagens')" id="tpl-mensagens">
-    <div class="tpl-icon">💬</div>
-    <div class="tpl-name">Mensagens / Tráfego</div>
+    <div class="tpl-name" style="font-size:20px;font-weight:800;font-family:'Bricolage Grotesque',sans-serif;">Mensagens / Tráfego</div>
     <div class="tpl-desc">Visitas IG, Seguidores, Alcance, Mensagens iniciadas, Custo/msg. Ideal para infoprodutos e locais.</div>
   </div>
 </div>
@@ -1024,24 +1060,44 @@ Meta Ads — <span id="lbl-client2" style="color:var(--accent2)">—</span>
 
 <!-- STEP 3 -->
 <div class="panel" id="panel3">
-<div class="card">
-<div class="card-title">📤 Relatório — pronto para enviar</div>
-<div class="preview-text" id="rel-preview">—</div>
-<div class="action-row">
-<button class="btn-act green" onclick="copyRel()">📋 Copiar para WhatsApp</button>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+  <!-- Coluna esquerda: Insights IA -->
+  <div class="card" style="height:100%;">
+    <div class="card-title" style="font-size:18px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;margin-bottom:4px;">Insights da Metricana (IA)
+      <span style="font-size:10px;font-weight:700;background:var(--accentbg);border:1px solid rgba(124,58,237,.3);color:var(--accent2);border-radius:50px;padding:2px 10px;margin-left:8px;">AI Generated</span>
+    </div>
+    <div class="ai-box loading" id="ai-box">Gerando análise<span class="dots"></span></div>
+    <div class="action-row">
+      <button class="btn-act" onclick="genAnalysis()">↺ Regenerar</button>
+      <button class="btn-act green" onclick="copyAI()">Copiar resumo IA</button>
+    </div>
+  </div>
+  <!-- Coluna direita: Pré-visualização WhatsApp -->
+  <div class="card" style="height:100%;">
+    <div class="card-title" style="font-size:18px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;margin-bottom:12px;">Pré-visualização do Relatório (WhatsApp)</div>
+    <!-- Mockup WhatsApp -->
+    <div style="background:#1a1a1a;border-radius:14px;overflow:hidden;border:1px solid var(--border);">
+      <div style="background:#1f1f1f;padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.06);">
+        <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#9333ea);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;">M</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#fff;">Metricana</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.4);">online</div>
+        </div>
+      </div>
+      <div style="padding:14px 16px;max-height:280px;overflow-y:auto;">
+        <div style="background:#2a2a2a;border-radius:10px;padding:12px;font-size:12px;line-height:1.7;color:rgba(255,255,255,.85);white-space:pre-wrap;font-family:'Lato',sans-serif;" id="rel-preview">—</div>
+      </div>
+    </div>
+    <div class="action-row" style="margin-top:16px;">
+      <button class="btn-act accent" style="width:100%;justify-content:center;gap:8px;" onclick="copyRel()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8a16 16 0 0 0 6 6l.77-.77a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Enviar para WhatsApp
+      </button>
+    </div>
+  </div>
 </div>
-</div>
-
-<div class="card">
-<div class="card-title">🤖 Resumo IA <span style="font-size:12px;font-weight:400;color:var(--text3)">(estilo WhatsApp — gerado pela IA)</span></div>
-<div class="ai-box loading" id="ai-box">Gerando análise<span class="dots"></span></div>
-<div class="action-row">
-<button class="btn-act" onclick="genAnalysis()">↺ Regenerar</button>
-<button class="btn-act green" onclick="copyAI()">📋 Copiar resumo IA</button>
-</div>
-</div>
-<div class="action-row">
-<button class="btn-act accent" onclick="nextClient()">▶ Próximo cliente</button>
+<div class="action-row" style="margin-top:8px;">
+  <button class="btn-act accent" onclick="nextClient()">Próximo cliente</button>
 </div>
 </div> <!-- fim panel3 -->
   </div> <!-- fim main-content -->
@@ -1704,11 +1760,21 @@ function launch() {
   setGreeting();
   document.getElementById('app').style.display = 'block';
   applyQuickPeriod();
-  const f = document.getElementById('date-from').value;
-  const t = document.getElementById('date-to').value;
-  document.getElementById('week-label').textContent = f && t ? `${fmt2(f)} – ${fmt2(t)}` : 'Esta semana';
+  // Esconde week-badge da topbar (não usamos mais)
+  const wb = document.getElementById('week-label');
+  if (wb) wb.style.display = 'none';
+  // Inicializa seletor mês/ano com mês anterior
+  const now = new Date();
+  let defMonth = now.getMonth(); // 0-based, então é o mês anterior
+  let defYear  = now.getFullYear();
+  if (defMonth === 0) { defMonth = 12; defYear--; } // Janeiro → Dezembro do ano anterior
+  const mSel = document.getElementById('dash-month');
+  const ySel = document.getElementById('dash-year');
+  if (mSel) mSel.value = String(defMonth);
+  if (ySel) ySel.value = String(defYear);
   renderClients();
   renderHistory();
+  renderClientSwitcher();
   loadDashboard();
   if (!cfg.isDemo) checkAllTokens();
 }
@@ -1726,24 +1792,31 @@ async function loadDashboard() {
   renderDashClientTable();
   loadClientStatuses();
 
-  const weekKey = getWeekKey();
-  const cacheKey = `metricana_dash_${weekKey}`;
+  const mSel2 = document.getElementById('dash-month');
+  const ySel2 = document.getElementById('dash-year');
+  const cacheKey = `metricana_dash_${ySel2?.value||'x'}_${mSel2?.value||'x'}`;
   const cached = localStorage.getItem(cacheKey);
   if (cached) {
     try {
       const m = JSON.parse(cached);
-      // Ignora cache zerado (fetch anterior falhou)
       if (m && m.spend > 0) { renderDashMetrics(m); return; }
     } catch(e) {}
   }
 
   if (!clients.length || cfg.isDemo) { renderDashMetrics(null); return; }
 
-  // Últimos 7 dias (igual ao período padrão da topbar)
-  const today = new Date();
-  const d7 = new Date(today); d7.setDate(today.getDate() - 7);
-  const fmt = d => d.toISOString().slice(0,10);
-  const since = fmt(d7), until = fmt(today);
+  // Usa mês/ano do seletor
+  const mSel = document.getElementById('dash-month');
+  const ySel = document.getElementById('dash-year');
+  const selMonth = mSel ? parseInt(mSel.value) : new Date().getMonth();
+  const selYear  = ySel ? parseInt(ySel.value)  : new Date().getFullYear();
+  const lastDay = new Date(selYear, selMonth, 0).getDate();
+  const since = `${selYear}-${String(selMonth).padStart(2,'0')}-01`;
+  const until = `${selYear}-${String(selMonth).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  const fmt = d => d;
+  const monthNames = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const lbl = document.getElementById('dash-period-label');
+  if (lbl) lbl.textContent = `${monthNames[selMonth]} ${selYear} · ${since} → ${until}`;
 
   let totalSpend = 0, totalConv = 0, totalRev = 0, cpaArr = [];
   const validClients = clients.filter(c => {
@@ -1802,13 +1875,11 @@ function renderDashClientTable() {
   (weekHistory||[]).forEach(h => { if (h.client) lastReport[h.client] = h.date||h.week||'—'; });
 
   tbody.innerHTML = clients.map((c,i) => {
-    const seg = c.segmento || '—';
     const recent = lastReport[c.name] || '—';
     return `<tr>
       <td>
         <button onclick="selectClient(${i})" style="background:none;border:none;padding:0;cursor:pointer;font-weight:700;font-size:14px;color:var(--text);font-family:'Bricolage Grotesque',sans-serif;text-align:left;" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='var(--text)'">${c.name}</button>
       </td>
-      <td style="color:var(--text2)">${seg}</td>
       <td style="color:var(--text3)">${recent}</td>
       <td>
         <div class="dash-status-wrap" id="dswrap-${i}">
@@ -1926,6 +1997,70 @@ function toggleSidebar() {
   sidebar.classList.toggle('collapsed', sidebarCollapsed);
   if (main) main.style.marginLeft = sidebarCollapsed ? '64px' : 'var(--sidebar-width)';
 }
+function collapseSidebar() {
+  if (!sidebarCollapsed) toggleSidebar();
+}
+function expandSidebar() {
+  if (sidebarCollapsed) toggleSidebar();
+}
+// Auto-collapse: recolhe ao clicar em item do menu (etapa)
+(function() {
+  document.addEventListener('DOMContentLoaded', () => {
+    // Ao clicar fora da sidebar, recolhe
+    document.getElementById('main-content')?.addEventListener('click', () => collapseSidebar());
+  });
+})();
+
+// ════════ CLIENT SWITCHER (topbar) ════════
+function renderClientSwitcher() {
+  const wrap = document.getElementById('topbar-switcher');
+  const dd   = document.getElementById('tcs-dropdown');
+  if (!wrap || !dd) return;
+  if (!clients.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  updateClientSwitcherBtn();
+  dd.innerHTML = clients.map((c,i) => {
+    const color = clientAvatarColor(c.name);
+    const initial = c.name.trim()[0].toUpperCase();
+    const isActive = selClient?.name === c.name;
+    return `<div class="tcs-opt${isActive?' active':''}" onclick="switchClientFromTopbar(${i})">
+      <div class="tcs-opt-avatar" style="background:linear-gradient(135deg,${color},${color}99)">${initial}</div>
+      <div>
+        <div class="tcs-opt-name">${c.name}</div>
+        ${c.segmento ? `<div class="tcs-opt-seg">${c.segmento}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  // Fecha ao clicar fora
+  document.addEventListener('click', e => {
+    if (!wrap.contains(e.target)) document.getElementById('tcs-dropdown')?.classList.remove('open');
+  }, { once: false });
+}
+function updateClientSwitcherBtn() {
+  const avatar = document.getElementById('tcs-avatar');
+  const name   = document.getElementById('tcs-name');
+  if (!avatar || !name) return;
+  if (selClient) {
+    const color = clientAvatarColor(selClient.name);
+    avatar.style.background = `linear-gradient(135deg,${color},${color}99)`;
+    avatar.textContent = selClient.name.trim()[0].toUpperCase();
+    name.textContent = selClient.name;
+  } else {
+    avatar.style.background = 'var(--s3)';
+    avatar.textContent = '?';
+    name.textContent = 'Selecione um cliente';
+  }
+}
+function toggleClientSwitcher(e) {
+  e.stopPropagation();
+  document.getElementById('tcs-dropdown')?.classList.toggle('open');
+}
+function switchClientFromTopbar(i) {
+  document.getElementById('tcs-dropdown')?.classList.remove('open');
+  selectClient(i);
+  updateClientSwitcherBtn();
+  renderClientSwitcher();
+}
 
 // ════════ STEPS ════════
 let step = 0;
@@ -1943,6 +2078,8 @@ function goStep(n) {
   });
   step = n;
   window.scrollTo({top:0,behavior:'smooth'});
+  // Auto-collapse sidebar ao navegar para qualquer etapa
+  if (n > 0) collapseSidebar();
 }
 
 // ════════ CLIENTS ════════
@@ -2010,6 +2147,11 @@ function selectClient(i) {
   document.getElementById('btn-to-cu').style.display = 'none';
   renderClients();
   updateTopbarClient();
+  updateClientSwitcherBtn();
+  renderClientSwitcher();
+  // Mostra o switcher no topbar
+  const sw = document.getElementById('topbar-switcher');
+  if (sw) sw.style.display = 'block';
   goStep(1);
 }
 
@@ -2819,20 +2961,9 @@ function renderMetrics(d) {
 }
 
 function updateTopbarClient() {
+  // Badge antigo substituído pelo client switcher — mantém oculto
   const el = document.getElementById('topbar-client-name');
-  if (!el) return;
-  if (selClient) {
-    const color = clientAvatarColor(selClient.name);
-    const initial = selClient.name.trim()[0].toUpperCase();
-    el.style.display = 'flex';
-    el.innerHTML = `<div class="topbar-client-badge">
-      <div class="tca" style="background:${color}">${initial}</div>
-      <span>${selClient.name}</span>
-    </div>`;
-  } else {
-    el.style.display = 'none';
-    el.innerHTML = '';
-  }
+  if (el) { el.style.display = 'none'; el.innerHTML = ''; }
 }
 
 function renderCuSummary(d, isMsgsTpl, msgsQty, custoMsg, fmtBRL) {

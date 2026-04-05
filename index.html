@@ -223,9 +223,9 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
   border:none;background:none;width:100%;text-align:left;
 }
 .sidebar-item:hover{background:var(--s3);color:var(--text);}
-.sidebar-item.active{background:var(--accentbg);color:var(--accent2);}
-.sidebar-item.active .si-icon{color:var(--accent);}
-.sidebar-item .si-icon{font-size:18px;flex-shrink:0;width:24px;text-align:center;}
+.sidebar-item.active{background:linear-gradient(135deg,rgba(124,58,237,.9),rgba(147,51,234,.75));color:#fff;box-shadow:0 4px 16px rgba(124,58,237,.3);}
+.sidebar-item.active .si-icon{color:#fff;}
+.sidebar-item .si-icon{font-size:18px;flex-shrink:0;width:24px;text-align:center;display:flex;align-items:center;justify-content:center;}
 .sidebar-item .si-label{transition:opacity .2s;}
 .sidebar.collapsed .si-label{opacity:0;width:0;overflow:hidden;}
 .sidebar-item .si-num{
@@ -276,6 +276,46 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 /* Panels */
 .panel{display:none;padding:24px;max-width:960px;margin:0 auto;width:100%;animation:fadeUp .2s ease;}
 .panel.active{display:block;}
+/* Dashboard home — sem max-width */
+#panel0.panel{max-width:none;padding:0;}
+
+/* ══════════ DASHBOARD HOME ══════════ */
+.dash-wrap{padding:36px 40px;max-width:1200px;width:100%;}
+.dash-hero{position:relative;margin-bottom:36px;}
+.dash-hero-glow{position:absolute;top:-80px;right:-60px;width:500px;height:400px;background:radial-gradient(ellipse at top right,rgba(124,58,237,.3) 0%,rgba(147,51,234,.15) 40%,transparent 70%);pointer-events:none;border-radius:50%;z-index:0;}
+.dash-h1{font-family:'Bricolage Grotesque',sans-serif;font-size:38px;font-weight:800;color:var(--text);line-height:1.1;position:relative;z-index:1;}
+.dash-h2{font-family:'Bricolage Grotesque',sans-serif;font-size:26px;font-weight:700;color:var(--text);opacity:.8;margin-top:6px;position:relative;z-index:1;}
+.dash-pending-txt{font-size:14px;color:var(--text3);margin-top:12px;position:relative;z-index:1;}
+.dash-metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px;}
+.dash-metric-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:36px;}
+.dash-mc{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:20px 22px;position:relative;overflow:hidden;transition:var(--transition);}
+.dash-mc:hover{border-color:var(--border2);box-shadow:0 8px 28px rgba(0,0,0,.22);transform:translateY(-2px);}
+.dash-mc::after{content:'';position:absolute;inset:0;border-radius:16px;border:1px solid rgba(124,58,237,.18);pointer-events:none;}
+.dash-mc-label{font-size:12px;color:var(--text2);margin-bottom:10px;font-weight:600;}
+.dash-mc-value{font-family:'Bricolage Grotesque',sans-serif;font-size:30px;font-weight:800;color:var(--green);line-height:1;}
+.dash-mc-value.red{color:var(--red);}
+.dash-mc-value.purple{color:var(--accent2);}
+.dash-mc-delta{font-size:12px;font-weight:700;margin-left:6px;vertical-align:middle;}
+.dash-mc-delta.pos{color:var(--green);}
+.dash-mc-delta.neg{color:var(--red);}
+.dash-section-title{font-family:'Bricolage Grotesque',sans-serif;font-size:18px;font-weight:800;color:var(--text);margin-bottom:16px;}
+.dash-table-wrap{background:var(--s1);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+.dash-table{width:100%;border-collapse:collapse;font-size:13px;}
+.dash-table th{padding:12px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);text-align:left;border-bottom:1px solid var(--border);background:var(--s2);}
+.dash-table td{padding:13px 16px;border-bottom:1px solid var(--border2);vertical-align:middle;}
+.dash-table tr:last-child td{border-bottom:none;}
+.dash-table tr:hover td{background:var(--accentbg);}
+.dash-status{display:inline-flex;align-items:center;gap:5px;border-radius:50px;padding:4px 11px;font-size:11px;font-weight:700;white-space:nowrap;}
+.dash-status.ativo{background:var(--greenbg);border:1px solid rgba(34,197,94,.3);color:var(--green);}
+.dash-status.pendente{background:var(--accentbg);border:1px solid rgba(124,58,237,.3);color:var(--accent2);}
+.dash-status.inativo{background:var(--redbg);border:1px solid rgba(239,68,68,.3);color:var(--red);}
+.dash-status.progresso{background:var(--yellowbg);border:1px solid rgba(245,158,11,.3);color:var(--yellow);}
+.dash-status.concluido{background:var(--greenbg);border:1px solid rgba(34,197,94,.3);color:var(--green);}
+.dash-status.enviar{background:var(--yellowbg);border:1px solid rgba(245,158,11,.3);color:var(--yellow);}
+.btn-view{background:transparent;border:1px solid var(--border);border-radius:8px;padding:5px 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;transition:var(--transition);font-family:'Bricolage Grotesque',sans-serif;}
+.btn-view:hover{border-color:var(--accent);color:var(--accent2);background:var(--accentbg);}
+.dash-client-avatar{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;flex-shrink:0;margin-right:8px;}
+.dash-client-cell{display:flex;align-items:center;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .action-row{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;align-items:center;}
 /* Pill buttons — estilo inspirado no ProgressIndicator */
@@ -690,27 +730,31 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <img src="https://i.imgur.com/drcW25i.png" alt="Metricana" class="sidebar-logo"/>
-    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Retrair menu">☰</button>
+    <div style="display:flex;align-items:center;gap:9px;overflow:hidden;flex:1;min-width:0;">
+      <img src="https://i.imgur.com/drcW25i.png" alt="Metricana" class="sidebar-logo"/>
+    </div>
+    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Retrair menu">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
   </div>
   <nav class="sidebar-nav">
     <button class="sidebar-item active" id="tab0" onclick="goStep(0)">
-      <span class="si-icon">🏠</span>
-      <span class="si-label">Clientes</span>
+      <span class="si-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+      <span class="si-label">Home</span>
       <span class="si-num">1</span>
     </button>
     <button class="sidebar-item" id="tab1" onclick="goStep(1)">
-      <span class="si-icon">📊</span>
-      <span class="si-label">Buscar Dados</span>
+      <span class="si-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+      <span class="si-label">Reports</span>
       <span class="si-num">2</span>
     </button>
     <button class="sidebar-item" id="tab2" onclick="goStep(2)">
-      <span class="si-icon">🔗</span>
-      <span class="si-label">ClickUp</span>
+      <span class="si-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
+      <span class="si-label">Integrations</span>
       <span class="si-num">3</span>
     </button>
     <button class="sidebar-item" id="tab3" onclick="goStep(3)">
-      <span class="si-icon">📤</span>
+      <span class="si-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
       <span class="si-label">Relatório + IA</span>
       <span class="si-num">4</span>
     </button>
@@ -718,15 +762,15 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
   <hr class="sidebar-divider"/>
   <div class="sidebar-bottom">
     <button class="sidebar-item" onclick="openConfig()">
-      <span class="si-icon">⚙️</span>
-      <span class="si-label">Config</span>
+      <span class="si-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+      <span class="si-label">Settings</span>
     </button>
     <button class="sidebar-item" onclick="openClientManager()">
-      <span class="si-icon">👤</span>
-      <span class="si-label">Clientes</span>
+      <span class="si-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+      <span class="si-label">Clients</span>
     </button>
     <button class="sidebar-item" onclick="doLogout()">
-      <span class="si-icon">🚪</span>
+      <span class="si-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
       <span class="si-label">Sair</span>
     </button>
   </div>
@@ -748,23 +792,73 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 </div>
 </div>
 
-<!-- STEP 0 -->
+<!-- STEP 0 — DASHBOARD HOME -->
 <div class="panel active" id="panel0">
-<div class="greeting-section">
-  <div class="greeting-time" id="greeting-time">Bom dia,</div>
-  <div class="greeting-tagline">escolha o cliente para gerar o relatório.</div>
-</div>
-<div class="card" style="background:transparent;border:none;box-shadow:none;padding:0">
-<div class="client-grid" id="client-grid"></div>
-</div>
-<div class="card">
-<div class="card-title" style="font-size:14px">📋 Relatórios desta semana</div>
-<div style="overflow-x:auto">
-<table class="data-table" id="hist-table">
-<thead id="hist-head"><tr><th>Cliente</th><th>Investido</th><th id="hist-col3">ROI</th><th id="hist-col4">Vendas</th><th>Status</th></tr></thead>
-<tbody id="hist-body"><tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Nenhum relatório enviado ainda.</td></tr></tbody>
-</table>
-</div>
+<div class="dash-wrap">
+
+  <!-- Hero / Greeting -->
+  <div class="dash-hero">
+    <div class="dash-hero-glow"></div>
+    <div class="dash-h1"><span id="greeting-time">Bom dia</span>, Time!</div>
+    <div class="dash-h2">Vamos analisar os resultados de hoje?</div>
+    <div class="dash-pending-txt" id="dash-pending-txt">Carregando...</div>
+  </div>
+
+  <!-- Metric cards row 1 -->
+  <div class="dash-metric-grid">
+    <div class="dash-mc">
+      <div class="dash-mc-label">Total ROAS Médio (Agência)</div>
+      <div><span class="dash-mc-value" id="dm-roas">—</span><span class="dash-mc-delta pos" id="dm-roas-d"></span></div>
+    </div>
+    <div class="dash-mc">
+      <div class="dash-mc-label">Total Conversões</div>
+      <div><span class="dash-mc-value" id="dm-conv">—</span><span class="dash-mc-delta pos" id="dm-conv-d"></span></div>
+    </div>
+    <div class="dash-mc">
+      <div class="dash-mc-label">CPA Médio (Agência)</div>
+      <div><span class="dash-mc-value" id="dm-cpa">—</span><span class="dash-mc-delta neg" id="dm-cpa-d"></span></div>
+    </div>
+  </div>
+
+  <!-- Metric cards row 2 -->
+  <div class="dash-metric-grid-2">
+    <div class="dash-mc">
+      <div class="dash-mc-label">Total Gasto</div>
+      <div><span class="dash-mc-value" id="dm-spend">—</span></div>
+    </div>
+    <div class="dash-mc">
+      <div class="dash-mc-label">Volume de Relatórios Pendentes</div>
+      <div><span class="dash-mc-value purple" id="dm-pending">—</span></div>
+    </div>
+  </div>
+
+  <!-- Client activity table -->
+  <div class="dash-section-title">Atividade Recente dos Clientes</div>
+  <div class="dash-table-wrap">
+    <table class="dash-table">
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Segmento</th>
+          <th>Relatório Recente</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="dash-client-tbody">
+        <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">Carregando clientes...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Hidden elements kept for compatibility -->
+  <div style="display:none">
+    <div id="client-grid"></div>
+    <table><tbody id="hist-body"></tbody></table>
+    <thead id="hist-head"></thead>
+    <th id="hist-col3"></th><th id="hist-col4"></th>
+  </div>
+
 </div>
 </div>
 
@@ -1606,8 +1700,156 @@ function launch() {
   document.getElementById('week-label').textContent = f && t ? `${fmt2(f)} – ${fmt2(t)}` : 'Esta semana';
   renderClients();
   renderHistory();
-  // Verifica tokens de todos os clientes em background
+  loadDashboard();
   if (!cfg.isDemo) checkAllTokens();
+}
+
+// ════════ DASHBOARD ════════
+function getWeekKey() {
+  const now = new Date();
+  const jan1 = new Date(now.getFullYear(), 0, 1);
+  const week = Math.ceil(((now - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+  return `${now.getFullYear()}-W${String(week).padStart(2,'0')}`;
+}
+
+async function loadDashboard() {
+  setGreeting();
+  renderDashClientTable();
+  loadClientStatuses();
+
+  const weekKey = getWeekKey();
+  const cacheKey = `metricana_dash_${weekKey}`;
+  const cached = localStorage.getItem(cacheKey);
+  if (cached) {
+    try { renderDashMetrics(JSON.parse(cached)); return; } catch(e) {}
+  }
+
+  // Busca métricas da semana passada para todos os clientes
+  if (!clients.length || cfg.isDemo) {
+    renderDashMetrics(null);
+    return;
+  }
+
+  // Datas: semana passada (últimos 7 dias)
+  const today = new Date();
+  const d7 = new Date(today); d7.setDate(today.getDate() - 7);
+  const fmt = d => d.toISOString().slice(0,10);
+  const since = fmt(d7), until = fmt(today);
+
+  let totalSpend = 0, totalConv = 0, totalRev = 0, roasArr = [], cpaArr = [];
+  const promises = clients.filter(c => c.token && c.token !== 'DEMO' && c.account_id).map(async c => {
+    try {
+      const url = `https://graph.facebook.com/v18.0/act_${c.account_id}/insights?fields=spend,actions,action_values&time_range={"since":"${since}","until":"${until}"}&level=account&access_token=${c.token}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (!json.data || !json.data[0]) return;
+      const d = json.data[0];
+      const spend = parseFloat(d.spend||0);
+      const conv = (d.actions||[]).find(a=>a.action_type==='purchase')?.value||0;
+      const rev = (d.action_values||[]).find(a=>a.action_type==='purchase')?.value||0;
+      totalSpend += spend;
+      totalConv += parseFloat(conv);
+      totalRev += parseFloat(rev);
+      if (spend > 0 && parseFloat(rev) > 0) roasArr.push(parseFloat(rev)/spend);
+      if (parseFloat(conv) > 0) cpaArr.push(spend/parseFloat(conv));
+    } catch(e) {}
+  });
+  await Promise.all(promises);
+
+  const avgRoas = roasArr.length ? (roasArr.reduce((a,b)=>a+b,0)/roasArr.length) : null;
+  const avgCpa  = cpaArr.length  ? (cpaArr.reduce((a,b)=>a+b,0)/cpaArr.length)   : null;
+
+  const metrics = { spend: totalSpend, conv: totalConv, roas: avgRoas, cpa: avgCpa };
+  localStorage.setItem(cacheKey, JSON.stringify(metrics));
+  renderDashMetrics(metrics);
+}
+
+function renderDashMetrics(m) {
+  const fmtBRL = v => v != null ? 'R$' + v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+  const fmtNum = v => v != null ? v.toLocaleString('pt-BR') : '—';
+
+  document.getElementById('dm-roas').textContent  = m?.roas  != null ? m.roas.toFixed(1)+'x' : '—';
+  document.getElementById('dm-conv').textContent  = m?.conv  != null ? fmtNum(Math.round(m.conv)) : '—';
+  document.getElementById('dm-cpa').textContent   = m?.cpa   != null ? fmtBRL(m.cpa) : '—';
+  document.getElementById('dm-spend').textContent = m?.spend != null ? fmtBRL(m.spend) : '—';
+}
+
+function renderDashClientTable() {
+  const tbody = document.getElementById('dash-client-tbody');
+  if (!tbody) return;
+  if (!clients.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">Nenhum cliente cadastrado.</td></tr>`;
+    return;
+  }
+  // Pega último relatório enviado por cliente do weekHistory
+  const lastReport = {};
+  (weekHistory||[]).forEach(h => { if (h.client) lastReport[h.client] = h.date||h.week||'—'; });
+
+  tbody.innerHTML = clients.map((c,i) => {
+    const color = clientAvatarColor(c.name);
+    const initial = c.name.trim()[0].toUpperCase();
+    const seg = c.segmento || '—';
+    const recent = lastReport[c.name] || '—';
+    return `<tr>
+      <td><div class="dash-client-cell">
+        <div class="dash-client-avatar" style="background:linear-gradient(135deg,${color},${color}99)">${initial}</div>
+        <span style="font-weight:600">${c.name}</span>
+      </div></td>
+      <td style="color:var(--text2)">${seg}</td>
+      <td style="color:var(--text3)">${recent}</td>
+      <td><span class="dash-status pendente" id="dstatus-${i}">...</span></td>
+      <td><button class="btn-view" onclick="selectClient(${i})">View</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadClientStatuses() {
+  const pending = document.getElementById('dash-pending-txt');
+  const pendingNum = document.getElementById('dm-pending');
+  if (!cfg.clickupToken || !cfg.clickupListId) {
+    if (pending) pending.textContent = 'Configure o ClickUp nas configurações para ver os status.';
+    if (pendingNum) pendingNum.textContent = '—';
+    clients.forEach((_,i) => {
+      const el = document.getElementById(`dstatus-${i}`);
+      if (el) { el.textContent = '—'; el.className = 'dash-status'; }
+    });
+    return;
+  }
+  try {
+    const res = await fetch(`https://api.clickup.com/api/v2/list/${cfg.clickupListId}/task?page=0&limit=100`,
+      { headers: { Authorization: cfg.clickupToken } });
+    const json = await res.json();
+    const tasks = json.tasks || [];
+
+    const statusMap = { pendente:0, 'em progresso':0, 'a enviar':0, 'concluído':0, concluido:0 };
+    let pendCount = 0;
+
+    clients.forEach((c,i) => {
+      const el = document.getElementById(`dstatus-${i}`);
+      if (!el) return;
+      const cLow = c.name.toLowerCase().trim();
+      const words = cLow.split(/\s+/).filter(w=>w.length>2);
+      const task = tasks.find(t => {
+        const tl = t.name.toLowerCase();
+        return tl.includes(cLow) || words.some(w=>tl.includes(w));
+      });
+      if (!task) { el.textContent = 'Sem task'; el.className = 'dash-status'; return; }
+      const rawStatus = (task.status?.status||'').toLowerCase().trim();
+      let cls = 'pendente', label = 'Pendente';
+      if (rawStatus.includes('conclu')) { cls='concluido'; label='Concluído'; }
+      else if (rawStatus.includes('progresso')||rawStatus.includes('progress')) { cls='progresso'; label='Em Progresso'; }
+      else if (rawStatus.includes('enviar')||rawStatus.includes('send')) { cls='enviar'; label='A Enviar'; }
+      else if (rawStatus.includes('ativo')||rawStatus.includes('open')||rawStatus.includes('aberto')) { cls='ativo'; label='Ativo'; }
+      if (cls==='pendente'||cls==='enviar'||cls==='progresso') pendCount++;
+      el.textContent = label;
+      el.className = `dash-status ${cls}`;
+    });
+
+    if (pending) pending.textContent = `Você tem ${pendCount} relatório${pendCount!==1?'s':''} pendente${pendCount!==1?'s':''} para essa semana.`;
+    if (pendingNum) pendingNum.textContent = pendCount;
+  } catch(e) {
+    if (pending) pending.textContent = 'Não foi possível carregar os status do ClickUp.';
+  }
 }
 
 // ════════ SIDEBAR ════════
@@ -1658,7 +1900,7 @@ function setGreeting() {
   const h = new Date().getHours();
   const g = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
   const el = document.getElementById('greeting-time');
-  if (el) el.textContent = g + ',';
+  if (el) el.textContent = g;
 }
 
 function renderClients() {

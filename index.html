@@ -287,7 +287,7 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 .dash-h2{font-family:'Bricolage Grotesque',sans-serif;font-size:26px;font-weight:700;color:var(--text);opacity:.8;margin-top:6px;position:relative;z-index:1;}
 .dash-pending-txt{font-size:14px;color:var(--text3);margin-top:12px;position:relative;z-index:1;}
 .dash-metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px;}
-.dash-metric-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:36px;}
+.dash-metric-grid-2{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:36px;}
 .dash-mc{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:20px 22px;position:relative;overflow:hidden;transition:var(--transition);}
 .dash-mc:hover{border-color:var(--border2);box-shadow:0 8px 28px rgba(0,0,0,.22);transform:translateY(-2px);}
 .dash-mc::after{content:'';position:absolute;inset:0;border-radius:16px;border:1px solid rgba(124,58,237,.18);pointer-events:none;}
@@ -865,6 +865,10 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
     <div class="dash-mc">
       <div class="dash-mc-label">Valor Investido</div>
       <div><span class="dash-mc-value" id="dm-spend">—</span></div>
+    </div>
+    <div class="dash-mc">
+      <div class="dash-mc-label">ROI (Retorno)</div>
+      <div><span class="dash-mc-value" id="dm-roi">—</span></div>
     </div>
     <div class="dash-mc">
       <div class="dash-mc-label">Volume de Relatórios Pendentes</div>
@@ -1778,7 +1782,7 @@ function startDemo() {
 function launch() {
   setGreeting();
   document.getElementById('app').style.display = 'block';
-  applyQuickPeriod();
+  try { applyQuickPeriod(); } catch(e) { console.warn('applyQuickPeriod:', e.message); }
   const wb = document.getElementById('week-label');
   if (wb) wb.style.display = 'none';
   renderClients();
@@ -1875,8 +1879,10 @@ async function fetchDashMetrics(since, until, cacheKey) {
     }
   }));
 
+  const roi = totalSpend > 0 && totalRev > 0 ? totalRev / totalSpend : null;
   const metrics = { spend: totalSpend, conv: totalConv, rev: totalRev,
-    cpa: cpaArr.length ? cpaArr.reduce((a,b)=>a+b,0)/cpaArr.length : null };
+    cpa: cpaArr.length ? cpaArr.reduce((a,b)=>a+b,0)/cpaArr.length : null,
+    roi };
   renderDashMetrics(metrics);
   if (totalSpend > 0) localStorage.setItem(cacheKey, JSON.stringify(metrics));
 }
@@ -1889,6 +1895,8 @@ function renderDashMetrics(m) {
   document.getElementById('dm-conv').textContent  = m?.conv  != null ? fmtNum(m.conv)  : '—'; // Total de Compras
   document.getElementById('dm-cpa').textContent   = m?.cpa   != null ? fmtBRL(m.cpa)   : '—'; // CPA
   document.getElementById('dm-spend').textContent = m?.spend != null ? fmtBRL(m.spend) : '—'; // Valor Investido
+  const roiEl = document.getElementById('dm-roi');
+  if (roiEl) roiEl.textContent = m?.roi != null ? m.roi.toFixed(2) + 'x' : '—'; // ROI
 }
 
 let dashTaskMap = {}; // { clientIdx: { id, statusCls, statusLabel } }
@@ -2441,7 +2449,8 @@ function applyCustomDate() {
 function updateWeekLabel() {
   const f = document.getElementById('date-from')?.value;
   const t = document.getElementById('date-to')?.value;
-  if (f && t) document.getElementById('week-label').textContent = `${fmt2(f)} – ${fmt2(t)}`;
+  const el = document.getElementById('week-label');
+  if (f && t && el) el.textContent = `${fmt2(f)} – ${fmt2(t)}`;
 }
 
 // ════════ NUVEMSHOP ════════

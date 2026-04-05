@@ -837,19 +837,10 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
     <div class="dash-pending-txt" id="dash-pending-txt">Carregando...</div>
   </div>
 
-  <!-- Seletor mês/ano -->
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px;flex-wrap:wrap;">
+  <!-- Período das métricas (fixo: mês anterior) -->
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:22px;">
     <span style="font-size:13px;color:var(--text3);font-weight:600;">Período das métricas:</span>
-    <select id="dash-month" onchange="loadDashboard()" style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);font-size:13px;font-family:'Lato',sans-serif;cursor:pointer;">
-      <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
-      <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
-      <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
-      <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
-    </select>
-    <select id="dash-year" onchange="loadDashboard()" style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);font-size:13px;font-family:'Lato',sans-serif;cursor:pointer;">
-      <option value="2025">2025</option><option value="2026">2026</option>
-    </select>
-    <span style="font-size:11px;color:var(--text3);font-style:italic;" id="dash-period-label"></span>
+    <span style="font-size:13px;color:var(--accent2);font-weight:700;" id="dash-period-label"></span>
   </div>
 
   <!-- Metric cards row 1 -->
@@ -1763,15 +1754,6 @@ function launch() {
   // Esconde week-badge da topbar (não usamos mais)
   const wb = document.getElementById('week-label');
   if (wb) wb.style.display = 'none';
-  // Inicializa seletor mês/ano com mês anterior
-  const now = new Date();
-  let defMonth = now.getMonth(); // 0-based, então é o mês anterior
-  let defYear  = now.getFullYear();
-  if (defMonth === 0) { defMonth = 12; defYear--; } // Janeiro → Dezembro do ano anterior
-  const mSel = document.getElementById('dash-month');
-  const ySel = document.getElementById('dash-year');
-  if (mSel) mSel.value = String(defMonth);
-  if (ySel) ySel.value = String(defYear);
   renderClients();
   renderHistory();
   renderClientSwitcher();
@@ -1792,9 +1774,19 @@ async function loadDashboard() {
   renderDashClientTable();
   loadClientStatuses();
 
-  const mSel2 = document.getElementById('dash-month');
-  const ySel2 = document.getElementById('dash-year');
-  const cacheKey = `metricana_dash_${ySel2?.value||'x'}_${mSel2?.value||'x'}`;
+  // Mês anterior fixo (ex: em abril → março)
+  const now = new Date();
+  let prevMonth = now.getMonth(); // getMonth() é 0-based → mês atual-1 = mês anterior (1-based)
+  let prevYear  = now.getFullYear();
+  if (prevMonth === 0) { prevMonth = 12; prevYear--; } // Janeiro → Dezembro do ano anterior
+  const lastDay = new Date(prevYear, prevMonth, 0).getDate();
+  const since = `${prevYear}-${String(prevMonth).padStart(2,'0')}-01`;
+  const until = `${prevYear}-${String(prevMonth).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  const monthNames = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const lbl = document.getElementById('dash-period-label');
+  if (lbl) lbl.textContent = `${monthNames[prevMonth]} ${prevYear} (${since} → ${until})`;
+
+  const cacheKey = `metricana_dash_${prevYear}_${prevMonth}`;
   const cached = localStorage.getItem(cacheKey);
   if (cached) {
     try {
@@ -1804,19 +1796,6 @@ async function loadDashboard() {
   }
 
   if (!clients.length || cfg.isDemo) { renderDashMetrics(null); return; }
-
-  // Usa mês/ano do seletor
-  const mSel = document.getElementById('dash-month');
-  const ySel = document.getElementById('dash-year');
-  const selMonth = mSel ? parseInt(mSel.value) : new Date().getMonth();
-  const selYear  = ySel ? parseInt(ySel.value)  : new Date().getFullYear();
-  const lastDay = new Date(selYear, selMonth, 0).getDate();
-  const since = `${selYear}-${String(selMonth).padStart(2,'0')}-01`;
-  const until = `${selYear}-${String(selMonth).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
-  const fmt = d => d;
-  const monthNames = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  const lbl = document.getElementById('dash-period-label');
-  if (lbl) lbl.textContent = `${monthNames[selMonth]} ${selYear} · ${since} → ${until}`;
 
   let totalSpend = 0, totalConv = 0, totalRev = 0, cpaArr = [];
   const validClients = clients.filter(c => {

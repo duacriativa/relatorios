@@ -1751,13 +1751,15 @@ function launch() {
   setGreeting();
   document.getElementById('app').style.display = 'block';
   applyQuickPeriod();
-  // Esconde week-badge da topbar (não usamos mais)
   const wb = document.getElementById('week-label');
   if (wb) wb.style.display = 'none';
   renderClients();
   renderHistory();
   renderClientSwitcher();
-  loadDashboard();
+  // Clientes na tabela do dashboard — IMEDIATO, antes de qualquer API
+  renderDashClientTable();
+  // Cards de métricas e status em background
+  setTimeout(() => loadDashboard(), 0);
   if (!cfg.isDemo) checkAllTokens();
 }
 
@@ -1818,38 +1820,33 @@ async function fetchDashMetrics(since, until, cacheKey) {
 
   let totalSpend = 0, totalConv = 0, totalRev = 0, cpaArr = [];
 
-  // Busca sequencialmente com timeout por cliente (não paralelo — evita sobrecarregar)
-  for (const c of validClients) {
+  // Paralelo com timeout de 12s por cliente
+  await Promise.all(validClients.map(async c => {
     try {
       const acct  = c.account_id || c.accountId;
       const token = resolveToken(c);
       const ctrl  = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 8000); // 8s timeout por cliente
+      const timer = setTimeout(() => ctrl.abort(), 12000);
       const url = `https://graph.facebook.com/v18.0/${acct}/insights?fields=spend,actions,action_values&time_range={"since":"${since}","until":"${until}"}&level=account&access_token=${token}`;
       const res  = await fetch(url, { signal: ctrl.signal });
       clearTimeout(timer);
       const json = await res.json();
-      if (json.error || !json.data?.[0]) continue;
-      const d    = json.data[0];
+      if (json.error || !json.data?.[0]) return;
+      const d     = json.data[0];
       const spend = parseFloat(d.spend || 0);
       const conv  = parseFloat((d.actions     ||[]).find(a=>a.action_type==='purchase')?.value || 0);
       const rev   = parseFloat((d.action_values||[]).find(a=>a.action_type==='purchase')?.value || 0);
       totalSpend += spend; totalConv += conv; totalRev += rev;
       if (spend > 0 && conv > 0) cpaArr.push(spend / conv);
-      // Atualiza os cards progressivamente a cada cliente processado
-      const partial = { spend: totalSpend, conv: totalConv, rev: totalRev,
-        cpa: cpaArr.length ? cpaArr.reduce((a,b)=>a+b,0)/cpaArr.length : null };
-      renderDashMetrics(partial);
     } catch(e) {
       if (e.name !== 'AbortError') console.warn(`Dash fetch (${c.name}):`, e.message);
     }
-  }
+  }));
 
-  if (totalSpend > 0) {
-    const metrics = { spend: totalSpend, conv: totalConv, rev: totalRev,
-      cpa: cpaArr.length ? cpaArr.reduce((a,b)=>a+b,0)/cpaArr.length : null };
-    localStorage.setItem(cacheKey, JSON.stringify(metrics));
-  }
+  const metrics = { spend: totalSpend, conv: totalConv, rev: totalRev,
+    cpa: cpaArr.length ? cpaArr.reduce((a,b)=>a+b,0)/cpaArr.length : null };
+  renderDashMetrics(metrics);
+  if (totalSpend > 0) localStorage.setItem(cacheKey, JSON.stringify(metrics));
 }
 
 function renderDashMetrics(m) {

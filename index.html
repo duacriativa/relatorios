@@ -865,7 +865,7 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <!-- STEP 1 -->
 <div class="panel" id="panel1">
 <div class="card">
-<div class="card-title" style="font-size:15px;margin-bottom:12px">📋 Template do Relatório</div>
+<div class="card-title" style="font-size:20px;margin-bottom:12px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800">Template do Relatório</div>
 <div class="sec-label" style="margin-bottom:10px">Escolha o modelo que melhor representa este cliente</div>
 <div class="tpl-grid" id="tpl-grid">
   <div class="tpl-card sel" onclick="selectTemplate('ecommerce')" id="tpl-ecommerce">
@@ -881,7 +881,7 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 </div>
 </div>
 <div class="card">
-<div class="card-title">📅 Período</div>
+<div class="card-title" style="font-size:20px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800">Período</div>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
 <div class="field" style="margin:0"><label>Início</label><input type="date" id="date-from" onchange="onDateChange()"/></div>
 <div class="field" style="margin:0"><label>Fim</label><input type="date" id="date-to" onchange="onDateChange()"/></div>
@@ -902,8 +902,8 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 </div>
 <!-- ══ SELETOR DE CAMPANHAS ══ -->
 <div class="card" id="card-camp-select" style="display:none">
-  <div class="card-title" style="margin-bottom:12px">
-    🎯 Selecionar campanhas
+  <div class="card-title" style="margin-bottom:12px;font-size:20px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800">
+    Selecionar Campanhas
     <span id="camp-sel-badge" class="camp-count-badge" style="display:none">0</span>
     <span class="status-pill ok" style="margin-left:auto;font-size:10px">✓ Campanhas carregadas</span>
   </div>
@@ -942,8 +942,8 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 </div>
 <div id="card-results" style="display:none">
 <div class="card">
-<div class="card-title">
-📊 Meta Ads - <span id="lbl-client2" style="color:var(--accent2)">—</span>
+<div class="card-title" style="font-size:20px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800">
+Meta Ads — <span id="lbl-client2" style="color:var(--accent2)">—</span>
 <span class="status-pill ok" style="margin-left:auto;font-size:10px">✓ API Meta</span>
 </div>
 <div class="metric-edit-bar">
@@ -1721,46 +1721,53 @@ async function loadDashboard() {
   const cacheKey = `metricana_dash_${weekKey}`;
   const cached = localStorage.getItem(cacheKey);
   if (cached) {
-    try { renderDashMetrics(JSON.parse(cached)); return; } catch(e) {}
+    try {
+      const m = JSON.parse(cached);
+      // Ignora cache zerado (fetch anterior falhou)
+      if (m && m.spend > 0) { renderDashMetrics(m); return; }
+    } catch(e) {}
   }
 
-  // Busca métricas da semana passada para todos os clientes
-  if (!clients.length || cfg.isDemo) {
-    renderDashMetrics(null);
-    return;
-  }
+  if (!clients.length || cfg.isDemo) { renderDashMetrics(null); return; }
 
-  // Datas: semana passada (últimos 7 dias)
+  // Semana anterior completa (Segunda → Domingo)
   const today = new Date();
-  const d7 = new Date(today); d7.setDate(today.getDate() - 7);
+  const dow = today.getDay(); // 0=Dom, 1=Seg ... 6=Sáb
+  const thisMonday = new Date(today);
+  thisMonday.setDate(today.getDate() - ((dow + 6) % 7));
+  const prevMonday = new Date(thisMonday); prevMonday.setDate(thisMonday.getDate() - 7);
+  const prevSunday = new Date(thisMonday); prevSunday.setDate(thisMonday.getDate() - 1);
   const fmt = d => d.toISOString().slice(0,10);
-  const since = fmt(d7), until = fmt(today);
+  const since = fmt(prevMonday), until = fmt(prevSunday);
 
   let totalSpend = 0, totalConv = 0, totalRev = 0, roasArr = [], cpaArr = [];
-  const promises = clients.filter(c => c.token && c.token !== 'DEMO' && c.account_id).map(async c => {
+  const validClients = clients.filter(c => c.token && c.token !== 'DEMO' && (c.account_id || c.accountId));
+  const promises = validClients.map(async c => {
     try {
-      const url = `https://graph.facebook.com/v18.0/act_${c.account_id}/insights?fields=spend,actions,action_values&time_range={"since":"${since}","until":"${until}"}&level=account&access_token=${c.token}`;
+      const acct = c.account_id || c.accountId;
+      const token = c.token;
+      const url = `https://graph.facebook.com/v18.0/act_${acct}/insights?fields=spend,actions,action_values&time_range={"since":"${since}","until":"${until}"}&level=account&access_token=${token}`;
       const res = await fetch(url);
       const json = await res.json();
       if (!json.data || !json.data[0]) return;
       const d = json.data[0];
       const spend = parseFloat(d.spend||0);
-      const conv = (d.actions||[]).find(a=>a.action_type==='purchase')?.value||0;
-      const rev = (d.action_values||[]).find(a=>a.action_type==='purchase')?.value||0;
+      const conv  = parseFloat((d.actions||[]).find(a=>a.action_type==='purchase')?.value||0);
+      const rev   = parseFloat((d.action_values||[]).find(a=>a.action_type==='purchase')?.value||0);
       totalSpend += spend;
-      totalConv += parseFloat(conv);
-      totalRev += parseFloat(rev);
-      if (spend > 0 && parseFloat(rev) > 0) roasArr.push(parseFloat(rev)/spend);
-      if (parseFloat(conv) > 0) cpaArr.push(spend/parseFloat(conv));
-    } catch(e) {}
+      totalConv  += conv;
+      totalRev   += rev;
+      if (spend > 0 && rev > 0)  roasArr.push(rev / spend);
+      if (spend > 0 && conv > 0) cpaArr.push(spend / conv);
+    } catch(e) { console.warn('Dashboard Meta fetch error:', e.message); }
   });
   await Promise.all(promises);
 
-  const avgRoas = roasArr.length ? (roasArr.reduce((a,b)=>a+b,0)/roasArr.length) : null;
-  const avgCpa  = cpaArr.length  ? (cpaArr.reduce((a,b)=>a+b,0)/cpaArr.length)   : null;
-
-  const metrics = { spend: totalSpend, conv: totalConv, roas: avgRoas, cpa: avgCpa };
-  localStorage.setItem(cacheKey, JSON.stringify(metrics));
+  const avgRoas = roasArr.length ? roasArr.reduce((a,b)=>a+b,0)/roasArr.length : null;
+  const avgCpa  = cpaArr.length  ? cpaArr.reduce((a,b)=>a+b,0)/cpaArr.length   : null;
+  const metrics = { spend: totalSpend, conv: totalConv, roas: avgRoas, cpa: avgCpa, since, until };
+  // Só cacheia se tiver dados reais
+  if (totalSpend > 0) localStorage.setItem(cacheKey, JSON.stringify(metrics));
   renderDashMetrics(metrics);
 }
 
@@ -1781,20 +1788,16 @@ function renderDashClientTable() {
     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">Nenhum cliente cadastrado.</td></tr>`;
     return;
   }
-  // Pega último relatório enviado por cliente do weekHistory
   const lastReport = {};
   (weekHistory||[]).forEach(h => { if (h.client) lastReport[h.client] = h.date||h.week||'—'; });
 
   tbody.innerHTML = clients.map((c,i) => {
-    const color = clientAvatarColor(c.name);
-    const initial = c.name.trim()[0].toUpperCase();
     const seg = c.segmento || '—';
     const recent = lastReport[c.name] || '—';
     return `<tr>
-      <td><div class="dash-client-cell">
-        <div class="dash-client-avatar" style="background:linear-gradient(135deg,${color},${color}99)">${initial}</div>
-        <span style="font-weight:600">${c.name}</span>
-      </div></td>
+      <td>
+        <button onclick="selectClient(${i})" style="background:none;border:none;padding:0;cursor:pointer;font-weight:700;font-size:14px;color:var(--text);font-family:'Bricolage Grotesque',sans-serif;text-align:left;" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='var(--text)'">${c.name}</button>
+      </td>
       <td style="color:var(--text2)">${seg}</td>
       <td style="color:var(--text3)">${recent}</td>
       <td><span class="dash-status pendente" id="dstatus-${i}">...</span></td>
@@ -1806,7 +1809,7 @@ function renderDashClientTable() {
 async function loadClientStatuses() {
   const pending = document.getElementById('dash-pending-txt');
   const pendingNum = document.getElementById('dm-pending');
-  if (!cfg.clickupToken || !cfg.clickupListId) {
+  if (!cfg.clickup || !cfg.listId) {
     if (pending) pending.textContent = 'Configure o ClickUp nas configurações para ver os status.';
     if (pendingNum) pendingNum.textContent = '—';
     clients.forEach((_,i) => {
@@ -1816,8 +1819,8 @@ async function loadClientStatuses() {
     return;
   }
   try {
-    const res = await fetch(`https://api.clickup.com/api/v2/list/${cfg.clickupListId}/task?page=0&limit=100`,
-      { headers: { Authorization: cfg.clickupToken } });
+    const res = await fetch(`https://api.clickup.com/api/v2/list/${cfg.listId}/task?page=0&limit=100`,
+      { headers: { Authorization: cfg.clickup } });
     const json = await res.json();
     const tasks = json.tasks || [];
 

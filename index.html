@@ -1769,66 +1769,87 @@ function getWeekKey() {
   return `${now.getFullYear()}-W${String(week).padStart(2,'0')}`;
 }
 
-async function loadDashboard() {
+function loadDashboard() {
   setGreeting();
-  renderDashClientTable();
-  loadClientStatuses();
 
-  // Mês anterior fixo (ex: em abril → março)
+  // Mês anterior fixo
   const now = new Date();
-  let prevMonth = now.getMonth(); // getMonth() é 0-based → mês atual-1 = mês anterior (1-based)
+  let prevMonth = now.getMonth(); // 0-based → mês atual = mês anterior em 1-based
   let prevYear  = now.getFullYear();
-  if (prevMonth === 0) { prevMonth = 12; prevYear--; } // Janeiro → Dezembro do ano anterior
+  if (prevMonth === 0) { prevMonth = 12; prevYear--; }
   const lastDay = new Date(prevYear, prevMonth, 0).getDate();
   const since = `${prevYear}-${String(prevMonth).padStart(2,'0')}-01`;
   const until = `${prevYear}-${String(prevMonth).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
   const monthNames = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const lbl = document.getElementById('dash-period-label');
-  if (lbl) lbl.textContent = `${monthNames[prevMonth]} ${prevYear} (${since} → ${until})`;
+  if (lbl) lbl.textContent = `${monthNames[prevMonth]} ${prevYear}`;
 
+  // 1. Mostra clientes IMEDIATAMENTE (não depende de API)
+  renderDashClientTable();
+
+  // 2. Tenta cache primeiro — mostra IMEDIATAMENTE se existir
   const cacheKey = `metricana_dash_${prevYear}_${prevMonth}`;
   const cached = localStorage.getItem(cacheKey);
   if (cached) {
     try {
       const m = JSON.parse(cached);
-      if (m && m.spend > 0) { renderDashMetrics(m); return; }
+      if (m && m.spend > 0) {
+        renderDashMetrics(m);
+        // Mesmo com cache, busca ClickUp em background (leve)
+        loadClientStatuses();
+        return;
+      }
     } catch(e) {}
   }
 
-  if (!clients.length || cfg.isDemo) { renderDashMetrics(null); return; }
+  // 3. Sem cache: mostra "—" imediatamente e busca em background
+  renderDashMetrics(null);
+  loadClientStatuses();
+
+  if (!clients.length || cfg.isDemo) return;
+
+  // Busca em background — não bloqueia UI
+  fetchDashMetrics(since, until, cacheKey);
+}
+
+async function fetchDashMetrics(since, until, cacheKey) {
+  const validClients = clients.filter(c => resolveToken(c) && (c.account_id || c.accountId));
+  if (!validClients.length) return;
 
   let totalSpend = 0, totalConv = 0, totalRev = 0, cpaArr = [];
-  const validClients = clients.filter(c => {
-    const token = resolveToken(c);
-    return token && (c.account_id || c.accountId);
-  });
 
-  const promises = validClients.map(async c => {
+  // Busca sequencialmente com timeout por cliente (não paralelo — evita sobrecarregar)
+  for (const c of validClients) {
     try {
       const acct  = c.account_id || c.accountId;
       const token = resolveToken(c);
-      // Usa o mesmo formato de URL que o fetch individual (sem adicionar act_ — já vem do DB)
+      const ctrl  = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000); // 8s timeout por cliente
       const url = `https://graph.facebook.com/v18.0/${acct}/insights?fields=spend,actions,action_values&time_range={"since":"${since}","until":"${until}"}&level=account&access_token=${token}`;
-      const res  = await fetch(url);
+      const res  = await fetch(url, { signal: ctrl.signal });
+      clearTimeout(timer);
       const json = await res.json();
-      if (json.error) { console.warn(`Meta API error for ${c.name}:`, json.error.message); return; }
-      if (!json.data || !json.data[0]) return;
-      const d     = json.data[0];
+      if (json.error || !json.data?.[0]) continue;
+      const d    = json.data[0];
       const spend = parseFloat(d.spend || 0);
       const conv  = parseFloat((d.actions     ||[]).find(a=>a.action_type==='purchase')?.value || 0);
       const rev   = parseFloat((d.action_values||[]).find(a=>a.action_type==='purchase')?.value || 0);
-      totalSpend += spend;
-      totalConv  += conv;
-      totalRev   += rev;
+      totalSpend += spend; totalConv += conv; totalRev += rev;
       if (spend > 0 && conv > 0) cpaArr.push(spend / conv);
-    } catch(e) { console.warn(`Dashboard fetch error (${c.name}):`, e.message); }
-  });
-  await Promise.all(promises);
+      // Atualiza os cards progressivamente a cada cliente processado
+      const partial = { spend: totalSpend, conv: totalConv, rev: totalRev,
+        cpa: cpaArr.length ? cpaArr.reduce((a,b)=>a+b,0)/cpaArr.length : null };
+      renderDashMetrics(partial);
+    } catch(e) {
+      if (e.name !== 'AbortError') console.warn(`Dash fetch (${c.name}):`, e.message);
+    }
+  }
 
-  const avgCpa = cpaArr.length ? cpaArr.reduce((a,b)=>a+b,0)/cpaArr.length : null;
-  const metrics = { spend: totalSpend, conv: totalConv, rev: totalRev, cpa: avgCpa, since, until };
-  if (totalSpend > 0) localStorage.setItem(cacheKey, JSON.stringify(metrics));
-  renderDashMetrics(metrics);
+  if (totalSpend > 0) {
+    const metrics = { spend: totalSpend, conv: totalConv, rev: totalRev,
+      cpa: cpaArr.length ? cpaArr.reduce((a,b)=>a+b,0)/cpaArr.length : null };
+    localStorage.setItem(cacheKey, JSON.stringify(metrics));
+  }
 }
 
 function renderDashMetrics(m) {

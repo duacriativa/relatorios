@@ -316,6 +316,15 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 .btn-view:hover{border-color:var(--accent);color:var(--accent2);background:var(--accentbg);}
 .dash-client-avatar{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;flex-shrink:0;margin-right:8px;}
 .dash-client-cell{display:flex;align-items:center;}
+/* Status dropdown */
+.dash-status-wrap{position:relative;display:inline-block;}
+.dash-status{cursor:pointer;}
+.dash-status:hover{opacity:.85;}
+.dash-status-dd{position:absolute;top:calc(100% + 6px);left:0;z-index:400;background:var(--modal-bg);border:1px solid var(--border);border-radius:10px;padding:4px;min-width:160px;box-shadow:0 8px 28px rgba(0,0,0,.35);display:none;}
+.dash-status-dd.open{display:block;}
+.dash-status-opt{padding:8px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;transition:background .12s;display:flex;align-items:center;gap:7px;white-space:nowrap;}
+.dash-status-opt:hover{background:var(--s3);}
+.dash-status-opt .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .action-row{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;align-items:center;}
 /* Pill buttons — estilo inspirado no ProgressIndicator */
@@ -807,23 +816,23 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
   <!-- Metric cards row 1 -->
   <div class="dash-metric-grid">
     <div class="dash-mc">
-      <div class="dash-mc-label">Total ROAS Médio (Agência)</div>
-      <div><span class="dash-mc-value" id="dm-roas">—</span><span class="dash-mc-delta pos" id="dm-roas-d"></span></div>
+      <div class="dash-mc-label">Valor Faturado</div>
+      <div><span class="dash-mc-value" id="dm-roas">—</span></div>
     </div>
     <div class="dash-mc">
-      <div class="dash-mc-label">Total Conversões</div>
-      <div><span class="dash-mc-value" id="dm-conv">—</span><span class="dash-mc-delta pos" id="dm-conv-d"></span></div>
+      <div class="dash-mc-label">Total de Compras</div>
+      <div><span class="dash-mc-value" id="dm-conv">—</span></div>
     </div>
     <div class="dash-mc">
-      <div class="dash-mc-label">CPA Médio (Agência)</div>
-      <div><span class="dash-mc-value" id="dm-cpa">—</span><span class="dash-mc-delta neg" id="dm-cpa-d"></span></div>
+      <div class="dash-mc-label">CPA</div>
+      <div><span class="dash-mc-value" id="dm-cpa">—</span></div>
     </div>
   </div>
 
   <!-- Metric cards row 2 -->
   <div class="dash-metric-grid-2">
     <div class="dash-mc">
-      <div class="dash-mc-label">Total Gasto</div>
+      <div class="dash-mc-label">Valor Investido</div>
       <div><span class="dash-mc-value" id="dm-spend">—</span></div>
     </div>
     <div class="dash-mc">
@@ -1730,56 +1739,57 @@ async function loadDashboard() {
 
   if (!clients.length || cfg.isDemo) { renderDashMetrics(null); return; }
 
-  // Semana anterior completa (Segunda → Domingo)
+  // Últimos 7 dias (igual ao período padrão da topbar)
   const today = new Date();
-  const dow = today.getDay(); // 0=Dom, 1=Seg ... 6=Sáb
-  const thisMonday = new Date(today);
-  thisMonday.setDate(today.getDate() - ((dow + 6) % 7));
-  const prevMonday = new Date(thisMonday); prevMonday.setDate(thisMonday.getDate() - 7);
-  const prevSunday = new Date(thisMonday); prevSunday.setDate(thisMonday.getDate() - 1);
+  const d7 = new Date(today); d7.setDate(today.getDate() - 7);
   const fmt = d => d.toISOString().slice(0,10);
-  const since = fmt(prevMonday), until = fmt(prevSunday);
+  const since = fmt(d7), until = fmt(today);
 
-  let totalSpend = 0, totalConv = 0, totalRev = 0, roasArr = [], cpaArr = [];
-  const validClients = clients.filter(c => c.token && c.token !== 'DEMO' && (c.account_id || c.accountId));
+  let totalSpend = 0, totalConv = 0, totalRev = 0, cpaArr = [];
+  const validClients = clients.filter(c => {
+    const token = resolveToken(c);
+    return token && (c.account_id || c.accountId);
+  });
+
   const promises = validClients.map(async c => {
     try {
-      const acct = c.account_id || c.accountId;
-      const token = c.token;
-      const url = `https://graph.facebook.com/v18.0/act_${acct}/insights?fields=spend,actions,action_values&time_range={"since":"${since}","until":"${until}"}&level=account&access_token=${token}`;
-      const res = await fetch(url);
+      const acct  = c.account_id || c.accountId;
+      const token = resolveToken(c);
+      // Usa o mesmo formato de URL que o fetch individual (sem adicionar act_ — já vem do DB)
+      const url = `https://graph.facebook.com/v18.0/${acct}/insights?fields=spend,actions,action_values&time_range={"since":"${since}","until":"${until}"}&level=account&access_token=${token}`;
+      const res  = await fetch(url);
       const json = await res.json();
+      if (json.error) { console.warn(`Meta API error for ${c.name}:`, json.error.message); return; }
       if (!json.data || !json.data[0]) return;
-      const d = json.data[0];
-      const spend = parseFloat(d.spend||0);
-      const conv  = parseFloat((d.actions||[]).find(a=>a.action_type==='purchase')?.value||0);
-      const rev   = parseFloat((d.action_values||[]).find(a=>a.action_type==='purchase')?.value||0);
+      const d     = json.data[0];
+      const spend = parseFloat(d.spend || 0);
+      const conv  = parseFloat((d.actions     ||[]).find(a=>a.action_type==='purchase')?.value || 0);
+      const rev   = parseFloat((d.action_values||[]).find(a=>a.action_type==='purchase')?.value || 0);
       totalSpend += spend;
       totalConv  += conv;
       totalRev   += rev;
-      if (spend > 0 && rev > 0)  roasArr.push(rev / spend);
       if (spend > 0 && conv > 0) cpaArr.push(spend / conv);
-    } catch(e) { console.warn('Dashboard Meta fetch error:', e.message); }
+    } catch(e) { console.warn(`Dashboard fetch error (${c.name}):`, e.message); }
   });
   await Promise.all(promises);
 
-  const avgRoas = roasArr.length ? roasArr.reduce((a,b)=>a+b,0)/roasArr.length : null;
-  const avgCpa  = cpaArr.length  ? cpaArr.reduce((a,b)=>a+b,0)/cpaArr.length   : null;
-  const metrics = { spend: totalSpend, conv: totalConv, roas: avgRoas, cpa: avgCpa, since, until };
-  // Só cacheia se tiver dados reais
+  const avgCpa = cpaArr.length ? cpaArr.reduce((a,b)=>a+b,0)/cpaArr.length : null;
+  const metrics = { spend: totalSpend, conv: totalConv, rev: totalRev, cpa: avgCpa, since, until };
   if (totalSpend > 0) localStorage.setItem(cacheKey, JSON.stringify(metrics));
   renderDashMetrics(metrics);
 }
 
 function renderDashMetrics(m) {
-  const fmtBRL = v => v != null ? 'R$' + v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
-  const fmtNum = v => v != null ? v.toLocaleString('pt-BR') : '—';
+  const fmtBRL = v => v != null ? 'R$' + parseFloat(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+  const fmtNum = v => v != null ? Math.round(v).toLocaleString('pt-BR') : '—';
 
-  document.getElementById('dm-roas').textContent  = m?.roas  != null ? m.roas.toFixed(1)+'x' : '—';
-  document.getElementById('dm-conv').textContent  = m?.conv  != null ? fmtNum(Math.round(m.conv)) : '—';
-  document.getElementById('dm-cpa').textContent   = m?.cpa   != null ? fmtBRL(m.cpa) : '—';
-  document.getElementById('dm-spend').textContent = m?.spend != null ? fmtBRL(m.spend) : '—';
+  document.getElementById('dm-roas').textContent  = m?.rev   != null ? fmtBRL(m.rev)   : '—'; // Valor Faturado
+  document.getElementById('dm-conv').textContent  = m?.conv  != null ? fmtNum(m.conv)  : '—'; // Total de Compras
+  document.getElementById('dm-cpa').textContent   = m?.cpa   != null ? fmtBRL(m.cpa)   : '—'; // CPA
+  document.getElementById('dm-spend').textContent = m?.spend != null ? fmtBRL(m.spend) : '—'; // Valor Investido
 }
+
+let dashTaskMap = {}; // { clientIdx: { id, statusCls, statusLabel } }
 
 function renderDashClientTable() {
   const tbody = document.getElementById('dash-client-tbody');
@@ -1800,10 +1810,59 @@ function renderDashClientTable() {
       </td>
       <td style="color:var(--text2)">${seg}</td>
       <td style="color:var(--text3)">${recent}</td>
-      <td><span class="dash-status pendente" id="dstatus-${i}">...</span></td>
+      <td>
+        <div class="dash-status-wrap" id="dswrap-${i}">
+          <span class="dash-status pendente" id="dstatus-${i}" onclick="toggleStatusDd(${i},event)">...</span>
+          <div class="dash-status-dd" id="dsdd-${i}">
+            <div class="dash-status-opt" onclick="updateDashStatus(${i},'pendente','Pendente',event)"><span class="dot" style="background:#7c3aed"></span>Pendente</div>
+            <div class="dash-status-opt" onclick="updateDashStatus(${i},'progresso','Em Progresso',event)"><span class="dot" style="background:#f59e0b"></span>Em Progresso</div>
+            <div class="dash-status-opt" onclick="updateDashStatus(${i},'enviar','A Enviar',event)"><span class="dot" style="background:#f59e0b"></span>A Enviar</div>
+            <div class="dash-status-opt" onclick="updateDashStatus(${i},'concluido','Concluído',event)"><span class="dot" style="background:#22c55e"></span>Concluído</div>
+          </div>
+        </div>
+      </td>
       <td><button class="btn-view" onclick="selectClient(${i})">View</button></td>
     </tr>`;
   }).join('');
+}
+
+function toggleStatusDd(i, e) {
+  e.stopPropagation();
+  // Fecha outros dropdowns abertos
+  document.querySelectorAll('.dash-status-dd.open').forEach(d => { if (d.id !== `dsdd-${i}`) d.classList.remove('open'); });
+  document.getElementById(`dsdd-${i}`)?.classList.toggle('open');
+}
+// Fecha dropdown ao clicar fora
+document.addEventListener('click', () => document.querySelectorAll('.dash-status-dd.open').forEach(d => d.classList.remove('open')));
+
+async function updateDashStatus(i, cls, label, e) {
+  e.stopPropagation();
+  document.getElementById(`dsdd-${i}`)?.classList.remove('open');
+  const el = document.getElementById(`dstatus-${i}`);
+  if (el) { el.textContent = label; el.className = `dash-status ${cls}`; }
+
+  const taskInfo = dashTaskMap[i];
+  if (!taskInfo?.id || !cfg.clickup) return;
+
+  // Mapeia cls → nome de status no ClickUp
+  const cuStatusMap = {
+    pendente:  'pendente',
+    progresso: 'em progresso',
+    enviar:    'enviar grupo cliente',
+    concluido: 'concluído'
+  };
+  const cuStatus = cuStatusMap[cls] || cls;
+  try {
+    const res = await fetch(`https://api.clickup.com/api/v2/task/${taskInfo.id}`, {
+      method: 'PUT',
+      headers: { Authorization: cfg.clickup, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: cuStatus })
+    });
+    const json = await res.json();
+    if (json.err) { toast('Erro ao atualizar no ClickUp: ' + json.err); return; }
+    toast(`✓ Status de ${clients[i]?.name} atualizado no ClickUp`);
+    dashTaskMap[i] = { ...taskInfo, statusCls: cls, statusLabel: label };
+  } catch(err) { toast('Erro de conexão com ClickUp'); }
 }
 
 async function loadClientStatuses() {
@@ -1823,8 +1882,6 @@ async function loadClientStatuses() {
       { headers: { Authorization: cfg.clickup } });
     const json = await res.json();
     const tasks = json.tasks || [];
-
-    const statusMap = { pendente:0, 'em progresso':0, 'a enviar':0, 'concluído':0, concluido:0 };
     let pendCount = 0;
 
     clients.forEach((c,i) => {
@@ -1836,16 +1893,21 @@ async function loadClientStatuses() {
         const tl = t.name.toLowerCase();
         return tl.includes(cLow) || words.some(w=>tl.includes(w));
       });
-      if (!task) { el.textContent = 'Sem task'; el.className = 'dash-status'; return; }
+      if (!task) {
+        el.textContent = 'Sem task'; el.className = 'dash-status';
+        dashTaskMap[i] = null;
+        return;
+      }
       const rawStatus = (task.status?.status||'').toLowerCase().trim();
       let cls = 'pendente', label = 'Pendente';
-      if (rawStatus.includes('conclu')) { cls='concluido'; label='Concluído'; }
-      else if (rawStatus.includes('progresso')||rawStatus.includes('progress')) { cls='progresso'; label='Em Progresso'; }
-      else if (rawStatus.includes('enviar')||rawStatus.includes('send')) { cls='enviar'; label='A Enviar'; }
-      else if (rawStatus.includes('ativo')||rawStatus.includes('open')||rawStatus.includes('aberto')) { cls='ativo'; label='Ativo'; }
+      if (rawStatus.includes('conclu'))                                        { cls='concluido'; label='Concluído'; }
+      else if (rawStatus.includes('progresso')||rawStatus.includes('progress')){ cls='progresso'; label='Em Progresso'; }
+      else if (rawStatus.includes('enviar')||rawStatus.includes('send'))       { cls='enviar';    label='A Enviar'; }
+      else if (rawStatus.includes('ativo')||rawStatus.includes('aberto'))      { cls='ativo';     label='Ativo'; }
       if (cls==='pendente'||cls==='enviar'||cls==='progresso') pendCount++;
       el.textContent = label;
       el.className = `dash-status ${cls}`;
+      dashTaskMap[i] = { id: task.id, statusCls: cls, statusLabel: label };
     });
 
     if (pending) pending.textContent = `Você tem ${pendCount} relatório${pendCount!==1?'s':''} pendente${pendCount!==1?'s':''} para essa semana.`;

@@ -541,8 +541,9 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
   /* Metric grids — 2 colunas */
   .dash-metric-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
   .dash-metric-grid-2{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px;}
-  .dash-mc{padding:16px 14px;}
-  .dash-mc-value{font-size:22px;}
+  .dash-mc{padding:14px 12px;}
+  .dash-mc-label{font-size:11px;margin-bottom:6px;}
+  .dash-mc-value{font-size:clamp(15px,4.5vw,22px);}
 
   /* Período picker — wrap */
   #dash-period-wrap + button{font-size:11px;padding:3px 9px;}
@@ -576,7 +577,8 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 @media(max-width:480px){
   .dash-metric-grid{grid-template-columns:1fr 1fr;}
   .dash-metric-grid-2{grid-template-columns:1fr 1fr;}
-  .dash-mc-value{font-size:19px;}
+  .dash-mc-value{font-size:clamp(13px,3.8vw,18px);}
+  .dash-h1{font-size:22px;}
 }
 
 /* ══════════ METRIC DRAG & DROP ══════════ */

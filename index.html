@@ -3218,14 +3218,18 @@ function renderCuSummary(d, isMsgsTpl, msgsQty, custoMsg, fmtBRL) {
       (msgsQty>0 ? mb('Msgs Iniciadas', msgsQty.toLocaleString('pt-BR'), true) : '') +
       (msgsQty>0 ? mb('Custo/Msg', custoMsg) : '');
   } else {
-    const nsBadge = d.nsSource ? ' 🛍️' : '';
+    const nsBadge   = d.nsSource ? ' 🛍️' : '';
+    const dispRev   = d.nsSource && d.nsRevenue > 0 ? d.nsRevenue : d.revVal;
+    const dispOrd   = d.nsSource && d.nsOrders  > 0 ? d.nsOrders  : d.convQty;
+    const dispROI   = d.spend > 0 && dispRev > 0 ? (dispRev / d.spend).toFixed(2) : '—';
+    const dispCPA   = dispOrd > 0 ? fmtBRL(d.spend / dispOrd) : (d.cpa !== '—' ? 'R$ '+parseFloat(d.cpa).toFixed(2) : '—');
     metricsEl.innerHTML =
       mb('Investido', fmtBRL(d.spend), true) +
-      mb('ROI', d.roi !== '—' ? d.roi+'x' : '—') +
-      mb('Conversões'+nsBadge, d.convQty) +
-      mb('Receita'+nsBadge, d.revVal>0?fmtBRL(d.revVal):'—') +
-      (d.nsSource && d.convQty>0 ? mb('Ticket Médio'+nsBadge, fmtBRL(d.revVal/d.convQty)) : '') +
-      mb('CPA', d.cpa!=='—'?'R$ '+parseFloat(d.cpa).toFixed(2):'—') +
+      mb('ROI', dispROI !== '—' ? dispROI+'x' : '—') +
+      mb('Conversões'+nsBadge, dispOrd) +
+      mb('Receita'+nsBadge, dispRev > 0 ? fmtBRL(dispRev) : '—') +
+      (dispOrd > 0 && dispRev > 0 ? mb('Ticket Médio'+nsBadge, fmtBRL(dispRev / dispOrd)) : '') +
+      mb('CPA', dispCPA) +
       mb('Cliques', parseInt(d.clicks).toLocaleString('pt-BR')) +
       mb('CTR', parseFloat(d.ctr).toFixed(2)+'%');
   }
@@ -3304,18 +3308,23 @@ function buildCUPreview() {
     if (msgsQty > 0) rows.push(['Mensagens Iniciadas', msgsQty.toLocaleString('pt-BR')]);
     if (msgsQty > 0) rows.push(['Custo por Msg', custoMsg]);
   } else {
+    const nsRev    = d.nsSource && d.nsRevenue > 0 ? d.nsRevenue : d.revVal;
+    const nsOrd    = d.nsSource && d.nsOrders  > 0 ? d.nsOrders  : d.convQty;
+    const nsROI    = d.spend > 0 && nsRev > 0 ? (nsRev / d.spend).toFixed(2) : d.roi;
+    const nsCPA    = nsOrd > 0 ? fmtBRL(d.spend / nsOrd) : (d.cpa !== '—' ? fmtBRL(parseFloat(d.cpa)) : '—');
+    const suffix   = d.nsSource ? ' (Nuvemshop)' : '';
     rows = [
       ['Investido',   fmtBRL(d.spend)],
-      ['Receita',     d.revVal>0 ? fmtBRL(d.revVal)+(d.nsSource?' (Nuvemshop)':'') : '—'],
-      ['ROI',         d.roi+'x'],
-      ['Conversões',  String(d.convQty)+(d.nsSource?' (Nuvemshop)':'')],
-      ['CPA',         d.cpa!=='—' ? fmtBRL(parseFloat(d.cpa)) : '—'],
+      ['Receita',     nsRev > 0 ? fmtBRL(nsRev) + suffix : '—'],
+      ['ROI',         nsROI + 'x'],
+      ['Conversões',  String(nsOrd) + suffix],
+      ['CPA',         nsCPA],
       ['Cliques',     d.clicks.toLocaleString('pt-BR')],
       ['Impressões',  d.impr.toLocaleString('pt-BR')],
       ['CTR',         parseFloat(d.ctr).toFixed(2)+'%'],
       ['Período',     `${fmt2(d.from)} – ${fmt2(d.to)}`],
     ];
-    if (d.nsSource && d.convQty > 0) rows.push(['Ticket Médio (NS)', fmtBRL(d.revVal / d.convQty)]);
+    if (d.nsSource && nsOrd > 0) rows.push(['Ticket Médio (NS)', fmtBRL(nsRev / nsOrd)]);
     if (d.nsSource && (d.nsNewCustomers > 0 || d.nsReturningCustomers > 0)) {
       rows.push(['Clientes Novos (NS)',      d.nsNewCustomers]);
       rows.push(['Clientes Recorrentes (NS)', d.nsReturningCustomers]);

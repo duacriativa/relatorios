@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     `https://api.nuvemshop.com.br/v1/${storeId}/orders`,
     `?payment_status=paid`,
     `&created_at_min=${from}`,
-    `&created_at_max=${to}T23:59:59`,
+    `&created_at_max=${to}T23:59:59-03:00`,
     `&per_page=${perPage || 200}`,
     `&page=${page || 1}`
   ].join('');

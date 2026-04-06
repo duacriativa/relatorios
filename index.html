@@ -493,11 +493,90 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 .edit-mode-banner{background:var(--accentbg);border:1px solid rgba(99,102,241,.25);border-radius:var(--radius2);padding:9px 13px;font-size:12px;color:var(--accent2);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .edit-mode-banner button{background:transparent;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:2px 6px;}
 .edit-mode-banner button:hover{color:var(--red);}
-/* Responsive */
-@media(max-width:680px){
-.panel{padding:14px;} .topbar{padding:0 14px;} .tabs{padding:0 8px;}
-.tab{padding:11px 10px;font-size:12px;} .metrics-auto{grid-template-columns:repeat(2,1fr);}
-.topbar-brand{font-size:14px;} .week-badge{display:none;}
+/* ══════════ MOBILE OVERLAY ══════════ */
+#sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:199;backdrop-filter:blur(2px);}
+#sidebar-overlay.open{display:block;}
+
+/* ══════════ RESPONSIVE — TABLET ══════════ */
+@media(max-width:900px){
+  .dash-metric-grid{grid-template-columns:repeat(2,1fr);}
+  .dash-metric-grid-2{grid-template-columns:repeat(2,1fr);}
+  .dash-wrap{padding:28px 24px;}
+}
+
+/* ══════════ RESPONSIVE — MOBILE ══════════ */
+@media(max-width:768px){
+  /* Sidebar vira overlay deslizante */
+  .sidebar{
+    position:fixed;top:0;left:0;height:100vh;z-index:200;
+    transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+    box-shadow:none;
+  }
+  .sidebar.mobile-open{transform:translateX(0);box-shadow:4px 0 32px rgba(0,0,0,.5);}
+  /* Cancela collapsed no mobile — sidebar sempre cheia quando aberta */
+  .sidebar.collapsed{width:var(--sidebar-width);}
+  .sidebar.collapsed .si-label{opacity:1;width:auto;overflow:visible;}
+  .sidebar.collapsed .sidebar-logo{opacity:1;width:auto;}
+  .sidebar.collapsed .sidebar-header{justify-content:space-between;padding:16px 14px;}
+  .sidebar.collapsed .si-num{margin-left:auto;margin-right:0;}
+
+  /* Main ocupa largura total */
+  .main-content{margin-left:0 !important;}
+  .sidebar.collapsed ~ .main-content{margin-left:0 !important;}
+
+  /* Topbar mobile */
+  .topbar{padding:0 16px;gap:10px;}
+  .topbar-mobile-menu{display:flex !important;align-items:center;justify-content:center;}
+  .topbar-mobile-menu:hover{background:var(--s3) !important;}
+  .sidebar-toggle{display:none;} /* esconde toggle dentro da sidebar no mobile */
+
+  /* Dashboard hero */
+  .dash-wrap{padding:20px 16px;}
+  .dash-h1{font-size:26px;}
+  .dash-h2{font-size:17px;margin-top:4px;}
+  .dash-pending-txt{font-size:13px;}
+  .dash-hero{margin-bottom:22px;}
+  .dash-hero-glow{display:none;}
+
+  /* Metric grids — 2 colunas */
+  .dash-metric-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
+  .dash-metric-grid-2{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px;}
+  .dash-mc{padding:16px 14px;}
+  .dash-mc-value{font-size:22px;}
+
+  /* Período picker — wrap */
+  #dash-period-wrap + button{font-size:11px;padding:3px 9px;}
+
+  /* Section title menor */
+  .dash-section-title{font-size:15px;}
+
+  /* Tabela de clientes — scroll horizontal */
+  .dash-table-wrap{overflow-x:auto;}
+  .dash-table{min-width:480px;}
+
+  /* Panels */
+  .panel{padding:16px;}
+  .topbar{padding:0 16px;}
+  .tabs{padding:0 6px;gap:0;}
+  .tab{padding:10px 8px;font-size:11px;}
+  .metrics-auto{grid-template-columns:repeat(2,1fr);}
+  .topbar-brand{font-size:13px;}
+  .week-badge{display:none;}
+
+  /* Client switcher topbar — texto menor */
+  .tcs-name{font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;}
+
+  /* Modais full-screen */
+  .modal{width:95vw;max-width:none;max-height:85vh;}
+
+  /* Period picker dropdown alinha à direita se estiver perto da borda */
+  .dash-period-dd{left:auto;right:0;}
+}
+
+@media(max-width:480px){
+  .dash-metric-grid{grid-template-columns:1fr 1fr;}
+  .dash-metric-grid-2{grid-template-columns:1fr 1fr;}
+  .dash-mc-value{font-size:19px;}
 }
 
 /* ══════════ METRIC DRAG & DROP ══════════ */
@@ -812,8 +891,13 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 
 <!-- MAIN -->
 <div class="main-content" id="main-content">
+<div id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
 <div class="topbar">
 <div class="topbar-left">
+  <!-- Hamburger mobile -->
+  <button class="topbar-mobile-menu" id="topbar-mobile-menu" onclick="toggleMobileSidebar()" style="display:none;background:none;border:none;cursor:pointer;color:var(--text2);padding:6px;border-radius:8px;flex-shrink:0;" title="Menu">
+    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
   <!-- seletor de cliente no topbar -->
   <div class="topbar-client-switcher" id="topbar-switcher" style="display:none">
     <button class="tcs-btn" id="tcs-btn" onclick="toggleClientSwitcher(event)">
@@ -2095,7 +2179,10 @@ async function loadClientStatuses() {
 
 // ════════ SIDEBAR ════════
 let sidebarCollapsed = false;
+function isMobile() { return window.innerWidth <= 768; }
+
 function toggleSidebar() {
+  if (isMobile()) { toggleMobileSidebar(); return; }
   sidebarCollapsed = !sidebarCollapsed;
   const sidebar = document.getElementById('sidebar');
   const main = document.getElementById('main-content');
@@ -2103,10 +2190,29 @@ function toggleSidebar() {
   if (main) main.style.marginLeft = sidebarCollapsed ? '64px' : 'var(--sidebar-width)';
 }
 function collapseSidebar() {
+  if (isMobile()) { closeMobileSidebar(); return; }
   if (!sidebarCollapsed) toggleSidebar();
 }
 function expandSidebar() {
+  if (isMobile()) return;
   if (sidebarCollapsed) toggleSidebar();
+}
+
+// Mobile sidebar (overlay)
+function toggleMobileSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const isOpen = sidebar.classList.contains('mobile-open');
+  sidebar.classList.toggle('mobile-open', !isOpen);
+  if (overlay) overlay.classList.toggle('open', !isOpen);
+  document.body.style.overflow = isOpen ? '' : 'hidden';
+}
+function closeMobileSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  sidebar.classList.remove('mobile-open');
+  if (overlay) overlay.classList.remove('open');
+  document.body.style.overflow = '';
 }
 // Auto-collapse: recolhe ao clicar em item do menu (etapa)
 (function() {
@@ -2183,8 +2289,9 @@ function goStep(n) {
   });
   step = n;
   window.scrollTo({top:0,behavior:'smooth'});
-  // Auto-collapse sidebar ao navegar para qualquer etapa
-  if (n > 0) collapseSidebar();
+  // Mobile: fecha sidebar ao navegar. Desktop: recolhe ao ir pra etapas > 0
+  if (isMobile()) { closeMobileSidebar(); }
+  else if (n > 0) { collapseSidebar(); }
 }
 
 // ════════ CLIENTS ════════

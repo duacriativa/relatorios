@@ -2763,10 +2763,10 @@ async function fetchData() {
     document.getElementById('loading-msg').innerHTML = 'Carregando campanhas<span class="dots"></span>';
     await new Promise(r => setTimeout(r, 800));
     allCampaigns = [
-      { id: 'demo1', name: '[DEMO] Campanha Produto A', status: 'ACTIVE',  objective: 'OUTCOME_SALES'   },
-      { id: 'demo2', name: '[DEMO] Mensagens WhatsApp',  status: 'ACTIVE',  objective: 'MESSAGES'        },
-      { id: 'demo3', name: '[DEMO] Retargeting',         status: 'ACTIVE',  objective: 'OUTCOME_SALES'   },
-      { id: 'demo4', name: '[DEMO] Tráfego Instagram',   status: 'PAUSED', objective: 'OUTCOME_TRAFFIC' },
+      { id: 'demo1', name: '[DEMO] Campanha Produto A', status: 'ACTIVE',  effective_status: 'ACTIVE',  objective: 'OUTCOME_SALES',   _hadDelivery: true  },
+      { id: 'demo2', name: '[DEMO] Mensagens WhatsApp',  status: 'ACTIVE',  effective_status: 'ACTIVE',  objective: 'MESSAGES',        _hadDelivery: true  },
+      { id: 'demo3', name: '[DEMO] Retargeting',         status: 'ACTIVE',  effective_status: 'ACTIVE',  objective: 'OUTCOME_SALES',   _hadDelivery: true  },
+      { id: 'demo4', name: '[DEMO] Tráfego Instagram',   status: 'PAUSED', effective_status: 'PAUSED', objective: 'OUTCOME_TRAFFIC', _hadDelivery: false },
     ];
     prog.style.width = '100%'; progLbl.textContent = 'Campanhas carregadas!';
     await new Promise(r => setTimeout(r, 300));
@@ -2802,19 +2802,36 @@ async function fetchData() {
   }
 
   try {
-    prog.style.width = '30%'; progLbl.textContent = 'Buscando campanhas...';
+    prog.style.width = '25%'; progLbl.textContent = 'Buscando campanhas...';
     document.getElementById('loading-msg').innerHTML = 'Carregando campanhas do Meta<span class="dots"></span>';
 
     const accountId = selClient.accountId || selClient.account_id;
-    const campUrl = `https://graph.facebook.com/v18.0/${accountId}/campaigns?fields=name,status,effective_status,objective&limit=200&access_token=${token}`;
+    const campUrl = `https://graph.facebook.com/v18.0/${accountId}/campaigns?fields=name,status,effective_status,objective&limit=500&access_token=${token}`;
     const campRes  = await fetch(campUrl);
     const campData = await campRes.json();
     if (campData.error) throw new Error(campData.error.message);
 
+    allCampaigns = campData.data || [];
+
+    // ── Busca quais campanhas tiveram veiculação no período selecionado ──
+    const fromDate = document.getElementById('date-from').value;
+    const toDate   = document.getElementById('date-to').value;
+    if (fromDate && toDate) {
+      prog.style.width = '65%'; progLbl.textContent = 'Verificando veiculação no período...';
+      document.getElementById('loading-msg').innerHTML = 'Verificando campanhas ativas no período<span class="dots"></span>';
+      try {
+        const delivUrl = `https://graph.facebook.com/v18.0/${accountId}/insights?fields=campaign_id,spend&time_range={"since":"${fromDate}","until":"${toDate}"}&level=campaign&limit=500&access_token=${token}`;
+        const delivRes  = await fetch(delivUrl);
+        const delivData = await delivRes.json();
+        if (!delivData.error) {
+          const deliveredIds = new Set((delivData.data || []).map(d => d.campaign_id));
+          allCampaigns.forEach(c => { c._hadDelivery = deliveredIds.has(c.id); });
+        }
+      } catch(e) { /* silencioso — filtro vai mostrar tudo como fallback */ }
+    }
+
     prog.style.width = '100%'; progLbl.textContent = 'Campanhas carregadas!';
     await new Promise(r => setTimeout(r, 300));
-
-    allCampaigns = campData.data || [];
     loading.style.display = 'none';
     btn.disabled = false;
     campFilterMode = 'delivery';
@@ -2844,7 +2861,7 @@ function objLabel(obj) {
 }
 
 function matchCampFilter(camp, filter) {
-  if (filter === 'delivery') return camp.effective_status !== 'ARCHIVED' && camp.effective_status !== 'DELETED';
+  if (filter === 'delivery') return camp._hadDelivery === true;
   if (filter === 'active') return camp.effective_status === 'ACTIVE';
   return true;
 }
@@ -2861,7 +2878,7 @@ function updateCampSelCount() {
 function renderCampaignList() {
   const list    = document.getElementById('camp-list');
   const visible = allCampaigns.filter(c => matchCampFilter(c, campFilterMode));
-  document.getElementById('camp-total-count').textContent = allCampaigns.length;
+  document.getElementById('camp-total-count').textContent = visible.length;
 
   if (!visible.length) {
     list.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Nenhuma campanha neste filtro.</div>`;

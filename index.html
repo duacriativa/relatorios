@@ -1514,14 +1514,23 @@ const METRIC_CATALOG = [
   { id:'costMsg',   label:'Custo/Msg',       icon:'📲', group:'WhatsApp',   hi:false, desc:'Custo médio por mensagem iniciada',
     getValue: d => d._costMsg != null ? d._costMsg : (d.msgs > 0 ? d.spend / d.msgs : null),
     fmt: v => fmtBRL(v) },
-  { id:'leads',     label:'Leads',           icon:'📋', group:'Geral',      hi:false, desc:'Leads gerados no período',
+  { id:'leads',          label:'Leads',                  icon:'📋', group:'Geral',      hi:false, desc:'Leads gerados no período',
     getValue: d => d.leads > 0 ? d.leads : null,
+    fmt: v => parseInt(v).toLocaleString('pt-BR') },
+  { id:'profileVisits',  label:'Visitas ao Perfil',      icon:'👤', group:'Instagram',  hi:false, desc:'Visitas ao perfil IG geradas pelos anúncios',
+    getValue: d => d.profileVisits > 0 ? d.profileVisits : null,
+    fmt: v => parseInt(v).toLocaleString('pt-BR') },
+  { id:'cpProfileVisit', label:'Custo/Visita Perfil',    icon:'💲', group:'Instagram',  hi:false, desc:'Custo médio por visita ao perfil IG',
+    getValue: d => d.profileVisits > 0 ? d.spend / d.profileVisits : null,
+    fmt: v => fmtBRL(v) },
+  { id:'followers',      label:'Seguidores',             icon:'➕', group:'Instagram',  hi:false, desc:'Novos seguidores conquistados pelos anúncios',
+    getValue: d => d.followers > 0 ? d.followers : null,
     fmt: v => parseInt(v).toLocaleString('pt-BR') },
 ];
 
 const DEFAULT_METRICS = {
   ecommerce: ['spend','revenue','roi','convQty','cpa','ticket','clicks','impr','ctr','cpm','cps','msgs','leads'],
-  mensagens: ['spend','reach','clicks','ctr','cpm','msgs','costMsg'],
+  mensagens: ['spend','reach','profileVisits','cpProfileVisit','clicks','ctr','cpm','msgs','costMsg','followers'],
 };
 
 function getActiveMetrics() {
@@ -2996,8 +3005,10 @@ async function confirmCampaignSelection() {
     const actVals = ins.action_values||[];
     const purchases = actions.find(a=>a.action_type==='purchase');
     const revenue   = actVals.find(a=>a.action_type==='purchase');
-    const msgs      = actions.find(a=>a.action_type==='onsite_conversion.messaging_conversation_started_7d');
-    const leads     = actions.find(a=>a.action_type==='lead');
+    const msgs           = actions.find(a=>a.action_type==='onsite_conversion.messaging_conversation_started_7d');
+    const leads          = actions.find(a=>a.action_type==='lead');
+    const profileVisitsA = actions.find(a=>a.action_type==='view_content');
+    const followersA     = actions.find(a=>a.action_type==='page_fan');
     const convQty   = parseInt(purchases?.value||0);
     const revVal    = parseFloat(revenue?.value||0);
     const roi = spend > 0 && revVal > 0 ? (revVal/spend).toFixed(2) : '—';
@@ -3048,6 +3059,8 @@ async function confirmCampaignSelection() {
       spend, clicks, impr, reach, ctr, cpm,
       convQty, revVal, roi, cpa,
       msgs: parseInt(msgs?.value||0), leads: parseInt(leads?.value||0),
+      profileVisits: parseInt(profileVisitsA?.value||0),
+      followers:     parseInt(followersA?.value||0),
       camps, from, to, nsSource,
       nsRevenue:            nsExtra?.revenue            || 0,
       nsOrders:             nsExtra?.orders             || 0,
@@ -3310,8 +3323,11 @@ function buildCUPreview() {
       ['CPM',             fmtBRL(d.cpm)],
       ['Período',         `${fmt2(d.from)} – ${fmt2(d.to)}`],
     ];
+    if (d.profileVisits > 0) rows.push(['Visitas ao Perfil', d.profileVisits.toLocaleString('pt-BR')]);
+    if (d.profileVisits > 0) rows.push(['Custo/Visita Perfil', fmtBRL(d.spend / d.profileVisits)]);
     if (msgsQty > 0) rows.push(['Mensagens Iniciadas', msgsQty.toLocaleString('pt-BR')]);
     if (msgsQty > 0) rows.push(['Custo por Msg', custoMsg]);
+    if (d.followers > 0) rows.push(['Seguidores', d.followers.toLocaleString('pt-BR')]);
   } else {
     const nsRev    = d.nsSource && d.nsRevenue > 0 ? d.nsRevenue : d.revVal;
     const nsOrd    = d.nsSource && d.nsOrders  > 0 ? d.nsOrders  : d.convQty;
@@ -3435,8 +3451,11 @@ async function sendClickUp() {
         `👁️ Alcance: ${(d.reach||d.impr).toLocaleString('pt-BR')}`,
         `👆 Cliques no link: ${d.clicks.toLocaleString('pt-BR')}`,
         `🎯 CTR: ${parseFloat(d.ctr).toFixed(2)}%`,
+        d.profileVisits > 0 ? `👤 Visitas ao Perfil: ${d.profileVisits.toLocaleString('pt-BR')}` : null,
+        d.profileVisits > 0 ? `💲 Custo/Visita: ${fmtBRL(d.spend/d.profileVisits)}` : null,
         msgs > 0 ? `💬 Mensagens Iniciadas: ${msgs.toLocaleString('pt-BR')}` : null,
         msgs > 0 ? `💲 Custo por Msg: ${custoMsg}` : null,
+        d.followers > 0 ? `➕ Seguidores: ${d.followers.toLocaleString('pt-BR')}` : null,
         ``,
         `💰 *Valor Geral Investido: ${fmtBRL(d.spend)}*`,
       ].filter(Boolean).join('\n');
@@ -3563,8 +3582,11 @@ async function sendClickUpFull() {
           `👁️ Alcance: ${(d.reach||d.impr).toLocaleString('pt-BR')}`,
           `👆 Cliques: ${d.clicks.toLocaleString('pt-BR')}`,
           `🎯 CTR: ${parseFloat(d.ctr).toFixed(2)}%`,
+          d.profileVisits > 0 ? `👤 Visitas ao Perfil: ${d.profileVisits.toLocaleString('pt-BR')}` : null,
+          d.profileVisits > 0 ? `💲 Custo/Visita: ${fmtBRL(d.spend/d.profileVisits)}` : null,
           d.msgs > 0 ? `💬 Mensagens: ${d.msgs.toLocaleString('pt-BR')}` : null,
           d.msgs > 0 ? `💲 Custo/Msg: ${fmtBRL(d.spend/d.msgs)}` : null,
+          d.followers > 0 ? `➕ Seguidores: ${d.followers.toLocaleString('pt-BR')}` : null,
           ``,`💰 *Investido: ${fmtBRL(d.spend)}*`,
         ].filter(Boolean).join('\n')
       : [
@@ -3641,8 +3663,11 @@ function buildRelatorio() {
       `• Cliques no link: *${fmtN(d.clicks)}*`,
       `• CTR: *${parseFloat(d.ctr).toFixed(2)}%*`,
       `• CPM: *${fmtBRL(d.cpm)}*`,
+      d.profileVisits > 0 ? `• Visitas ao Perfil: *${d.profileVisits.toLocaleString('pt-BR')}*` : null,
+      d.profileVisits > 0 ? `• Custo/Visita: *${fmtBRL(d.spend/d.profileVisits)}*` : null,
       msgs > 0 ? `• Mensagens Iniciadas: *${msgs.toLocaleString('pt-BR')}*` : null,
       msgs > 0 ? `• Custo por Msg: *${custoMsg}*` : null,
+      d.followers > 0 ? `• Seguidores: *${d.followers.toLocaleString('pt-BR')}*` : null,
       ``,
       `💰 *Valor Geral Investido: ${fmtBRL(d.spend)}*`,
       ``,
@@ -3706,10 +3731,13 @@ async function genAnalysis() {
 
   const dadosAI = isMsgs
     ? `Alcance: ${(d.reach||d.impr).toLocaleString('pt-BR')}
-Cliques: ${parseInt(d.clicks).toLocaleString('pt-BR')}
+Cliques no link: ${parseInt(d.clicks).toLocaleString('pt-BR')}
 CTR: ${parseFloat(d.ctr).toFixed(2)}%
+${d.profileVisits > 0 ? 'Visitas ao perfil IG: '+d.profileVisits.toLocaleString('pt-BR') : ''}
+${d.profileVisits > 0 ? 'Custo por visita ao perfil: R$ '+(d.spend/d.profileVisits).toFixed(2) : ''}
 ${msgsQty > 0 ? 'Mensagens iniciadas: '+msgsQty.toLocaleString('pt-BR') : ''}
 ${custoMsgAI ? 'Custo por mensagem: '+custoMsgAI : ''}
+${d.followers > 0 ? 'Seguidores conquistados: '+d.followers.toLocaleString('pt-BR') : ''}
 Investido: R$ ${parseFloat(d.spend).toFixed(2)}`
     : `[META ADS — Anúncios]
 Investido: R$ ${parseFloat(d.spend).toFixed(2)}

@@ -1,0 +1,3654 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Metricana</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23c084fc'/%3E%3Cstop offset='100%25' stop-color='%237c3aed'/%3E%3C/linearGradient%3E%3ClinearGradient id='mg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23e9d5ff'/%3E%3Cstop offset='100%25' stop-color='%23ffffff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M8 47 L8 24 L20 38 L32 18 L44 34 L52 22' fill='none' stroke='url(%23mg)' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpolygon points='52,22 46,22 52,16' fill='white'/%3E%3C/svg%3E"/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+<style>
+/* ══════════ TOKENS ══════════ */
+[data-theme="dark"] {
+--bg:#0d0b18; --s1:#13111f; --s2:#1a1730; --s3:#221f3a;
+--border:#2d2850; --border2:#3d3870;
+--text:#f0eeff; --text2:#a09cc0; --text3:#605c80;
+--card-shadow:0 2px 16px rgba(0,0,0,.5);
+--topbar-bg:#13111f;
+--input-bg:#1a1730;
+--chip-bg:#1a1730;
+--modal-bg:#13111f;
+--sidebar-bg:#13111f;
+--sidebar-width:220px;
+}
+[data-theme="light"] {
+--bg:#f5f0e8; --s1:#ffffff; --s2:#faf7f2; --s3:#f0ebe0;
+--border:#e5ddd0; --border2:#ddd5c5;
+--text:#1a1a2e; --text2:#4a4464; --text3:#9898a8;
+--card-shadow:0 2px 16px rgba(0,0,0,.07);
+--topbar-bg:#ffffff;
+--input-bg:#faf7f2;
+--chip-bg:#f5f0e8;
+--modal-bg:#ffffff;
+--sidebar-bg:#ffffff;
+--sidebar-width:220px;
+}
+:root {
+--accent:#7c3aed; --accent2:#9333ea; --accentbg:rgba(124,58,237,.1);
+--green:#22c55e; --greenbg:rgba(34,197,94,.1);
+--yellow:#f59e0b; --yellowbg:rgba(245,158,11,.1);
+--red:#ef4444; --redbg:rgba(239,68,68,.1);
+--radius:12px; --radius2:8px;
+--transition: background .2s, color .2s, border-color .2s, box-shadow .2s;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:var(--transition);}
+
+/* ══════════ THEME TOGGLE ══════════ */
+.theme-toggle{position:relative;width:52px;height:28px;cursor:pointer;flex-shrink:0;}
+.theme-toggle input{display:none;}
+.theme-track{position:absolute;inset:0;background:var(--s3);border:1px solid var(--border);border-radius:28px;transition:var(--transition);}
+.theme-thumb{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--accent);transition:transform .25s cubic-bezier(.4,0,.2,1),background .2s;display:flex;align-items:center;justify-content:center;font-size:11px;}
+.theme-toggle input:checked ~ .theme-thumb{transform:translateX(24px);}
+.theme-icon-sun{display:none;} .theme-icon-moon{display:block;}
+[data-theme="light"] .theme-icon-sun{display:block;} [data-theme="light"] .theme-icon-moon{display:none;}
+
+/* ══════════ LOGIN ══════════ */
+/* ══════════ LOGIN — Metricana dark glass ══════════ */
+#login-screen{
+  position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:24px;
+  background:#000;overflow:hidden;
+}
+/* Gradiente de fundo roxo */
+#login-screen::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(to bottom, rgba(139,92,246,.45) 0%, rgba(109,40,217,.5) 40%, #000 100%);
+  pointer-events:none;
+}
+/* Glow top */
+#login-screen::after{
+  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:120vw;height:55vh;border-radius:0 0 50% 50%;
+  background:radial-gradient(ellipse at center top, rgba(167,139,250,.25) 0%, transparent 70%);
+  pointer-events:none;
+}
+/* Partícula de glow animada */
+@keyframes loginGlow{0%,100%{opacity:.18;transform:scale(1)}50%{opacity:.35;transform:scale(1.08)}}
+@keyframes loginGlowB{0%,100%{opacity:.28;transform:scale(1)}50%{opacity:.45;transform:scale(1.1)}}
+@keyframes lightBeamH{0%{left:-50%;opacity:0}10%{opacity:.7}90%{opacity:.7}100%{left:110%;opacity:0}}
+@keyframes lightBeamV{0%{top:-50%;opacity:0}10%{opacity:.7}90%{opacity:.7}100%{top:110%;opacity:0}}
+@keyframes lightBeamHR{0%{right:-50%;opacity:0}10%{opacity:.7}90%{opacity:.7}100%{right:110%;opacity:0}}
+@keyframes lightBeamVB{0%{bottom:-50%;opacity:0}10%{opacity:.7}90%{opacity:.7}100%{bottom:110%;opacity:0}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+@keyframes loginFadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+
+.login-glow-a{position:absolute;left:20%;top:20%;width:420px;height:420px;background:rgba(255,255,255,.04);border-radius:50%;filter:blur(90px);animation:loginGlow 9s ease-in-out infinite;pointer-events:none;}
+.login-glow-b{position:absolute;right:20%;bottom:20%;width:380px;height:380px;background:rgba(255,255,255,.04);border-radius:50%;filter:blur(90px);animation:loginGlowB 7s ease-in-out infinite 1s;pointer-events:none;}
+
+.login-wrap{
+  width:100%;max-width:380px;position:relative;z-index:2;
+  animation:loginFadeUp .7s ease both;
+  perspective:1200px;
+}
+.login-card-outer{
+  position:relative;
+  transform-style:preserve-3d;
+  transition:transform .08s linear;
+}
+/* Luz viajando pelas bordas */
+.login-beam-wrap{position:absolute;inset:-1px;border-radius:18px;overflow:hidden;pointer-events:none;z-index:3;}
+.login-beam-top{position:absolute;top:0;left:-50%;height:2px;width:50%;background:linear-gradient(to right,transparent,rgba(255,255,255,.85),transparent);filter:blur(1.5px);animation:lightBeamH 3s ease-in-out infinite;}
+.login-beam-right{position:absolute;right:0;top:-50%;width:2px;height:50%;background:linear-gradient(to bottom,transparent,rgba(255,255,255,.85),transparent);filter:blur(1.5px);animation:lightBeamV 3s ease-in-out infinite .7s;}
+.login-beam-bottom{position:absolute;bottom:0;right:-50%;height:2px;width:50%;background:linear-gradient(to left,transparent,rgba(255,255,255,.85),transparent);filter:blur(1.5px);animation:lightBeamHR 3s ease-in-out infinite 1.4s;}
+.login-beam-left{position:absolute;left:0;bottom:-50%;width:2px;height:50%;background:linear-gradient(to top,transparent,rgba(255,255,255,.85),transparent);filter:blur(1.5px);animation:lightBeamVB 3s ease-in-out infinite 2.1s;}
+
+.login-card{
+  position:relative;background:rgba(0,0,0,.45);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:32px 28px;
+  box-shadow:0 32px 80px rgba(0,0,0,.6),0 0 0 .5px rgba(255,255,255,.04);
+  overflow:hidden;
+}
+.login-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.03) 0%,transparent 60%);
+  pointer-events:none;
+}
+
+/* Cabeçalho */
+.login-icon{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-family:'Bricolage Grotesque',sans-serif;font-size:16px;font-weight:800;color:#fff;position:relative;overflow:hidden;}
+.login-icon::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.15),transparent);pointer-events:none;}
+.login-title{font-family:'Bricolage Grotesque',sans-serif;font-size:20px;font-weight:800;color:#fff;text-align:center;margin-bottom:4px;background:linear-gradient(to bottom,#fff,rgba(255,255,255,.8));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.login-sub{color:rgba(255,255,255,.5);font-size:12px;text-align:center;margin-bottom:22px;}
+
+/* Campo */
+.login-field{margin-bottom:12px;position:relative;}
+.login-field-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:rgba(255,255,255,.35);pointer-events:none;transition:color .2s;}
+.login-field:focus-within .login-field-icon{color:rgba(255,255,255,.8);}
+.login-field input{
+  width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.0);
+  border-radius:10px;padding:10px 38px;color:#fff;font-family:'Lato',sans-serif;font-size:14px;
+  outline:none;transition:background .2s,border-color .2s;letter-spacing:.04em;box-sizing:border-box;
+}
+.login-field input::placeholder{color:rgba(255,255,255,.28);}
+.login-field input:focus{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);}
+.login-pw-toggle{position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,.35);font-size:13px;padding:2px;line-height:1;transition:color .2s;}
+.login-pw-toggle:hover{color:rgba(255,255,255,.8);}
+
+.login-error{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:9px 13px;font-size:12px;color:#fca5a5;margin-bottom:12px;display:none;}
+.btn-login{
+  width:100%;background:#fff;border:none;border-radius:10px;padding:11px;
+  color:#000;font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:700;
+  cursor:pointer;transition:opacity .15s,transform .1s,box-shadow .2s;
+  position:relative;overflow:hidden;margin-top:4px;
+}
+.btn-login:hover{opacity:.92;box-shadow:0 0 24px rgba(255,255,255,.15);}
+.btn-login:active{transform:scale(.98)}
+.btn-login:disabled{opacity:.5;cursor:not-allowed;}
+.login-hint{text-align:center;margin-top:16px;font-size:11px;color:rgba(255,255,255,.35);}
+
+/* ══════════ SETUP (mantido para admin — oculto para equipe) ══════════ */
+#setup-screen{position:fixed;inset:0;background:var(--bg);z-index:400;display:none;align-items:center;justify-content:center;padding:24px;overflow-y:auto;transition:var(--transition);}
+#setup-screen.open{display:flex;}
+.setup-wrap{width:100%;max-width:460px;padding:20px 0;}
+.setup-logo{font-family:'Bricolage Grotesque',sans-serif;font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;}
+.setup-title{font-family:'Bricolage Grotesque',sans-serif;font-size:28px;font-weight:800;margin-bottom:8px;}
+.setup-sub{color:var(--text2);font-size:14px;line-height:1.6;margin-bottom:24px;}
+.setup-box{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:26px;box-shadow:var(--card-shadow);transition:var(--transition);}
+
+/* ══════════ SHARED COMPONENTS ══════════ */
+.field{margin-bottom:15px;}
+.field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:6px;}
+.field input,.field select,.field textarea{width:100%;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius2);padding:10px 13px;color:var(--text);font-family:'Lato',sans-serif;font-size:14px;outline:none;transition:var(--transition);}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentbg);}
+.field input::placeholder,.field textarea::placeholder{color:var(--text3);}
+.field .hint{font-size:12px;color:var(--text3);margin-top:5px;line-height:1.5;}
+.field .hint a{color:var(--accent2);text-decoration:none;}
+.btn-main{width:100%;background:var(--accent);border:none;border-radius:var(--radius2);padding:13px;color:#fff;font-family:'Bricolage Grotesque',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .15s,transform .1s;}
+.btn-main:hover{opacity:.88} .btn-main:active{transform:scale(.98)} .btn-main:disabled{opacity:.4;cursor:not-allowed}
+.btn-ghost{width:100%;background:transparent;border:1px solid var(--border);border-radius:var(--radius2);padding:10px;color:var(--text2);font-family:'Lato',sans-serif;font-size:13px;cursor:pointer;transition:var(--transition);}
+.btn-ghost:hover{border-color:var(--accent2);color:var(--accent2);}
+.divider{border:none;border-top:1px solid var(--border);margin:18px 0;}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;margin-bottom:14px;box-shadow:var(--card-shadow);transition:var(--transition);}
+.card-title{font-family:'Bricolage Grotesque',sans-serif;font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.sec-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:12px;}
+.status-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.status-pill.ok{background:var(--greenbg);color:var(--green);} .status-pill.warn{background:var(--yellowbg);color:var(--yellow);}
+.status-pill.err{background:var(--redbg);color:var(--red);} .status-pill.idle{background:var(--s3);color:var(--text3);}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.04em;}
+.badge.auto{background:var(--yellowbg);border:1px solid rgba(245,158,11,.2);color:var(--yellow);}
+
+/* ══════════ APP LAYOUT ══════════ */
+#app{display:none;min-height:100vh;background:var(--bg);}
+.app-layout{display:flex;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{
+  width:var(--sidebar-width);
+  min-height:100vh;
+  background:var(--sidebar-bg);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  position:fixed;left:0;top:0;bottom:0;
+  z-index:200;
+  transition:width .25s cubic-bezier(.4,0,.2,1);
+  overflow:hidden;
+}
+.sidebar.collapsed{width:64px;}
+.sidebar-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 14px;
+  border-bottom:1px solid var(--border);
+  min-height:64px;flex-shrink:0;
+}
+.sidebar-logo{height:28px;width:auto;object-fit:contain;flex-shrink:0;transition:opacity .2s;}
+.sidebar.collapsed .sidebar-logo{opacity:0;width:0;}
+.sidebar-toggle{
+  background:none;border:none;cursor:pointer;
+  color:var(--text3);padding:4px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  transition:color .15s,background .15s;flex-shrink:0;
+  font-size:18px;line-height:1;
+}
+.sidebar-toggle:hover{color:var(--text);background:var(--s3);}
+.sidebar.collapsed .sidebar-header{justify-content:center;padding:16px 8px;}
+
+.sidebar-nav{flex:1;padding:12px 8px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+.sidebar-item{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 12px;border-radius:10px;
+  cursor:pointer;transition:background .15s,color .15s;
+  color:var(--text3);font-size:13px;font-weight:600;
+  white-space:nowrap;overflow:hidden;
+  font-family:'Bricolage Grotesque',sans-serif;
+  border:none;background:none;width:100%;text-align:left;
+}
+.sidebar-item:hover{background:var(--s3);color:var(--text);}
+.sidebar-item.active{background:linear-gradient(135deg,rgba(124,58,237,.9),rgba(147,51,234,.75));color:#fff;box-shadow:0 4px 16px rgba(124,58,237,.3);}
+.sidebar-item.active .si-icon{color:#fff;}
+.sidebar-item .si-icon{font-size:18px;flex-shrink:0;width:24px;text-align:center;display:flex;align-items:center;justify-content:center;}
+.sidebar-item .si-label{transition:opacity .2s;}
+.sidebar.collapsed .si-label{opacity:0;width:0;overflow:hidden;}
+.sidebar-item .si-num{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--s3);border:1.5px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:800;flex-shrink:0;
+  font-family:'Bricolage Grotesque',sans-serif;
+  transition:background .15s,border-color .15s;
+}
+.sidebar-item.active .si-num{background:var(--accent);border-color:var(--accent);color:#fff;}
+.sidebar-item.done .si-num{background:var(--greenbg);border-color:var(--green);color:var(--green);}
+.sidebar.collapsed .si-num{margin-left:auto;margin-right:auto;}
+
+.sidebar-divider{border:none;border-top:1px solid var(--border);margin:8px 0;flex-shrink:0;}
+.sidebar-bottom{padding:8px;display:flex;flex-direction:column;gap:2px;flex-shrink:0;}
+.sidebar-bottom .sidebar-item{font-size:12px;}
+
+/* MAIN CONTENT */
+.main-content{
+  margin-left:var(--sidebar-width);
+  flex:1;min-width:0;
+  transition:margin-left .25s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;
+}
+.sidebar.collapsed ~ .main-content{margin-left:64px;}
+
+/* TOPBAR dentro do main */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;height:58px;
+  background:var(--topbar-bg);
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+  transition:var(--transition);
+  flex-shrink:0;
+}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.topbar-center{display:flex;align-items:center;gap:8px;}
+.topbar-client-badge{font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:7px;}
+.topbar-client-badge .tca{width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;}
+.topbar-right{display:flex;align-items:center;gap:6px;}
+.week-badge{background:var(--accentbg);border:1px solid rgba(124,58,237,.2);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--accent2);letter-spacing:.02em;}
+.btn-top{background:transparent;border:1px solid transparent;border-radius:var(--radius2);padding:6px 12px;color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);white-space:nowrap;}
+.btn-top:hover{background:var(--s2);border-color:var(--border);color:var(--text);}
+.btn-top.danger:hover{color:var(--red);background:var(--redbg);border-color:rgba(239,68,68,.2);}
+
+/* Panels */
+.panel{display:none;padding:24px;max-width:960px;margin:0 auto;width:100%;animation:fadeUp .2s ease;}
+.panel.active{display:block;}
+/* Dashboard home — sem max-width */
+#panel0.panel{max-width:none;padding:0;}
+
+/* ══════════ DASHBOARD HOME ══════════ */
+.dash-wrap{padding:36px 40px;max-width:1200px;width:100%;}
+.dash-hero{position:relative;margin-bottom:36px;}
+.dash-hero-glow{position:absolute;top:-80px;right:-60px;width:500px;height:400px;background:radial-gradient(ellipse at top right,rgba(124,58,237,.3) 0%,rgba(147,51,234,.15) 40%,transparent 70%);pointer-events:none;border-radius:50%;z-index:0;}
+.dash-h1{font-family:'Bricolage Grotesque',sans-serif;font-size:38px;font-weight:800;color:var(--text);line-height:1.1;position:relative;z-index:1;}
+.dash-h2{font-family:'Bricolage Grotesque',sans-serif;font-size:26px;font-weight:700;color:var(--text);opacity:.8;margin-top:6px;position:relative;z-index:1;}
+.dash-pending-txt{font-size:14px;color:var(--text3);margin-top:12px;position:relative;z-index:1;}
+.dash-metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px;}
+.dash-metric-grid-2{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:36px;}
+.dash-metric-grid-all{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:36px;}
+.dash-mc{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:20px 22px;position:relative;overflow:hidden;transition:var(--transition);}
+.dash-mc:hover{border-color:var(--border2);box-shadow:0 8px 28px rgba(0,0,0,.22);transform:translateY(-2px);}
+.dash-mc::after{content:'';position:absolute;inset:0;border-radius:16px;border:1px solid rgba(124,58,237,.18);pointer-events:none;}
+.dash-mc-label{font-size:12px;color:var(--text2);margin-bottom:10px;font-weight:600;}
+.dash-mc-value{font-family:'Bricolage Grotesque',sans-serif;font-size:30px;font-weight:800;color:var(--green);line-height:1;}
+.dash-mc-value.red{color:var(--red);}
+.dash-mc-value.purple{color:var(--accent2);}
+.dash-mc-delta{font-size:12px;font-weight:700;margin-left:6px;vertical-align:middle;}
+.dash-mc-delta.pos{color:var(--green);}
+.dash-mc-delta.neg{color:var(--red);}
+.dash-section-title{font-family:'Bricolage Grotesque',sans-serif;font-size:18px;font-weight:800;color:var(--text);margin-bottom:16px;}
+.dash-table-wrap{background:var(--s1);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+.dash-table{width:100%;border-collapse:collapse;font-size:13px;}
+.dash-table th{padding:12px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);text-align:left;border-bottom:1px solid var(--border);background:var(--s2);}
+.dash-table td{padding:13px 16px;border-bottom:1px solid var(--border2);vertical-align:middle;}
+.dash-table tr:last-child td{border-bottom:none;}
+.dash-table tr:hover td{background:var(--accentbg);}
+.dash-status{display:inline-flex;align-items:center;gap:5px;border-radius:50px;padding:4px 11px;font-size:11px;font-weight:700;white-space:nowrap;}
+.dash-status.ativo{background:var(--greenbg);border:1px solid rgba(34,197,94,.3);color:var(--green);}
+.dash-status.pendente{background:var(--accentbg);border:1px solid rgba(124,58,237,.3);color:var(--accent2);}
+.dash-status.inativo{background:var(--redbg);border:1px solid rgba(239,68,68,.3);color:var(--red);}
+.dash-status.progresso{background:var(--yellowbg);border:1px solid rgba(245,158,11,.3);color:var(--yellow);}
+.dash-status.concluido{background:var(--greenbg);border:1px solid rgba(34,197,94,.3);color:var(--green);}
+.dash-status.enviar{background:var(--yellowbg);border:1px solid rgba(245,158,11,.3);color:var(--yellow);}
+.btn-view{background:transparent;border:1px solid var(--border);border-radius:8px;padding:5px 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;transition:var(--transition);font-family:'Bricolage Grotesque',sans-serif;}
+.btn-view:hover{border-color:var(--accent);color:var(--accent2);background:var(--accentbg);}
+.dash-client-avatar{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;flex-shrink:0;margin-right:8px;}
+.dash-client-cell{display:flex;align-items:center;}
+
+/* ══ TOPBAR CLIENT SWITCHER ══ */
+.topbar-client-switcher{position:relative;}
+.tcs-btn{display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--border);border-radius:50px;padding:6px 14px 6px 8px;cursor:pointer;transition:var(--transition);color:var(--text);}
+.tcs-btn:hover{border-color:var(--accent);background:var(--accentbg);}
+.tcs-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;}
+.tcs-name{font-family:'Bricolage Grotesque',sans-serif;font-size:13px;font-weight:700;white-space:nowrap;}
+.tcs-dropdown{position:absolute;top:calc(100% + 8px);left:0;z-index:500;background:var(--modal-bg);border:1px solid var(--border);border-radius:14px;padding:6px;min-width:200px;max-height:320px;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,.4);display:none;}
+.tcs-dropdown.open{display:block;}
+.tcs-opt{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;cursor:pointer;transition:background .12s;}
+.tcs-opt:hover{background:var(--s3);}
+.tcs-opt.active{background:var(--accentbg);}
+.tcs-opt-avatar{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;}
+.tcs-opt-name{font-size:13px;font-weight:600;}
+.tcs-opt-seg{font-size:11px;color:var(--text3);}
+
+/* Period picker dropdown */
+.dash-period-wrap{position:relative;display:inline-block;}
+.dash-period-btn{display:flex;align-items:center;gap:6px;background:var(--accentbg);border:1px solid var(--accent);border-radius:20px;padding:4px 12px;font-size:13px;font-weight:700;color:var(--accent2);cursor:pointer;transition:var(--transition);}
+.dash-period-btn:hover{background:rgba(124,58,237,.2);}
+.dash-period-dd{position:absolute;top:calc(100% + 8px);left:0;z-index:500;background:var(--modal-bg);border:1px solid var(--border);border-radius:14px;padding:6px;min-width:180px;max-height:280px;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,.4);display:none;}
+.dash-period-dd.open{display:block;animation:fadeUp .15s ease both;}
+.dash-period-opt{padding:9px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:background .12s;color:var(--text2);}
+.dash-period-opt:hover{background:var(--s3);color:var(--text);}
+.dash-period-opt.active{background:var(--accentbg);color:var(--accent2);}
+/* Status dropdown */
+.dash-status-wrap{position:relative;display:inline-block;}
+.dash-status{cursor:pointer;}
+.dash-status:hover{opacity:.85;}
+.dash-status-dd{position:absolute;top:calc(100% + 6px);left:0;z-index:400;background:var(--modal-bg);border:1px solid var(--border);border-radius:10px;padding:4px;min-width:160px;box-shadow:0 8px 28px rgba(0,0,0,.35);display:none;}
+.dash-status-dd.open{display:block;}
+.dash-status-opt{padding:8px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;transition:background .12s;display:flex;align-items:center;gap:7px;white-space:nowrap;}
+.dash-status-opt:hover{background:var(--s3);}
+.dash-status-opt .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.action-row{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;align-items:center;}
+/* Pill buttons — estilo inspirado no ProgressIndicator */
+.btn-act{
+  background:var(--s1);border:1.5px solid var(--border);
+  border-radius:50px;padding:10px 22px;
+  color:var(--text2);font-size:13px;font-weight:700;
+  cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+  transition:background .18s,border-color .18s,color .18s,transform .15s,box-shadow .18s;
+  font-family:'Bricolage Grotesque',sans-serif;
+  letter-spacing:.01em;
+}
+.btn-act:hover{
+  background:var(--s3);border-color:var(--border2);color:var(--text);
+  transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.1);
+}
+.btn-act:active{transform:scale(.97);}
+.btn-act.green{
+  border-color:rgba(34,197,94,.35);color:var(--green);background:var(--greenbg);
+}
+.btn-act.green:hover{border-color:var(--green);box-shadow:0 4px 14px rgba(34,197,94,.18);}
+.btn-act.accent{
+  background:var(--accent);border-color:var(--accent);color:#fff;
+  box-shadow:0 2px 10px rgba(99,102,241,.3);
+}
+.btn-act.accent:hover{
+  background:var(--accent2);border-color:var(--accent2);
+  box-shadow:0 4px 18px rgba(99,102,241,.4);transform:translateY(-1px);
+}
+.btn-act:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
+
+/* Clients — card estilo Lovable */
+/* ══════════ GREETING ══════════ */
+.greeting-section{margin-bottom:28px;padding:4px 0;text-align:center;}
+.greeting-time{font-family:'Lato',sans-serif;font-size:17px;font-weight:300;color:var(--text2);margin-bottom:4px;}
+.greeting-tagline{font-family:'Bricolage Grotesque',sans-serif;font-size:26px;font-weight:800;color:var(--text);line-height:1.15;}
+
+/* ══════════ CLIENT CARDS ══════════ */
+.client-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:8px;}
+@media(max-width:960px){.client-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:640px){.client-grid{grid-template-columns:repeat(2,1fr);}}
+
+.client-chip{border-radius:20px;overflow:hidden;cursor:pointer;transition:transform .2s,box-shadow .2s;box-shadow:0 4px 16px rgba(0,0,0,.08);background:var(--s1);border:2.5px solid transparent;display:flex;flex-direction:column;position:relative;}
+.client-chip:hover{transform:translateY(-4px);box-shadow:0 10px 30px rgba(0,0,0,.13);}
+.client-chip.sel{border-color:var(--accent);box-shadow:0 8px 28px rgba(124,58,237,.22);}
+
+.cc-img{position:relative;aspect-ratio:2;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.cc-photo{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
+.cc-initial{display:none;}
+.cc-sel-badge{position:absolute;top:10px;right:10px;background:var(--accent);color:#fff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;opacity:0;transform:scale(.7);transition:opacity .2s,transform .2s;z-index:2;}
+.client-chip.sel .cc-sel-badge{opacity:1;transform:scale(1);}
+.cc-status{position:absolute;bottom:8px;left:10px;font-size:13px;z-index:2;}
+.cc-edit-btn{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);color:#fff;border:none;border-radius:8px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;opacity:0;transform:scale(.8);transition:opacity .18s,transform .18s;z-index:3;}
+.client-chip:hover .cc-edit-btn{opacity:1;transform:scale(1);}
+.cc-edit-btn:hover{background:rgba(0,0,0,.7);}
+
+.cc-body{padding:12px 14px 14px;}
+.cc-name{font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:700;color:var(--text);line-height:1.3;}
+.cc-seg{font-size:11px;color:var(--text3);margin-top:3px;text-transform:uppercase;letter-spacing:.04em;font-weight:600;}
+
+/* legacy — kept for other uses */
+.client-chip .cc{display:none;}
+
+/* Metrics */
+.metrics-auto{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:10px;margin-bottom:14px;}
+.metric-box{background:var(--s2);border:1px solid var(--border);border-radius:var(--radius2);padding:13px;transition:var(--transition);}
+.metric-box .mlabel{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin-bottom:5px;}
+.metric-box .mvalue{font-family:'Bricolage Grotesque',sans-serif;font-size:20px;font-weight:700;}
+.metric-box .mvalue.hi{color:var(--accent2);} .metric-box .msub{font-size:11px;color:var(--text3);margin-top:2px;}
+
+/* Table */
+.data-table{width:100%;border-collapse:collapse;font-size:13px;}
+.data-table th{padding:9px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);text-align:left;border-bottom:1px solid var(--border);}
+.data-table td{padding:10px 12px;border-bottom:1px solid var(--border2);}
+.data-table tr:last-child td{border-bottom:none;} .data-table tr:hover td{background:var(--accentbg);}
+
+/* Preview & AI */
+.preview-text{background:var(--s2);border:1px solid var(--border);border-radius:var(--radius2);padding:18px;font-size:13.5px;line-height:1.8;white-space:pre-wrap;color:var(--text);max-height:360px;overflow-y:auto;transition:var(--transition);}
+.ai-box{background:var(--s2);border:1px solid rgba(99,102,241,.25);border-radius:var(--radius);padding:20px 22px;font-size:14px;line-height:1.75;white-space:pre-wrap;min-height:80px;color:var(--text);transition:var(--transition);}
+.ai-box.loading{color:var(--text3);font-style:italic;}
+
+/* ClickUp rows */
+.cu-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--s2);border:1px solid var(--border);border-radius:var(--radius2);margin-bottom:7px;transition:var(--transition);}
+.cu-row .crk{font-size:13px;font-weight:500;} .cu-row .crv{font-size:13px;font-weight:700;color:var(--accent2);}
+
+/* Loader */
+.spinner-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:52px 0;gap:14px;}
+.spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .75s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.progress-wrap{background:var(--s3);border-radius:4px;height:5px;overflow:hidden;margin-bottom:5px;}
+.progress-bar{height:100%;background:var(--accent);border-radius:4px;transition:width .4s ease;}
+
+/* Error */
+.err-box{background:var(--redbg);border:1px solid rgba(239,68,68,.25);border-radius:var(--radius2);padding:14px 16px;font-size:13px;color:var(--red);line-height:1.6;}
+
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:600;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--modal-bg);border:1px solid var(--border);border-radius:16px;padding:30px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);transition:var(--transition);}
+.modal h2{font-family:'Bricolage Grotesque',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px;}
+.modal .msub{color:var(--text2);font-size:13px;margin-bottom:22px;}
+.tut-step{display:flex;gap:13px;margin-bottom:18px;}
+.tut-num{width:26px;height:26px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Bricolage Grotesque',sans-serif;font-size:11px;font-weight:800;flex-shrink:0;color:#fff;}
+.tut-body strong{display:block;font-size:13px;margin-bottom:3px;}
+.tut-body p{font-size:12px;color:var(--text2);line-height:1.6;}
+.tut-body a{color:var(--accent2);text-decoration:none;}
+.tut-body code{background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:11px;color:var(--accent2);font-family:monospace;}
+.modal-close{width:100%;background:var(--accent);border:none;border-radius:var(--radius2);padding:12px;color:#fff;font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;}
+
+/* Templates */
+.tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
+.tpl-card{background:var(--s2);border:2px solid var(--border);border-radius:var(--radius);padding:14px 16px;cursor:pointer;transition:var(--transition);display:flex;flex-direction:column;gap:6px;}
+.tpl-card:hover{border-color:var(--accent2);transform:translateY(-1px);}
+.tpl-card.sel{border-color:var(--accent);background:var(--accentbg);}
+.tpl-card .tpl-icon{font-size:22px;line-height:1;}
+.tpl-card .tpl-name{font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:800;}
+.tpl-card .tpl-desc{font-size:11px;color:var(--text3);line-height:1.5;}
+.tpl-card.sel .tpl-name{color:var(--accent2);}
+.tpl-required{background:var(--redbg);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius2);padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:10px;display:none;}
+
+/* Toast */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--s1);border:1px solid var(--border);border-radius:30px;padding:9px 20px;font-size:13px;font-weight:600;color:var(--text);opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;box-shadow:0 8px 32px rgba(0,0,0,.3);}
+.toast.show{opacity:1;}
+.dots::after{content:'.';animation:dots 1.2s steps(3,end) infinite;}
+@keyframes dots{0%{content:'.'}33%{content:'..'}66%{content:'...'}100%{content:'.'}}
+
+/* Token status badges */
+.token-badge{display:inline-flex;align-items:center;gap:3px;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;letter-spacing:.03em;margin-top:3px;}
+.token-badge.expired{background:var(--redbg);border:1px solid rgba(239,68,68,.2);color:var(--red);}
+.token-badge.permission{background:var(--yellowbg);border:1px solid rgba(245,158,11,.2);color:var(--yellow);}
+.token-badge.invalid{background:var(--redbg);border:1px solid rgba(239,68,68,.2);color:var(--red);}
+.token-badge.valid{background:var(--greenbg);border:1px solid rgba(34,197,94,.2);color:var(--green);}
+.token-badge.checking{background:var(--s3);border:1px solid var(--border);color:var(--text3);}
+/* client-chip layout — definido no bloco Clients acima */
+/* Edit/Remove button row in modal */
+.btn-edit{background:var(--accentbg);border:1px solid rgba(99,102,241,.2);color:var(--accent2);border-radius:var(--radius2);padding:5px 10px;font-size:12px;cursor:pointer;transition:var(--transition);}
+.btn-edit:hover{border-color:var(--accent);color:var(--accent);}
+.btn-remove{background:var(--redbg);border:1px solid rgba(239,68,68,.2);color:var(--red);border-radius:var(--radius2);padding:5px 10px;font-size:12px;cursor:pointer;}
+/* Edit mode banner */
+.edit-mode-banner{background:var(--accentbg);border:1px solid rgba(99,102,241,.25);border-radius:var(--radius2);padding:9px 13px;font-size:12px;color:var(--accent2);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.edit-mode-banner button{background:transparent;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:2px 6px;}
+.edit-mode-banner button:hover{color:var(--red);}
+/* ══════════ MOBILE OVERLAY ══════════ */
+#sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:199;backdrop-filter:blur(2px);}
+#sidebar-overlay.open{display:block;}
+
+/* ══════════ RESPONSIVE — TABLET ══════════ */
+@media(max-width:900px){
+  .dash-metric-grid{grid-template-columns:repeat(2,1fr);}
+  .dash-metric-grid-2{grid-template-columns:repeat(2,1fr);}
+  .dash-metric-grid-all{grid-template-columns:repeat(2,1fr);}
+  .dash-wrap{padding:28px 24px;}
+}
+
+/* ══════════ RESPONSIVE — MOBILE ══════════ */
+@media(max-width:768px){
+  /* Sidebar vira overlay deslizante */
+  .sidebar{
+    position:fixed;top:0;left:0;height:100vh;z-index:200;
+    transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+    box-shadow:none;
+  }
+  .sidebar.mobile-open{transform:translateX(0);box-shadow:4px 0 32px rgba(0,0,0,.5);}
+  /* Cancela collapsed no mobile — sidebar sempre cheia quando aberta */
+  .sidebar.collapsed{width:var(--sidebar-width);}
+  .sidebar.collapsed .si-label{opacity:1;width:auto;overflow:visible;}
+  .sidebar.collapsed .sidebar-logo{opacity:1;width:auto;}
+  .sidebar.collapsed .sidebar-header{justify-content:space-between;padding:16px 14px;}
+  .sidebar.collapsed .si-num{margin-left:auto;margin-right:0;}
+
+  /* Main ocupa largura total */
+  .main-content{margin-left:0 !important;}
+  .sidebar.collapsed ~ .main-content{margin-left:0 !important;}
+
+  /* Topbar mobile */
+  .topbar{padding:0 16px;gap:10px;}
+  .topbar-mobile-menu{display:flex !important;align-items:center;justify-content:center;}
+  .topbar-mobile-menu:hover{background:var(--s3) !important;}
+  .sidebar-toggle{display:none;} /* esconde toggle dentro da sidebar no mobile */
+
+  /* Dashboard hero */
+  .dash-wrap{padding:20px 16px;}
+  .dash-h1{font-size:26px;}
+  .dash-h2{font-size:17px;margin-top:4px;}
+  .dash-pending-txt{font-size:13px;}
+  .dash-hero{margin-bottom:22px;}
+  .dash-hero-glow{display:none;}
+
+  /* Metric grids — 2 colunas */
+  .dash-metric-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
+  .dash-metric-grid-2{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px;}
+  .dash-metric-grid-all{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px;}
+  .dash-mc{padding:14px 12px;}
+  .dash-mc-label{font-size:11px;margin-bottom:6px;}
+  .dash-mc-value{font-size:clamp(15px,4.5vw,22px);}
+
+  /* Datas — empilhar em 2 cols: Início+Fim em cima, Atalho embaixo */
+  .date-period-grid{grid-template-columns:1fr 1fr !important;gap:10px !important;}
+  .date-period-grid .date-atalho{grid-column:1/-1;}
+
+  /* Panel 3 (IA + WhatsApp) — coluna única no mobile */
+  .panel3-grid{grid-template-columns:1fr !important;}
+
+  /* Período picker — wrap */
+  #dash-period-wrap + button{font-size:11px;padding:3px 9px;}
+
+  /* Section title menor */
+  .dash-section-title{font-size:15px;}
+
+  /* Tabela de clientes — scroll horizontal */
+  .dash-table-wrap{overflow-x:auto;}
+  .dash-table{min-width:480px;}
+
+  /* Panels */
+  .panel{padding:16px;}
+  .topbar{padding:0 16px;}
+  .tabs{padding:0 6px;gap:0;}
+  .tab{padding:10px 8px;font-size:11px;}
+  .metrics-auto{grid-template-columns:repeat(2,1fr);}
+  .topbar-brand{font-size:13px;}
+  .week-badge{display:none;}
+
+  /* Client switcher topbar — texto menor */
+  .tcs-name{font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;}
+
+  /* Modais full-screen */
+  .modal{width:95vw;max-width:none;max-height:85vh;}
+
+  /* Period picker dropdown alinha à direita se estiver perto da borda */
+  .dash-period-dd{left:auto;right:0;}
+}
+
+@media(max-width:480px){
+  .dash-metric-grid{grid-template-columns:1fr 1fr;}
+  .dash-metric-grid-2{grid-template-columns:1fr 1fr;}
+  .dash-metric-grid-all{grid-template-columns:1fr 1fr;}
+  .dash-mc-value{font-size:clamp(13px,3.8vw,18px);}
+  .dash-h1{font-size:22px;}
+}
+
+/* ══════════ METRIC DRAG & DROP ══════════ */
+.metrics-auto .metric-box{position:relative;cursor:default;transition:var(--transition),opacity .15s,transform .15s;}
+.metrics-edit-mode .metric-box{cursor:grab;border-style:dashed;}
+.metrics-edit-mode .metric-box:active{cursor:grabbing;}
+.metric-box.dragging{opacity:.3;transform:scale(.97);}
+.metric-box.drag-over{border-color:var(--accent)!important;border-style:solid!important;box-shadow:0 0 0 3px var(--accentbg);}
+.drag-handle{position:absolute;top:8px;right:8px;width:16px;height:14px;display:none;flex-direction:column;gap:3px;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;pointer-events:none;}
+.drag-handle span{display:block;width:11px;height:1.5px;background:var(--text3);border-radius:2px;}
+.metric-box:hover .drag-handle{opacity:.65;}
+.metrics-edit-mode .drag-handle{display:flex;}
+.metric-remove-btn{position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;background:var(--red);border:2px solid var(--bg);color:#fff;font-size:10px;cursor:pointer;display:none;align-items:center;justify-content:center;line-height:1;font-weight:900;z-index:5;padding:0;transition:transform .15s,box-shadow .15s;}
+.metric-remove-btn:hover{transform:scale(1.15);box-shadow:0 2px 8px rgba(239,68,68,.4);}
+.metrics-edit-mode .metric-remove-btn{display:flex;}
+.metric-edit-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.btn-metric-edit{background:transparent;border:1px solid var(--border);border-radius:6px;padding:4px 11px;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;gap:5px;}
+.btn-metric-edit:hover{border-color:var(--accent2);color:var(--accent2);}
+.btn-metric-edit.editing{background:var(--accentbg);border-color:var(--accent);color:var(--accent2);}
+.metrics-edit-hint{font-size:11px;color:var(--text3);font-style:italic;}
+
+/* ══════════ METRIC PICKER SHEET ══════════ */
+#metric-picker-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:700;display:none;align-items:flex-end;justify-content:center;padding:0;}
+#metric-picker-bg.open{display:flex;}
+.picker-sheet{background:var(--modal-bg);border:1px solid var(--border);border-bottom:none;border-radius:20px 20px 0 0;padding:24px 24px 32px;width:100%;max-width:660px;max-height:88vh;overflow-y:auto;animation:slideUp .25s ease;}
+@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.picker-sheet h3{font-family:'Bricolage Grotesque',sans-serif;font-size:17px;font-weight:800;margin-bottom:4px;}
+.picker-group-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin:14px 0 6px;}
+.picker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:7px;}
+.picker-item{background:var(--s2);border:1.5px solid var(--border);border-radius:var(--radius2);padding:11px 12px;cursor:pointer;transition:var(--transition);display:flex;flex-direction:column;gap:4px;position:relative;}
+.picker-item:hover{border-color:var(--accent2);transform:translateY(-1px);}
+.picker-item.active{border-color:var(--accent);background:var(--accentbg);}
+.picker-item.active::after{content:'✓';position:absolute;top:7px;right:9px;font-size:10px;font-weight:800;color:var(--accent2);}
+.picker-item .pi-icon{font-size:17px;line-height:1;}
+.picker-item .pi-label{font-size:12px;font-weight:700;line-height:1.3;}
+.picker-item .pi-desc{font-size:10px;color:var(--text3);line-height:1.4;}
+
+/* ══════════ CAMPAIGN SELECTOR ══════════ */
+.camp-filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.camp-filter-chip{background:var(--s3);border:1px solid var(--border);border-radius:50px;padding:5px 13px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;transition:var(--transition);}
+.camp-filter-chip:hover{border-color:var(--accent2);color:var(--accent2);}
+.camp-filter-chip.active{background:var(--accentbg);border-color:var(--accent);color:var(--accent2);}
+.camp-list{display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto;padding-right:2px;}
+.camp-item{display:flex;align-items:center;gap:10px;background:var(--s2);border:1.5px solid var(--border);border-radius:var(--radius2);padding:10px 13px;cursor:pointer;transition:var(--transition);}
+.camp-item:hover{border-color:var(--accent2);}
+.camp-item.selected{border-color:var(--accent);background:var(--accentbg);}
+.camp-item input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);flex-shrink:0;cursor:pointer;}
+.camp-item .ci-name{font-size:13px;font-weight:600;flex:1;line-height:1.3;}
+.camp-item .ci-obj{font-size:10px;color:var(--text3);margin-top:2px;}
+.camp-status-pill{font-size:9px;font-weight:700;letter-spacing:.05em;border-radius:4px;padding:2px 7px;white-space:nowrap;flex-shrink:0;}
+.camp-status-pill.active{background:var(--greenbg);border:1px solid rgba(34,197,94,.2);color:var(--green);}
+.camp-status-pill.paused{background:var(--s3);border:1px solid var(--border);color:var(--text3);}
+.camp-count-badge{background:var(--accent);color:#fff;border-radius:50px;padding:1px 8px;font-size:10px;font-weight:700;margin-left:6px;}
+.camp-select-actions{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+.camp-select-label{font-size:12px;color:var(--text2);}
+.camp-quick-btns{display:flex;gap:6px;}
+.camp-quick-btn{background:transparent;border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;color:var(--text3);cursor:pointer;transition:var(--transition);}
+.camp-quick-btn:hover{border-color:var(--accent2);color:var(--accent2);}
+</style>
+</head>
+<body>
+
+<!-- ══════════ TUTORIAL MODAL ══════════ -->
+<div class="modal-bg" id="modal-tutorial" onclick="if(event.target===this)document.getElementById('modal-tutorial').classList.remove('open')">
+<div class="modal">
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px">
+  <h2 style="margin-bottom:0">Como gerar o token do cliente</h2>
+  <button onclick="document.getElementById('modal-tutorial').classList.remove('open')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;line-height:1;padding:0 2px;margin-top:-2px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text3)'">✕</button>
+</div>
+<p class="msub">Feito uma única vez por cliente — leva 5 minutos.</p>
+<div class="tut-step"><div class="tut-num">1</div><div class="tut-body"><strong>Acesse o Graph API Explorer</strong><p>Vá em <a href="https://developers.facebook.com/tools/explorer/" target="_blank">developers.facebook.com/tools/explorer</a> logado com o usuário que tem acesso admin à conta do cliente.</p></div></div>
+<div class="tut-step"><div class="tut-num">2</div><div class="tut-body"><strong>Selecione ou crie um App</strong><p>No seletor "Meta App", escolha um app existente ou crie um em <a href="https://developers.facebook.com/apps/" target="_blank">developers.facebook.com/apps</a> (tipo Business).</p></div></div>
+<div class="tut-step"><div class="tut-num">3</div><div class="tut-body"><strong>Adicione as permissões</strong><p>Clique em "Add a Permission" e adicione: <code>ads_read</code>, <code>ads_management</code>, <code>read_insights</code>. São somente leitura — não alteram nada nas campanhas.</p></div></div>
+<div class="tut-step"><div class="tut-num">4</div><div class="tut-body"><strong>Gere e copie o token</strong><p>Clique em "Generate Access Token", autorize as permissões e copie. O token começa com <code>EAA...</code></p></div></div>
+<div class="tut-step"><div class="tut-num">5</div><div class="tut-body"><strong>Encontre o Ad Account ID</strong><p>No <a href="https://business.facebook.com/adsmanager" target="_blank">Gerenciador de Anúncios</a>, o ID aparece na URL. Formato: <code>act_123456789</code></p></div></div>
+<div class="tut-step"><div class="tut-num">6</div><div class="tut-body"><strong>Sobre validade do token</strong><p>Tokens de usuário expiram em ~60 dias. Para uso permanente, gere um token de sistema no Business Manager: Configurações → Usuários do sistema → Gerar token.</p></div></div>
+<button class="modal-close" onclick="document.getElementById('modal-tutorial').classList.remove('open')">Entendido →</button>
+</div>
+</div>
+
+<!-- Client manager modal -->
+<div class="modal-bg" id="modal-clients" onclick="if(event.target===this)closeClientModal()">
+<div class="modal">
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px">
+  <h2 style="margin-bottom:0">Gerenciar Clientes</h2>
+  <button onclick="closeClientModal()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;line-height:1;padding:0 2px;margin-top:-2px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text3)'">✕</button>
+</div>
+<p class="msub">Clientes salvos no Supabase. Cadastre uma vez, use em qualquer computador.</p>
+<div id="client-manager-list"></div>
+<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+<!-- Banner de modo edição -->
+<div class="edit-mode-banner" id="edit-mode-banner">
+  <span>✏️ Editando cliente: <strong id="edit-mode-name"></strong></span>
+  <button onclick="cancelEditClient()">✕ Cancelar</button>
+</div>
+<div id="form-section-title" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent2);margin-bottom:12px">Adicionar cliente</div>
+<div class="field"><label>Nome</label><input id="add-cname" placeholder="ex: Kyrefh Jeans"/></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="field" style="margin:0"><label>Segmento</label>
+<select id="add-segmento">
+  <option value="">— Selecione —</option>
+  <option>Moda Feminina</option>
+  <option>Moda Masculina</option>
+  <option>Moda Praia</option>
+  <option>Moda Infantil</option>
+  <option>Moda Íntima</option>
+  <option>Calçados</option>
+  <option>Acessórios</option>
+  <option>Atacado</option>
+  <option>Infoproduto</option>
+  <option>Local / Restaurante</option>
+  <option>Serviços</option>
+  <option>Outro</option>
+</select>
+</div>
+<div class="field" style="margin:0"><label>Imagem da marca</label>
+<div style="display:flex;gap:6px">
+  <input id="add-imagem-url" placeholder="URL da imagem" style="flex:1;min-width:0" oninput="previewClientImage(this.value.trim())"/>
+  <button type="button" onclick="generateClientImage()" id="btn-gen-img" title="Gerar com IA" style="flex-shrink:0;padding:0 10px;height:38px;background:var(--accentbg);border:1px solid rgba(124,58,237,.25);color:var(--accent);border-radius:var(--radius2);cursor:pointer;font-size:13px;font-weight:700;white-space:nowrap">✨ IA</button>
+</div>
+<div id="img-preview-wrap" style="margin-top:8px;display:none">
+  <img id="img-preview" style="width:100%;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border)"/>
+</div>
+</div>
+</div>
+<div class="field">
+  <label>Access Token (Meta) <span style="font-weight:400;color:var(--text3);font-size:10px;text-transform:none;letter-spacing:0">— opcional se token global configurado</span></label>
+  <div style="position:relative">
+    <input id="add-ctoken" type="password" placeholder="EAAxxxxx... (deixe vazio para usar token global)" style="padding-right:90px"/>
+    <button onclick="validateTokenManual()" id="btn-validate-token" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:var(--accentbg);border:1px solid rgba(99,102,241,.2);color:var(--accent2);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Verificar</button>
+  </div>
+  <div class="hint">Token individual do cliente. Se vazio, usa o <strong>token global</strong> configurado em ⚙️ Config. <a href="#" onclick="openTutorial();return false">Ver tutorial</a></div>
+  <div id="token-validation-result" style="margin-top:6px;display:none"></div>
+</div>
+<div class="field"><label>Ad Account ID</label><input id="add-caccount" placeholder="act_123456789"/></div>
+<div style="background:var(--s3);border:1px solid var(--border);border-radius:var(--radius2);padding:12px 14px;margin-bottom:14px">
+  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--accent2);margin-bottom:10px">🛍️ Nuvemshop (opcional)</div>
+  <div class="field" style="margin-bottom:10px"><label>Store ID <span style="font-weight:400;color:var(--text3);font-size:10px;text-transform:none;letter-spacing:0">— número da loja</span></label><input id="add-ns-store-id" placeholder="ex: 1234567" type="number"/></div>
+  <div class="field" style="margin:0"><label>Access Token Nuvemshop</label><input id="add-ns-token" type="password" placeholder="Cole o token de acesso da loja"/><div class="hint" style="margin-top:4px">Token permanente gerado no painel de parceiros Nuvemshop. Não expira a menos que o app seja desinstalado.</div></div>
+</div>
+<input type="hidden" id="edit-client-id" value=""/>
+<button class="btn-main" id="btn-save-client" onclick="saveNewClient()">Salvar cliente</button>
+</div>
+<button class="btn-ghost" style="margin-top:10px" onclick="closeClientModal()">Fechar</button>
+</div>
+</div>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="login-screen" onmousemove="loginMouseMove(event)" onmouseleave="loginMouseLeave()">
+<!-- glows de fundo -->
+<div class="login-glow-a"></div>
+<div class="login-glow-b"></div>
+
+<div class="login-wrap">
+  <div class="login-card-outer" id="login-card-outer">
+    <!-- Luzes nas bordas -->
+    <div class="login-beam-wrap">
+      <div class="login-beam-top"></div>
+      <div class="login-beam-right"></div>
+      <div class="login-beam-bottom"></div>
+      <div class="login-beam-left"></div>
+    </div>
+    <div class="login-card">
+      <!-- Ícone / logo -->
+      <img src="https://i.imgur.com/CvygaNE.png" alt="Metricana" style="height:48px;width:auto;margin:0 auto 16px;display:block;"/>
+      <div class="login-title">Bem-vindo de volta.</div>
+      <div class="login-sub">Metricana · Acesso restrito à equipe</div>
+
+      <!-- Campo de senha -->
+      <div class="login-field">
+        <span class="login-field-icon">🔒</span>
+        <input type="password" id="login-input" placeholder="Senha de acesso" onkeydown="if(event.key==='Enter')doLogin()" autocomplete="current-password"/>
+        <button class="login-pw-toggle" type="button" onclick="toggleLoginPw(this)" tabindex="-1">👁</button>
+      </div>
+
+      <div class="login-error" id="login-error">Senha incorreta. Tente novamente.</div>
+      <button class="btn-login" id="btn-login" onclick="doLogin()">Entrar →</button>
+      <div class="login-hint">Esqueceu a senha? Fale com o administrador.</div>
+    </div>
+  </div>
+</div>
+<!-- input oculto para compatibilidade com toggleTheme -->
+<input type="checkbox" id="theme-toggle-login" style="display:none" onchange="toggleTheme(this)"/>
+</div>
+
+<!-- ══════════ SETUP (apenas admin, nunca aparece para equipe) ══════════ -->
+<div id="setup-screen">
+<div class="setup-wrap">
+<div class="setup-logo"><img src="https://i.imgur.com/drcW25i.png" alt="Metricana" style="height:36px;width:auto;"/></div>
+<div class="setup-title">Configuração inicial — Metricana</div>
+<div class="setup-sub">Conecte o ClickUp. Feito uma vez, fica salvo para toda a equipe.</div>
+<div class="setup-box">
+<div class="field">
+<label>ClickUp API Token</label>
+<input id="cfg-clickup" type="password" placeholder="pk_xxxxxxxxxxxxxxxx"/>
+<div class="hint">Em <a href="https://app.clickup.com/settings/apps" target="_blank">app.clickup.com/settings/apps</a> → API Token</div>
+</div>
+<div class="field">
+<label>ID da Lista de Clientes no ClickUp</label>
+<input id="cfg-list" placeholder="901xxxxxxxx"/>
+<div class="hint">URL da lista: <code style="font-size:11px;background:var(--s3);padding:1px 6px;border-radius:4px;color:var(--accent2)">/list/XXXXXXXXX</code></div>
+</div>
+<div class="field">
+<label>Token Global Meta (Sistema de Usuário)</label>
+<input type="password" id="cfg-meta-token" placeholder="EAAxxxxxxxx..."/>
+<div class="hint">Token permanente do Usuário do Sistema. Usado para todos os clientes sem token próprio.</div>
+</div>
+<div class="field">
+<label>Chave OpenAI API Key</label>
+<input type="password" id="oai-key" placeholder="sk-..."/>
+</div>
+<button class="btn-main" onclick="startApp()">Salvar e entrar →</button>
+<hr class="divider"/>
+<button class="btn-ghost" onclick="startDemo()">Ver demonstração com dados fictícios</button>
+</div>
+</div>
+</div>
+
+<!-- ══════════ MODAL CONFIGURAÇÕES ══════════ -->
+<div class="modal-bg" id="modal-config" onclick="if(event.target===this)document.getElementById('modal-config').classList.remove('open')">
+<div class="modal">
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px">
+  <h2 style="margin-bottom:0">⚙️ Configurações</h2>
+  <button onclick="document.getElementById('modal-config').classList.remove('open')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;line-height:1;padding:0 2px;margin-top:-2px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text3)'">✕</button>
+</div>
+<p class="msub">Configurações globais do sistema. Salvas para toda a equipe.</p>
+<div class="field">
+  <label>Token Global Meta (Sistema de Usuário)</label>
+  <div style="position:relative">
+    <input type="password" id="cfg-meta-token-modal" placeholder="EAAxxxxxxxx..." style="padding-right:90px"/>
+    <button onclick="validateGlobalToken()" id="btn-validate-global" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:var(--accentbg);border:1px solid rgba(99,102,241,.2);color:var(--accent2);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer">Verificar</button>
+  </div>
+  <div class="hint">Token permanente do Usuário do Sistema da sua BM. Clientes sem token próprio usam este automaticamente.</div>
+  <div id="global-token-result" style="margin-top:6px;display:none"></div>
+</div>
+<div class="field">
+  <label>ClickUp API Token</label>
+  <div style="position:relative">
+    <input type="password" id="cfg-clickup-modal" placeholder="pk_xxxxxxxxxxxxxxxx" style="padding-right:90px"/>
+    <button onclick="testClickUpToken()" id="btn-test-cu-token" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:var(--accentbg);border:1px solid rgba(99,102,241,.2);color:var(--accent2);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer">Testar</button>
+  </div>
+</div>
+<div class="field">
+  <label>ID da Lista de Clientes no ClickUp</label>
+  <div style="position:relative">
+    <input id="cfg-list-modal" placeholder="901xxxxxxxx" style="padding-right:90px"/>
+    <button onclick="testClickUpList()" id="btn-test-cu-list" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:var(--accentbg);border:1px solid rgba(99,102,241,.2);color:var(--accent2);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer">Testar</button>
+  </div>
+</div>
+<div id="cu-diag-result" style="display:none;margin-bottom:12px;padding:10px 13px;border-radius:8px;font-size:12px;line-height:1.6;font-family:monospace;word-break:break-all;"></div>
+<div class="field">
+  <label>OpenAI API Key</label>
+  <input type="password" id="cfg-oai-modal" placeholder="sk-..."/>
+</div>
+<button class="btn-main" id="btn-save-config" onclick="saveConfig()">Salvar configurações</button>
+<button class="btn-ghost" style="margin-top:10px" onclick="document.getElementById('modal-config').classList.remove('open')">Fechar</button>
+</div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="app">
+<div class="app-layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div style="display:flex;align-items:center;gap:9px;overflow:hidden;flex:1;min-width:0;">
+      <img src="https://i.imgur.com/drcW25i.png" alt="Metricana" class="sidebar-logo"/>
+    </div>
+    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Retrair menu">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+  <nav class="sidebar-nav">
+    <button class="sidebar-item active" id="tab0" onclick="goStep(0)">
+      <span class="si-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+      <span class="si-label">Home</span>
+      <span class="si-num">1</span>
+    </button>
+    <button class="sidebar-item" id="tab1" onclick="goStep(1)">
+      <span class="si-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+      <span class="si-label">Reports</span>
+      <span class="si-num">2</span>
+    </button>
+    <button class="sidebar-item" id="tab2" onclick="goStep(2)">
+      <span class="si-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
+      <span class="si-label">Integrations</span>
+      <span class="si-num">3</span>
+    </button>
+    <button class="sidebar-item" id="tab3" onclick="goStep(3)">
+      <span class="si-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
+      <span class="si-label">Relatório + IA</span>
+      <span class="si-num">4</span>
+    </button>
+  </nav>
+  <hr class="sidebar-divider"/>
+  <div class="sidebar-bottom">
+    <button class="sidebar-item" onclick="openConfig()">
+      <span class="si-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+      <span class="si-label">Settings</span>
+    </button>
+    <button class="sidebar-item" onclick="openClientManager()">
+      <span class="si-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+      <span class="si-label">Clients</span>
+    </button>
+    <button class="sidebar-item" onclick="doLogout()">
+      <span class="si-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
+      <span class="si-label">Sair</span>
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main-content" id="main-content">
+<div id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+<div class="topbar">
+<div class="topbar-left">
+  <!-- Hamburger mobile -->
+  <button class="topbar-mobile-menu" id="topbar-mobile-menu" onclick="toggleMobileSidebar()" style="display:none;background:none;border:none;cursor:pointer;color:var(--text2);padding:6px;border-radius:8px;flex-shrink:0;" title="Menu">
+    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <!-- seletor de cliente no topbar -->
+  <div class="topbar-client-switcher" id="topbar-switcher" style="display:none">
+    <button class="tcs-btn" id="tcs-btn" onclick="toggleClientSwitcher(event)">
+      <span class="tcs-avatar" id="tcs-avatar"></span>
+      <span class="tcs-name" id="tcs-name">Selecione</span>
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="tcs-dropdown" id="tcs-dropdown"></div>
+  </div>
+</div>
+<div class="topbar-center" id="topbar-client-name" style="display:none"></div>
+<div class="topbar-right">
+<label class="theme-toggle" title="Alternar tema" style="margin-right:4px">
+<input type="checkbox" id="theme-toggle-app" onchange="toggleTheme(this)"/>
+<div class="theme-track"></div>
+<div class="theme-thumb"><span class="theme-icon-moon">🌙</span><span class="theme-icon-sun">☀️</span></div>
+</label>
+</div>
+</div>
+
+<!-- STEP 0 — DASHBOARD HOME -->
+<div class="panel active" id="panel0">
+<div class="dash-wrap">
+
+  <!-- Hero / Greeting -->
+  <div class="dash-hero">
+    <div class="dash-hero-glow"></div>
+    <div class="dash-h1"><span id="greeting-time">Bom dia</span>, Time!</div>
+    <div class="dash-h2">Vamos analisar os resultados de hoje?</div>
+    <div class="dash-pending-txt" id="dash-pending-txt">Carregando...</div>
+  </div>
+
+  <!-- Período das métricas (selecionável) -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px;flex-wrap:wrap;">
+    <span style="font-size:13px;color:var(--text3);font-weight:600;">Período das métricas:</span>
+    <div class="dash-period-wrap" id="dash-period-wrap">
+      <button class="dash-period-btn" id="dash-period-btn" onclick="toggleDashPeriodDd(event)">
+        <span id="dash-period-label">—</span>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="dash-period-dd" id="dash-period-dd"></div>
+    </div>
+    <button id="btn-dash-refresh" onclick="refreshDashMetrics()" style="background:transparent;border:1px solid var(--border);border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700;color:var(--text3);cursor:pointer;transition:var(--transition);" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">↺ Atualizar dados</button>
+  </div>
+
+  <!-- Metric cards — único grid 3-col desktop / 2-col mobile -->
+  <div class="dash-metric-grid-all">
+    <div class="dash-mc">
+      <div class="dash-mc-label">Valor Faturado</div>
+      <div><span class="dash-mc-value" id="dm-roas">—</span></div>
+    </div>
+    <div class="dash-mc">
+      <div class="dash-mc-label">Total de Compras</div>
+      <div><span class="dash-mc-value" id="dm-conv">—</span></div>
+    </div>
+    <div class="dash-mc">
+      <div class="dash-mc-label">CPA</div>
+      <div><span class="dash-mc-value" id="dm-cpa">—</span></div>
+    </div>
+    <div class="dash-mc">
+      <div class="dash-mc-label">Valor Investido</div>
+      <div><span class="dash-mc-value" id="dm-spend">—</span></div>
+    </div>
+    <div class="dash-mc">
+      <div class="dash-mc-label">ROI (Retorno)</div>
+      <div><span class="dash-mc-value" id="dm-roi">—</span></div>
+    </div>
+    <div class="dash-mc">
+      <div class="dash-mc-label">Volume de Relatórios Pendentes</div>
+      <div><span class="dash-mc-value purple" id="dm-pending">—</span></div>
+    </div>
+  </div>
+
+  <!-- Client activity table -->
+  <div class="dash-section-title">Atividade Recente dos Clientes</div>
+  <div class="dash-table-wrap">
+    <table class="dash-table">
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Relatório Recente</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="dash-client-tbody">
+        <tr><td colspan="4" style="text-align:center;padding:32px;color:var(--text3)">Carregando clientes...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Hidden elements kept for compatibility -->
+  <div style="display:none">
+    <div id="client-grid"></div>
+    <table><tbody id="hist-body"></tbody></table>
+    <thead id="hist-head"></thead>
+    <th id="hist-col3"></th><th id="hist-col4"></th>
+  </div>
+
+</div>
+</div>
+
+<!-- STEP 1 -->
+<div class="panel" id="panel1">
+<div class="card">
+<div class="card-title" style="font-size:20px;margin-bottom:12px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800">Template do Relatório</div>
+<div class="sec-label" style="margin-bottom:10px">Escolha o modelo que melhor representa este cliente</div>
+<div class="tpl-grid" id="tpl-grid">
+  <div class="tpl-card sel" onclick="selectTemplate('ecommerce')" id="tpl-ecommerce">
+    <div class="tpl-name" style="font-size:20px;font-weight:800;font-family:'Bricolage Grotesque',sans-serif;">E-commerce</div>
+    <div class="tpl-desc">ROI, Conversões, CPA, Cliques, CTR, Impressões. Ideal para lojas com vendas rastreadas.</div>
+  </div>
+  <div class="tpl-card" onclick="selectTemplate('mensagens')" id="tpl-mensagens">
+    <div class="tpl-name" style="font-size:20px;font-weight:800;font-family:'Bricolage Grotesque',sans-serif;">Mensagens / Tráfego</div>
+    <div class="tpl-desc">Visitas IG, Seguidores, Alcance, Mensagens iniciadas, Custo/msg. Ideal para infoprodutos e locais.</div>
+  </div>
+</div>
+</div>
+<div class="card">
+<div class="card-title" style="font-size:20px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800">Período</div>
+<div class="date-period-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+<div class="field" style="margin:0"><label>Início</label><input type="date" id="date-from" onchange="onDateChange()"/></div>
+<div class="field" style="margin:0"><label>Fim</label><input type="date" id="date-to" onchange="onDateChange()"/></div>
+<div class="field date-atalho" style="margin:0">
+<label>Atalho</label>
+<select id="quick-period" onchange="applyQuickPeriod()">
+<option value="">Personalizado</option>
+<option value="7" selected>Últimos 7 dias</option>
+<option value="14">Últimos 14 dias</option>
+<option value="30">Últimos 30 dias</option>
+</select>
+</div>
+</div>
+<div id="custom-date-banner" style="display:none;margin-top:12px;background:var(--yellowbg);border:1px solid rgba(245,158,11,.25);border-radius:var(--radius2);padding:9px 13px;font-size:12px;color:var(--yellow);display:none;align-items:center;justify-content:space-between;gap:10px">
+<span>📅 Data personalizada — clique em Atualizar para aplicar.</span>
+<button onclick="applyCustomDate()" style="background:var(--yellow);border:none;border-radius:6px;padding:5px 12px;color:#000;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🔄 Atualizar</button>
+</div>
+</div>
+<!-- ══ SELETOR DE CAMPANHAS ══ -->
+<div class="card" id="card-camp-select" style="display:none">
+  <div class="card-title" style="margin-bottom:12px;font-size:20px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800">
+    Selecionar Campanhas
+    <span id="camp-sel-badge" class="camp-count-badge" style="display:none">0</span>
+    <span class="status-pill ok" style="margin-left:auto;font-size:10px">✓ Campanhas carregadas</span>
+  </div>
+  <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">Escolha quais campanhas entram no relatório. Útil para separar WhatsApp de e-commerce e não diluir o ROI.</p>
+  <div class="camp-filter-bar">
+    <div class="camp-filter-chip active" onclick="filterCampaignList('delivery')" id="cf-delivery">📦 Tiveram Veiculação</div>
+    <div class="camp-filter-chip" onclick="filterCampaignList('active')" id="cf-active">Ativas</div>
+  </div>
+  <div class="camp-select-actions">
+    <span class="camp-select-label"><span id="camp-sel-count">0</span> de <span id="camp-total-count">0</span> campanhas selecionadas</span>
+    <div class="camp-quick-btns">
+      <button class="camp-quick-btn" onclick="toggleAllCampaigns(true)">Selecionar todas</button>
+      <button class="camp-quick-btn" onclick="selectActiveCampaigns()">Só ativas</button>
+      <button class="camp-quick-btn" onclick="toggleAllCampaigns(false)">Limpar</button>
+    </div>
+  </div>
+  <div class="camp-list" id="camp-list"></div>
+  <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <button class="btn-act" onclick="document.getElementById('card-camp-select').style.display='none';document.getElementById('btn-fetch').disabled=false">← Voltar</button>
+    <button class="btn-act accent" id="btn-confirm-camps" onclick="confirmCampaignSelection()" disabled>Analisar selecionadas →</button>
+  </div>
+</div>
+
+<div class="card" id="card-loading" style="display:none">
+<div class="spinner-wrap">
+<div class="spinner"></div>
+<div style="font-size:13px;color:var(--text3)" id="loading-msg">Conectando à API do Meta<span class="dots"></span></div>
+<div style="width:240px">
+<div class="progress-wrap"><div class="progress-bar" id="prog-bar" style="width:10%"></div></div>
+<div style="font-size:11px;color:var(--text3);text-align:center;margin-top:4px" id="prog-lbl">Autenticando...</div>
+</div>
+</div>
+</div>
+<div id="card-results" style="display:none">
+<div class="card">
+<div class="card-title" style="font-size:20px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800">
+Meta Ads — <span id="lbl-client2" style="color:var(--accent2)">—</span>
+<span class="status-pill ok" style="margin-left:auto;font-size:10px">✓ API Meta</span>
+</div>
+<div class="metric-edit-bar">
+  <button class="btn-metric-edit" id="btn-metric-edit-toggle" onclick="toggleMetricEditMode()">✏️ Personalizar métricas</button>
+  <button class="btn-metric-edit" onclick="openMetricPicker()" id="btn-metric-add" style="display:none">＋ Adicionar métrica</button>
+  <button class="btn-metric-edit" onclick="resetMetricLayout()" id="btn-metric-reset" style="display:none" title="Restaurar padrão">↺ Restaurar padrão</button>
+  <span class="metrics-edit-hint" id="metric-edit-hint" style="display:none">Arraste para reordenar • clique em ✕ para remover</span>
+</div>
+<div class="metrics-auto" id="metrics-display"></div>
+<div id="camp-section" style="display:none">
+<div class="sec-label" style="margin-top:6px">Campanhas no período</div>
+<div style="overflow-x:auto">
+<table class="data-table" id="camp-table">
+<thead><tr>
+<th>Campanha</th>
+<th onclick="sortCamps('status')" style="cursor:pointer;user-select:none" title="Ordenar por Status">Status <span id="sort-ind-status" style="opacity:.5">↕</span></th>
+<th onclick="sortCamps('spend')" style="cursor:pointer;user-select:none" title="Ordenar por Investido">Investido <span id="sort-ind-spend" style="opacity:.5">↕</span></th>
+<th onclick="sortCamps('clicks')" style="cursor:pointer;user-select:none" title="Ordenar por Cliques">Cliques <span id="sort-ind-clicks" style="opacity:.5">↕</span></th>
+<th onclick="sortCamps('ctr')" style="cursor:pointer;user-select:none" title="Ordenar por CTR">CTR <span id="sort-ind-ctr" style="opacity:.5">↕</span></th>
+<th onclick="sortCamps('conv')" style="cursor:pointer;user-select:none" title="Ordenar por Conversões">Conversões <span id="sort-ind-conv" style="opacity:.5">↕</span></th>
+<th>CPA</th>
+</tr></thead>
+<tbody id="camp-body"></tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="card" id="card-ns" style="display:none">
+<div class="card-title">
+🛍️ Nuvemshop - <span id="lbl-client-ns" style="color:var(--green)">—</span>
+<span class="status-pill ok" style="margin-left:auto;font-size:10px;background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.25)">✓ Nuvemshop</span>
+</div>
+<div class="metrics-auto" id="ns-metrics-display"></div>
+<div id="ns-tables-display"></div>
+</div>
+</div>
+<div id="card-error" style="display:none"></div>
+<div class="action-row">
+<button class="btn-act" onclick="goStep(0)">← Voltar</button>
+<button class="btn-act accent" id="btn-fetch" onclick="fetchData()">↓ Puxar dados</button>
+<button class="btn-act green" id="btn-to-cu" style="display:none" onclick="goStep(2)">Enviar ao ClickUp →</button>
+</div>
+</div>
+
+<!-- STEP 2 -->
+<div class="panel" id="panel2">
+<div class="card" id="cu-summary-card" style="display:none">
+<div class="card-title" style="font-size:14px;margin-bottom:12px">📊 Resumo — <span id="cu-summary-client" style="color:var(--accent2)">—</span></div>
+<div id="cu-summary-metrics" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px"></div>
+</div>
+<div class="card">
+<div class="card-title">🔗 Campos para o ClickUp</div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+  <span style="font-size:13px;color:var(--text2);flex-shrink:0">Tipo de relatório:</span>
+  <div style="display:flex;gap:6px">
+    <button id="btn-type-semanal" onclick="setReportType('semanal')" style="padding:5px 14px;border-radius:20px;border:1.5px solid var(--accent2);background:var(--accent2);color:#fff;font-size:12px;font-weight:700;cursor:pointer">📅 Semanal</button>
+    <button id="btn-type-mensal"  onclick="setReportType('mensal')"  style="padding:5px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:700;cursor:pointer">📆 Mensal</button>
+  </div>
+</div>
+<div id="cu-rows"></div>
+<div id="cu-result" style="margin-top:12px"></div>
+</div>
+<div class="action-row">
+<button class="btn-act" onclick="goStep(1)">← Editar</button>
+<button class="btn-act accent" id="btn-send-cu" onclick="sendClickUp()">✓ Enviar ao ClickUp</button>
+<button class="btn-act green" id="btn-to-ai" style="display:none" onclick="goStep(3)">→ Relatório + IA</button>
+</div>
+</div>
+
+<!-- STEP 3 -->
+<div class="panel" id="panel3">
+<div class="panel3-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+  <!-- Coluna esquerda: Insights IA -->
+  <div class="card" style="height:100%;">
+    <div class="card-title" style="font-size:18px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;margin-bottom:4px;">Insights da Metricana (IA)
+      <span style="font-size:10px;font-weight:700;background:var(--accentbg);border:1px solid rgba(124,58,237,.3);color:var(--accent2);border-radius:50px;padding:2px 10px;margin-left:8px;">AI Generated</span>
+    </div>
+    <div class="ai-box loading" id="ai-box">Gerando análise<span class="dots"></span></div>
+    <div class="action-row">
+      <button class="btn-act" onclick="genAnalysis()">↺ Regenerar</button>
+      <button class="btn-act green" onclick="copyAI()">Copiar resumo IA</button>
+    </div>
+  </div>
+  <!-- Coluna direita: Pré-visualização WhatsApp -->
+  <div class="card" style="height:100%;">
+    <div class="card-title" style="font-size:18px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;margin-bottom:12px;">Pré-visualização do Relatório (WhatsApp)</div>
+    <!-- Mockup WhatsApp -->
+    <div style="background:#1a1a1a;border-radius:14px;overflow:hidden;border:1px solid var(--border);">
+      <div style="background:#1f1f1f;padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.06);">
+        <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#9333ea);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;">M</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#fff;">Metricana</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.4);">online</div>
+        </div>
+      </div>
+      <div style="padding:14px 16px;max-height:280px;overflow-y:auto;">
+        <div style="background:#2a2a2a;border-radius:10px;padding:12px;font-size:12px;line-height:1.7;color:rgba(255,255,255,.85);white-space:pre-wrap;font-family:'Lato',sans-serif;" id="rel-preview">—</div>
+      </div>
+    </div>
+    <div class="action-row" style="margin-top:16px;">
+      <button class="btn-act accent" style="width:100%;justify-content:center;gap:8px;" onclick="copyRel()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8a16 16 0 0 0 6 6l.77-.77a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Enviar para WhatsApp
+      </button>
+    </div>
+  </div>
+</div>
+<div class="action-row" style="margin-top:8px;">
+  <button class="btn-act accent" onclick="nextClient()">Próximo cliente</button>
+</div>
+</div> <!-- fim panel3 -->
+  </div> <!-- fim main-content -->
+</div> <!-- fim app-layout -->
+</div> <!-- fim #app -->
+
+<!-- ══════════ METRIC PICKER MODAL ══════════ -->
+<div id="metric-picker-bg" onclick="if(event.target===this)closeMetricPicker()">
+  <div class="picker-sheet">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <h3>📊 Escolha as métricas do relatório</h3>
+      <button onclick="closeMetricPicker()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;line-height:1;padding:0 4px" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text3)'">✕</button>
+    </div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:4px;line-height:1.6">Clique para ativar/desativar. A ordem pode ser ajustada arrastando no relatório.</p>
+    <div id="picker-content"></div>
+    <div style="margin-top:18px;display:flex;gap:8px">
+      <button class="btn-main" style="flex:1" onclick="closeMetricPicker()">Confirmar →</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════ CONSTANTS ════════
+const PASS = 'Ads2026@';
+const SUPA_URL = 'https://ugvmbtufwtpfqmvfmsde.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVndm1idHVmd3RwZnFtdmZtc2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjM2ODQsImV4cCI6MjA5MDAzOTY4NH0.yrJDf5iC1hcDfloF6QWmgkCrTgut7s10BfZWSi8AjNk';
+
+// ════════ SUPABASE HELPER ════════
+async function sbFetch(path, options = {}) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 12000);
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
+      ...options,
+      signal: ctrl.signal,
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': `Bearer ${SUPA_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': options.prefer || '',
+        ...options.headers,
+      }
+    });
+    clearTimeout(timer);
+    const text = await res.text();
+    if (!res.ok) {
+      let msg = 'Erro no Supabase (status ' + res.status + ')';
+      try { msg = JSON.parse(text)?.message || text || msg; } catch(_) {}
+      throw new Error(msg);
+    }
+    if (!text || res.status === 204) return null;
+    try { return JSON.parse(text); } catch(_) { return null; }
+  } catch(e) {
+    clearTimeout(timer);
+    throw e;
+  }
+}
+
+// ════════ CARREGAR CONFIG DO SUPABASE ════════
+async function loadConfig() {
+  try {
+    const rows = await sbFetch('config?select=*&limit=1');
+    if (rows && rows.length > 0) {
+      cfg.clickup   = rows[0].clickup_token || '';
+      cfg.listId    = rows[0].clickup_list_id || '';
+      cfg.openaiKey = rows[0].openai_key || '';
+      cfg.metaToken = rows[0].meta_token || '';
+      return true;
+    }
+  } catch(e) {
+    console.warn('Erro ao carregar config do Supabase:', e.message);
+  }
+  return false;
+}
+
+async function saveConfigToSupabase(clickup, listId, openaiKey, metaToken) {
+  await sbFetch('config', {
+    method: 'POST',
+    prefer: 'return=minimal,resolution=merge-duplicates',
+    headers: { 'Prefer': 'return=minimal,resolution=merge-duplicates' },
+    body: JSON.stringify({ id: 1, clickup_token: clickup, clickup_list_id: listId, openai_key: openaiKey, meta_token: metaToken })
+  });
+}
+
+async function loadClients() {
+  try {
+    const result = await sbFetch('clientes?select=*&order=name.asc');
+    clients = Array.isArray(result) ? result : [];
+  } catch(e) {
+    console.error('Erro ao carregar clientes:', e);
+    clients = [];
+  }
+}
+
+async function saveClient(client) {
+  await sbFetch('clientes', { method: 'POST', prefer: 'return=representation', body: JSON.stringify(client) });
+}
+
+async function deleteClient(id) {
+  await sbFetch(`clientes?id=eq.${id}`, { method: 'DELETE' });
+}
+
+async function updateClientInDb(id, data) {
+  await sbFetch(`clientes?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: { 'Prefer': 'return=minimal' },
+    body: JSON.stringify(data)
+  });
+}
+
+// ════════ THEME ════════
+// ════════ LOGIN 3D EFFECT ════════
+function loginMouseMove(e) {
+  const card = document.getElementById('login-card-outer');
+  if (!card) return;
+  const rect = card.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const dx = (e.clientX - cx) / (rect.width / 2);
+  const dy = (e.clientY - cy) / (rect.height / 2);
+  card.style.transform = `rotateY(${dx * 8}deg) rotateX(${-dy * 8}deg) translateZ(8px)`;
+}
+function loginMouseLeave() {
+  const card = document.getElementById('login-card-outer');
+  if (card) card.style.transform = 'rotateY(0deg) rotateX(0deg) translateZ(0)';
+}
+function toggleLoginPw(btn) {
+  const inp = document.getElementById('login-input');
+  if (!inp) return;
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁'; }
+}
+
+function loginMouseMove(e) {
+  const card = document.getElementById('login-card-outer');
+  if (!card) return;
+  const rect = card.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const dx = (e.clientX - cx) / (rect.width / 2);
+  const dy = (e.clientY - cy) / (rect.height / 2);
+  card.style.transform = `rotateY(${dx * 8}deg) rotateX(${-dy * 8}deg) translateZ(8px)`;
+}
+function loginMouseLeave() {
+  const card = document.getElementById('login-card-outer');
+  if (card) card.style.transform = 'rotateY(0deg) rotateX(0deg) translateZ(0)';
+}
+function toggleLoginPw(btn) {
+  const inp = document.getElementById('login-input');
+  if (!inp) return;
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁'; }
+}
+
+function toggleTheme(checkbox) {
+  const isDark = !checkbox.checked;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  document.getElementById('theme-toggle-login').checked = !isDark;
+  document.getElementById('theme-toggle-app').checked = !isDark;
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+}
+(function(){
+  const saved = localStorage.getItem('theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  window.addEventListener('DOMContentLoaded', () => {
+    const isLight = saved === 'light';
+    document.getElementById('theme-toggle-login').checked = isLight;
+    document.getElementById('theme-toggle-app').checked = isLight;
+  });
+})();
+
+// ════════ LOGIN ════════
+async function doLogin() {
+  const val = document.getElementById('login-input').value;
+  const err = document.getElementById('login-error');
+  const btn = document.getElementById('btn-login');
+
+  if (val !== PASS) {
+    err.style.display = 'block';
+    document.getElementById('login-input').value = '';
+    document.getElementById('login-input').focus();
+    const box = document.querySelector('.login-box');
+    box.style.animation = 'none'; box.offsetHeight; box.style.animation = 'shake .4s ease';
+    return;
+  }
+
+  err.style.display = 'none';
+  btn.textContent = 'Carregando...';
+  btn.disabled = true;
+  sessionStorage.setItem('auth', '1');
+  document.getElementById('login-screen').style.display = 'none';
+
+  const withTimeout = (promise, ms) => Promise.race([
+    promise,
+    new Promise(resolve => setTimeout(() => resolve(null), ms))
+  ]);
+
+  let hasConfig = false;
+  try { hasConfig = await withTimeout(loadConfig(), 8000); } catch(e) {}
+  try { await withTimeout(loadClients(), 8000); } catch(e) { clients = clients || []; }
+
+  if (hasConfig && cfg.clickup && cfg.listId) {
+    launch();
+  } else if (Array.isArray(clients) && clients.length) {
+    launch();
+  } else {
+    btn.textContent = 'Entrar →';
+    btn.disabled = false;
+    document.getElementById('setup-screen').classList.add('open');
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem('auth');
+  location.reload();
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  if (sessionStorage.getItem('auth') === '1') {
+    document.getElementById('login-screen').style.display = 'none';
+
+    // Timeout geral de 8s para não ficar preso eternamente
+    const withTimeout = (promise, ms) => Promise.race([
+      promise,
+      new Promise(resolve => setTimeout(() => resolve(null), ms))
+    ]);
+
+    let hasConfig = false;
+    try { hasConfig = await withTimeout(loadConfig(), 8000); } catch(e) {}
+    try { await withTimeout(loadClients(), 8000); } catch(e) { clients = clients || []; }
+
+    if (hasConfig && cfg.clickup && cfg.listId) {
+      launch();
+    } else if (Array.isArray(clients) && clients.length) {
+      // Tem clientes mas config incompleta — lança mesmo assim
+      launch();
+    } else {
+      document.getElementById('setup-screen').classList.add('open');
+    }
+  }
+  applyQuickPeriod();
+});
+
+const style = document.createElement('style');
+style.textContent = '@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}';
+document.head.appendChild(style);
+
+// ════════ STATE ════════
+let cfg = {clickup:'', listId:'', openaiKey:'', metaToken:'', isDemo:false};
+let clients = [];
+let selClient = null;
+let fetchedData = null;
+let weekHistory = [];
+let selTemplate = 'ecommerce'; // 'ecommerce' | 'mensagens'
+let tokenStatuses = {}; // { clientId: 'checking'|'valid'|'expired'|'permission'|'invalid' }
+let allCampaigns = [];        // campanhas carregadas da API
+let selectedCampaignIds = []; // IDs selecionados pelo usuário
+let campFilterMode = 'delivery';   // filtro ativo na UI do seletor
+let metricsEditMode = false;  // modo edição de métricas ativo
+let dragSrcId = null;         // ID da métrica sendo arrastada
+let selReportType = 'semanal'; // 'semanal' | 'mensal'
+
+// ════════ METRIC CATALOG ════════
+const fmtBRL = v => 'R$ '+parseFloat(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+const METRIC_CATALOG = [
+  { id:'spend',     label:'Investido',       icon:'💰', group:'Geral',      hi:true,  desc:'Total investido em anúncios no período',
+    getValue: d => d.spend,
+    fmt: v => fmtBRL(v) },
+  { id:'revenue',   label:'Receita (Meta)',  icon:'📈', group:'E-commerce', hi:false, desc:'Receita atribuída aos anúncios pelo pixel',
+    getValue: d => d.revVal > 0 ? d.revVal : null,
+    fmt: v => fmtBRL(v) },
+  { id:'roi',       label:'ROI',             icon:'🎯', group:'E-commerce', hi:false, desc:'Retorno sobre o investimento (Receita ÷ Gasto)',
+    getValue: d => d.roi !== '—' ? parseFloat(d.roi) : null,
+    fmt: v => parseFloat(v).toFixed(2) + 'x' },
+  { id:'convQty',   label:'Conversões',      icon:'🛒', group:'E-commerce', hi:false, desc:'Compras/conversões rastreadas pelo pixel',
+    getValue: d => d.convQty,
+    fmt: v => parseInt(v).toLocaleString('pt-BR') },
+  { id:'cpa',       label:'CPA',             icon:'💳', group:'E-commerce', hi:false, desc:'Custo por aquisição (Gasto ÷ Conversões)',
+    getValue: d => d.cpa !== '—' ? parseFloat(d.cpa) : null,
+    fmt: v => fmtBRL(v) },
+  { id:'ticket',    label:'Ticket Médio',    icon:'🏷️', group:'E-commerce', hi:false, desc:'Valor médio por conversão (Receita ÷ Compras)',
+    getValue: d => d.convQty > 0 && d.revVal > 0 ? d.revVal / d.convQty : null,
+    fmt: v => fmtBRL(v) },
+  { id:'clicks',    label:'Cliques',         icon:'👆', group:'Geral',      hi:false, desc:'Total de cliques no link do anúncio',
+    getValue: d => d.clicks,
+    fmt: v => parseInt(v).toLocaleString('pt-BR') },
+  { id:'impr',      label:'Impressões',      icon:'👁️', group:'Geral',      hi:false, desc:'Total de vezes que o anúncio foi exibido',
+    getValue: d => d.impr,
+    fmt: v => parseInt(v).toLocaleString('pt-BR') },
+  { id:'reach',     label:'Alcance',         icon:'📡', group:'Geral',      hi:false, desc:'Pessoas únicas que viram o anúncio',
+    getValue: d => d.reach || d.impr,
+    fmt: v => parseInt(v).toLocaleString('pt-BR') },
+  { id:'ctr',       label:'CTR',             icon:'📊', group:'Geral',      hi:false, desc:'Taxa de cliques (Cliques ÷ Impressões)',
+    getValue: d => d.ctr,
+    fmt: v => parseFloat(v).toFixed(2) + '%' },
+  { id:'cpm',       label:'CPM',             icon:'💵', group:'Geral',      hi:false, desc:'Custo por mil impressões',
+    getValue: d => d.cpm,
+    fmt: v => fmtBRL(v) },
+  { id:'cps',       label:'CPS',             icon:'🖱️', group:'Geral',      hi:false, desc:'Custo por sessão (Investido ÷ Cliques no link)',
+    getValue: d => d.clicks > 0 ? d.spend / d.clicks : null,
+    fmt: v => fmtBRL(v) },
+  { id:'msgs',      label:'Mensagens',       icon:'💬', group:'WhatsApp',   hi:true,  desc:'Conversas iniciadas no WhatsApp',
+    getValue: d => d.msgs > 0 ? d.msgs : null,
+    fmt: v => parseInt(v).toLocaleString('pt-BR') },
+  { id:'costMsg',   label:'Custo/Msg',       icon:'📲', group:'WhatsApp',   hi:false, desc:'Custo médio por mensagem iniciada',
+    getValue: d => d._costMsg != null ? d._costMsg : (d.msgs > 0 ? d.spend / d.msgs : null),
+    fmt: v => fmtBRL(v) },
+  { id:'leads',     label:'Leads',           icon:'📋', group:'Geral',      hi:false, desc:'Leads gerados no período',
+    getValue: d => d.leads > 0 ? d.leads : null,
+    fmt: v => parseInt(v).toLocaleString('pt-BR') },
+];
+
+const DEFAULT_METRICS = {
+  ecommerce: ['spend','revenue','roi','convQty','cpa','ticket','clicks','impr','ctr','cpm','cps','msgs','leads'],
+  mensagens: ['spend','reach','clicks','ctr','cpm','msgs','costMsg'],
+};
+
+function getActiveMetrics() {
+  const key = 'metricana_metrics_' + selTemplate;
+  try {
+    const saved = localStorage.getItem(key);
+    if (saved) return JSON.parse(saved);
+  } catch(_) {}
+  return [...DEFAULT_METRICS[selTemplate]];
+}
+
+function saveActiveMetrics(list) {
+  localStorage.setItem('metricana_metrics_' + selTemplate, JSON.stringify(list));
+}
+
+// ════════ METRIC EDIT MODE ════════
+function toggleMetricEditMode() {
+  metricsEditMode = !metricsEditMode;
+  const box  = document.getElementById('metrics-display');
+  const btn  = document.getElementById('btn-metric-edit-toggle');
+  const add  = document.getElementById('btn-metric-add');
+  const rst  = document.getElementById('btn-metric-reset');
+  const hint = document.getElementById('metric-edit-hint');
+  box.classList.toggle('metrics-edit-mode', metricsEditMode);
+  btn.classList.toggle('editing', metricsEditMode);
+  btn.textContent = metricsEditMode ? '✓ Concluir edição' : '✏️ Personalizar métricas';
+  add.style.display  = metricsEditMode ? 'inline-flex' : 'none';
+  rst.style.display  = metricsEditMode ? 'inline-flex' : 'none';
+  hint.style.display = metricsEditMode ? 'inline' : 'none';
+}
+
+function removeMetric(id) {
+  const active = getActiveMetrics().filter(m => m !== id);
+  saveActiveMetrics(active);
+  if (fetchedData) renderMetrics(fetchedData);
+  // keep edit mode on
+  const box = document.getElementById('metrics-display');
+  box.classList.add('metrics-edit-mode');
+}
+
+function resetMetricLayout() {
+  localStorage.removeItem('metricana_metrics_' + selTemplate);
+  if (fetchedData) renderMetrics(fetchedData);
+  const box = document.getElementById('metrics-display');
+  box.classList.add('metrics-edit-mode');
+  toast('✓ Layout restaurado para o padrão.');
+}
+
+// ════════ DRAG & DROP METRICS ════════
+function onMetricDragStart(e) {
+  if (!metricsEditMode) { e.preventDefault(); return; }
+  dragSrcId = e.currentTarget.dataset.metricId;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => e.currentTarget.classList.add('dragging'), 0);
+}
+function onMetricDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.metric-box.drag-over').forEach(el => el.classList.remove('drag-over'));
+  e.currentTarget.classList.add('drag-over');
+}
+function onMetricDrop(e) {
+  e.preventDefault();
+  const targetId = e.currentTarget.dataset.metricId;
+  if (!dragSrcId || dragSrcId === targetId) return;
+  let active = getActiveMetrics();
+  const srcIdx = active.indexOf(dragSrcId);
+  const tgtIdx = active.indexOf(targetId);
+  if (srcIdx < 0 || tgtIdx < 0) return;
+  active.splice(srcIdx, 1);
+  active.splice(tgtIdx, 0, dragSrcId);
+  saveActiveMetrics(active);
+  if (fetchedData) renderMetrics(fetchedData);
+  const box = document.getElementById('metrics-display');
+  box.classList.add('metrics-edit-mode');
+  dragSrcId = null;
+}
+function onMetricDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.metric-box.drag-over').forEach(el => el.classList.remove('drag-over'));
+}
+
+// ════════ METRIC PICKER ════════
+function openMetricPicker() {
+  const active  = getActiveMetrics();
+  const groups  = [...new Set(METRIC_CATALOG.map(m => m.group))];
+  const content = document.getElementById('picker-content');
+  content.innerHTML = groups.map(group => {
+    const items = METRIC_CATALOG.filter(m => m.group === group);
+    return `<div class="picker-group-label">${group}</div>
+    <div class="picker-grid">${items.map(m => `
+      <div class="picker-item ${active.includes(m.id) ? 'active' : ''}" id="picker-item-${m.id}" onclick="togglePickerMetric('${m.id}')">
+        <div class="pi-icon">${m.icon}</div>
+        <div class="pi-label">${m.label}</div>
+        <div class="pi-desc">${m.desc}</div>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+  document.getElementById('metric-picker-bg').classList.add('open');
+}
+
+function closeMetricPicker() {
+  document.getElementById('metric-picker-bg').classList.remove('open');
+  if (fetchedData) renderMetrics(fetchedData);
+  const box = document.getElementById('metrics-display');
+  if (metricsEditMode) box.classList.add('metrics-edit-mode');
+}
+
+function togglePickerMetric(id) {
+  let active = getActiveMetrics();
+  const idx  = active.indexOf(id);
+  if (idx >= 0) {
+    if (active.length <= 1) { toast('⚠️ Mantenha ao menos uma métrica.'); return; }
+    active.splice(idx, 1);
+  } else {
+    active.push(id);
+  }
+  saveActiveMetrics(active);
+  document.getElementById('picker-item-' + id)?.classList.toggle('active', active.includes(id));
+}
+
+// ════════ TOKEN VALIDATION ════════
+async function validateToken(token, accountId) {
+  if (!token || token === 'DEMO') return { valid: true, demo: true };
+  try {
+    const url = `https://graph.facebook.com/v18.0/${accountId}?fields=id,name&access_token=${token}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.error) {
+      const code = data.error.code;
+      if (code === 190)  return { valid: false, reason: 'expired',    message: '⚠ Token expirado' };
+      if (code === 200)  return { valid: false, reason: 'permission', message: '⚠ Sem permissão' };
+      return { valid: false, reason: 'invalid', message: '⚠ ' + (data.error.message || 'Token inválido') };
+    }
+    return { valid: true };
+  } catch(e) {
+    return { valid: false, reason: 'invalid', message: '⚠ Erro de rede' };
+  }
+}
+
+// Resolve qual token usar para um cliente (próprio ou global)
+function resolveToken(client) {
+  const t = client.token && client.token !== 'DEMO' ? client.token : null;
+  return t || cfg.metaToken || null;
+}
+
+async function checkAllTokens() {
+  if (cfg.isDemo) return;
+  for (const c of clients) {
+    const token = resolveToken(c);
+    if (!token) continue;
+    const id = c.id;
+    tokenStatuses[id] = 'checking';
+    renderClients();
+    renderClientManager();
+    const accountId = c.account_id || c.accountId;
+    const result = await validateToken(token, accountId);
+    tokenStatuses[id] = (result.valid || result.demo) ? 'valid' : (result.reason || 'invalid');
+    if (!result.valid && !result.demo) tokenStatuses[id + '_msg'] = result.message;
+    renderClients();
+    renderClientManager();
+  }
+}
+
+function tokenBadgeHTML(clientId) {
+  const status = tokenStatuses[clientId];
+  if (!status) return '';
+  const labels = {
+    checking:   '⋯ Verificando',
+    valid:      '✓ Token OK',
+    expired:    '⚠ Token expirado',
+    permission: '⚠ Sem permissão',
+    invalid:    '⚠ Token inválido',
+  };
+  const label = labels[status] || '⚠ Inválido';
+  return `<span class="token-badge ${status}">${label}</span>`;
+}
+
+// ════════ VALIDATE TOKEN MANUALLY (botão Verificar no form) ════════
+async function validateTokenManual() {
+  const token   = document.getElementById('add-ctoken').value.trim();
+  const account = document.getElementById('add-caccount').value.trim();
+  const result  = document.getElementById('token-validation-result');
+  const btn     = document.getElementById('btn-validate-token');
+  if (!token) { toast('⚠️ Digite o token primeiro.'); return; }
+  const accountId = account ? (account.startsWith('act_') ? account : 'act_' + account) : 'me';
+  btn.textContent = '...';
+  btn.disabled = true;
+  result.style.display = 'block';
+  result.innerHTML = '<span style="font-size:12px;color:var(--text3)">Verificando token<span class="dots"></span></span>';
+  const res = await validateToken(token, accountId);
+  btn.textContent = 'Verificar';
+  btn.disabled = false;
+  if (res.valid || res.demo) {
+    result.innerHTML = '<span style="font-size:12px;color:var(--green)">✓ Token válido e com permissões corretas!</span>';
+  } else {
+    result.innerHTML = `<span style="font-size:12px;color:var(--red)">${res.message}</span>`;
+  }
+}
+
+// ════════ SETUP ════════
+async function startApp() {
+  cfg.clickup   = document.getElementById('cfg-clickup').value.trim();
+  cfg.listId    = document.getElementById('cfg-list').value.trim();
+  cfg.openaiKey = document.getElementById('oai-key').value.trim();
+  cfg.metaToken = document.getElementById('cfg-meta-token').value.trim();
+  if (!cfg.clickup || !cfg.listId) { toast('⚠️ Preencha o token do ClickUp e o ID da lista.'); return; }
+  try {
+    await saveConfigToSupabase(cfg.clickup, cfg.listId, cfg.openaiKey, cfg.metaToken);
+    toast('✓ Configuração salva para toda a equipe!');
+  } catch(e) {
+    toast('⚠️ Erro ao salvar config: ' + e.message);
+  }
+  document.getElementById('setup-screen').classList.remove('open');
+  await loadClients();
+  launch();
+}
+
+// ════════ MODAL CONFIGURAÇÕES ════════
+function openConfig() {
+  document.getElementById('cfg-meta-token-modal').value = cfg.metaToken || '';
+  document.getElementById('cfg-clickup-modal').value    = cfg.clickup || '';
+  document.getElementById('cfg-list-modal').value       = cfg.listId || '';
+  document.getElementById('cfg-oai-modal').value        = cfg.openaiKey || '';
+  document.getElementById('global-token-result').style.display = 'none';
+  document.getElementById('modal-config').classList.add('open');
+}
+
+async function saveConfig() {
+  const metaToken = document.getElementById('cfg-meta-token-modal').value.trim();
+  const clickup   = document.getElementById('cfg-clickup-modal').value.trim();
+  const listId    = document.getElementById('cfg-list-modal').value.trim();
+  const openaiKey = document.getElementById('cfg-oai-modal').value.trim();
+  const btn = document.getElementById('btn-save-config');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+
+  // Usa valor atual se o campo estiver em branco (evita sobrescrever com vazio)
+  const finalClickup   = clickup   || cfg.clickup   || '';
+  const finalListId    = listId    || cfg.listId    || '';
+  const finalOpenaiKey = openaiKey || cfg.openaiKey || '';
+  const finalMetaToken = metaToken || cfg.metaToken || '';
+
+  try {
+    // Usa PATCH diretamente na linha id=1 para evitar problemas de upsert
+    await sbFetch('config?id=eq.1', {
+      method: 'PATCH',
+      headers: { 'Prefer': 'return=minimal' },
+      body: JSON.stringify({
+        clickup_token:   finalClickup,
+        clickup_list_id: finalListId,
+        openai_key:      finalOpenaiKey,
+        meta_token:      finalMetaToken
+      })
+    });
+    cfg.metaToken = finalMetaToken;
+    cfg.clickup   = finalClickup;
+    cfg.listId    = finalListId;
+    cfg.openaiKey = finalOpenaiKey;
+    toast('✓ Configurações salvas!');
+    document.getElementById('modal-config').classList.remove('open');
+    if (!cfg.isDemo) checkAllTokens();
+  } catch(e) {
+    toast('⚠️ Erro ao salvar: ' + e.message);
+  }
+  btn.disabled = false; btn.textContent = 'Salvar configurações';
+}
+
+async function testClickUpToken() {
+  const token = document.getElementById("cfg-clickup-modal").value.trim() || cfg.clickup;
+  const res = document.getElementById("cu-diag-result");
+  const btn = document.getElementById("btn-test-cu-token");
+  if (!token) { toast("⚠️ Cole o token primeiro."); return; }
+  btn.textContent = "..."; btn.disabled = true;
+  res.style.display = "block";
+  res.style.background = "var(--s3)";
+  res.style.border = "1px solid var(--border)";
+  res.style.color = "var(--text2)";
+  res.textContent = "Testando token...";
+  try {
+    const r = await fetch("https://api.clickup.com/api/v2/user", { headers: { "Authorization": token } });
+    const body = await r.text();
+    let parsed; try { parsed = JSON.parse(body); } catch(_) { parsed = { raw: body }; }
+    if (r.ok && parsed.user) {
+      res.style.background = "var(--greenbg)";
+      res.style.border = "1px solid rgba(34,197,94,.3)";
+      res.style.color = "var(--green)";
+      res.textContent = "✓ Token válido! Usuário: " + parsed.user.username + " (" + parsed.user.email + ")";
+    } else {
+      res.style.background = "var(--redbg)";
+      res.style.border = "1px solid rgba(239,68,68,.3)";
+      res.style.color = "var(--red)";
+      res.textContent = "❌ Token inválido — HTTP " + r.status + ": " + (parsed.err || parsed.message || body.slice(0,200));
+    }
+  } catch(e) {
+    res.style.background = "var(--redbg)";
+    res.style.border = "1px solid rgba(239,68,68,.3)";
+    res.style.color = "var(--red)";
+    res.textContent = "❌ Erro de rede: " + e.message;
+  }
+  btn.textContent = "Testar"; btn.disabled = false;
+}
+async function testClickUpList() {
+  const token = document.getElementById("cfg-clickup-modal").value.trim() || cfg.clickup;
+  const listId = document.getElementById("cfg-list-modal").value.trim() || cfg.listId;
+  const res = document.getElementById("cu-diag-result");
+  const btn = document.getElementById("btn-test-cu-list");
+  if (!token) { toast("⚠️ Preencha o token primeiro."); return; }
+  if (!listId) { toast("⚠️ Preencha o ID da lista primeiro."); return; }
+  btn.textContent = "..."; btn.disabled = true;
+  res.style.display = "block";
+  res.style.background = "var(--s3)";
+  res.style.border = "1px solid var(--border)";
+  res.style.color = "var(--text2)";
+  res.textContent = "Testando lista " + listId + "...";
+  try {
+    const r = await fetch("https://api.clickup.com/api/v2/list/" + listId, { headers: { "Authorization": token } });
+    const body = await r.text();
+    let parsed; try { parsed = JSON.parse(body); } catch(_) { parsed = { raw: body }; }
+    if (r.ok && parsed.id) {
+      res.style.background = "var(--greenbg)";
+      res.style.border = "1px solid rgba(34,197,94,.3)";
+      res.style.color = "var(--green)";
+      res.textContent = "✓ Lista encontrada: " + parsed.name + " (" + parsed.task_count + " tarefas)";
+    } else {
+      res.style.background = "var(--redbg)";
+      res.style.border = "1px solid rgba(239,68,68,.3)";
+      res.style.color = "var(--red)";
+      const detail = parsed.err || parsed.message || body.slice(0,300);
+      res.textContent = "❌ Lista não encontrada — HTTP " + r.status + ": " + detail + " | Dica: copie só os números da URL do ClickUp: app.clickup.com/.../v/l/ESSE_NUMERO";
+    }
+  } catch(e) {
+    res.style.background = "var(--redbg)";
+    res.style.border = "1px solid rgba(239,68,68,.3)";
+    res.style.color = "var(--red)";
+    res.textContent = "❌ Erro de rede: " + e.message;
+  }
+  btn.textContent = "Testar"; btn.disabled = false;
+}
+async function validateGlobalToken() {
+  const token  = document.getElementById('cfg-meta-token-modal').value.trim();
+  const result = document.getElementById('global-token-result');
+  const btn    = document.getElementById('btn-validate-global');
+  if (!token) { toast('⚠️ Cole o token primeiro.'); return; }
+  btn.textContent = '...'; btn.disabled = true;
+  result.style.display = 'block';
+  result.innerHTML = '<span style="font-size:12px;color:var(--text3)">Verificando<span class="dots"></span></span>';
+  // Valida contra /me para checar se o token em si é válido
+  const res = await validateToken(token, 'me');
+  btn.textContent = 'Verificar'; btn.disabled = false;
+  if (res.valid || res.demo) {
+    result.innerHTML = '<span style="font-size:12px;color:var(--green)">✓ Token válido! Pode salvar.</span>';
+  } else {
+    result.innerHTML = `<span style="font-size:12px;color:var(--red)">${res.message}</span>`;
+  }
+}
+
+function startDemo() {
+  cfg.isDemo = true; cfg.clickup = 'DEMO'; cfg.listId = 'DEMO';
+  clients = [
+    {name:'Kyrefh Jeans', token:'DEMO', accountId:'act_111'},
+    {name:'Beleza & Cia', token:'DEMO', accountId:'act_222'},
+    {name:'Moda Verão', token:'DEMO', accountId:'act_333'},
+    {name:'TrendStore', token:'DEMO', accountId:'act_444'},
+    {name:'FS Confecções', token:'DEMO', accountId:'act_555'},
+  ];
+  weekHistory = [{client:'TrendStore', investido:'R$ 520,00', roi:'2.8', vendas:'11', status:'ok'}];
+  document.getElementById('setup-screen').classList.remove('open');
+  launch();
+}
+
+function launch() {
+  setGreeting();
+  document.getElementById('app').style.display = 'block';
+  try { applyQuickPeriod(); } catch(e) { console.warn('applyQuickPeriod:', e.message); }
+  const wb = document.getElementById('week-label');
+  if (wb) wb.style.display = 'none';
+  renderClients();
+  renderHistory();
+  renderClientSwitcher();
+  renderDashClientTable();      // clientes — imediato, sem API
+  renderDashMetricsFromCache(); // mostra cache se tiver, senão "—"
+  loadClientStatuses();         // ClickUp status em background
+  if (!cfg.isDemo) checkAllTokens();
+
+  // Se clientes ainda não carregaram (timeout aconteceu), tentar novamente em background
+  if (!Array.isArray(clients) || !clients.length) {
+    loadClients().then(() => {
+      if (Array.isArray(clients) && clients.length) {
+        renderClients();
+        renderClientSwitcher();
+        renderDashClientTable();
+        if (!cfg.isDemo) checkAllTokens();
+      }
+    }).catch(() => {});
+  }
+}
+
+// ════════ DASHBOARD ════════
+function getWeekKey() {
+  const now = new Date();
+  const jan1 = new Date(now.getFullYear(), 0, 1);
+  const week = Math.ceil(((now - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+  return `${now.getFullYear()}-W${String(week).padStart(2,'0')}`;
+}
+
+// Período selecionado no dashboard (mês/ano)
+let dashPeriodMonth = null; // 1-based
+let dashPeriodYear  = null;
+
+function getDashPeriod() {
+  const monthNames = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  // Usa o selecionado, ou calcula mês anterior
+  let m = dashPeriodMonth, y = dashPeriodYear;
+  if (!m || !y) {
+    const now = new Date();
+    m = now.getMonth(); // 0-based = mês anterior em 1-based
+    y = now.getFullYear();
+    if (m === 0) { m = 12; y--; }
+    dashPeriodMonth = m; dashPeriodYear = y;
+  }
+  const lastDay = new Date(y, m, 0).getDate();
+  const since = `${y}-${String(m).padStart(2,'0')}-01`;
+  const until = `${y}-${String(m).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  return { prevMonth: m, prevYear: y, since, until, label: `${monthNames[m]} ${y}` };
+}
+
+function renderDashPeriodDropdown() {
+  const dd = document.getElementById('dash-period-dd');
+  if (!dd) return;
+  const monthNames = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  // Gera últimos 18 meses
+  const options = [];
+  const now = new Date();
+  for (let i = 1; i <= 18; i++) {
+    let m = now.getMonth() - i + 1; // getMonth() é 0-based, queremos 1-based do mês anterior
+    let y = now.getFullYear();
+    // ajuste: mês anterior em 1-based
+    m = now.getMonth() - i + 1;
+    if (m <= 0) { m += 12; y--; }
+    if (m <= 0) { m += 12; y--; }
+    options.push({ m, y, label: `${monthNames[m]} ${y}` });
+  }
+  const curM = dashPeriodMonth, curY = dashPeriodYear;
+  dd.innerHTML = options.map(o =>
+    `<div class="dash-period-opt ${o.m===curM&&o.y===curY?'active':''}" onclick="selectDashPeriod(${o.m},${o.y},event)">${o.label}</div>`
+  ).join('');
+}
+
+function toggleDashPeriodDd(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('dash-period-dd');
+  if (!dd) return;
+  const isOpen = dd.classList.contains('open');
+  document.querySelectorAll('.dash-period-dd.open').forEach(d => d.classList.remove('open'));
+  if (!isOpen) { renderDashPeriodDropdown(); dd.classList.add('open'); }
+}
+document.addEventListener('click', () => document.querySelectorAll('.dash-period-dd.open').forEach(d => d.classList.remove('open')));
+
+function selectDashPeriod(m, y, e) {
+  if (e) e.stopPropagation();
+  dashPeriodMonth = m; dashPeriodYear = y;
+  document.querySelectorAll('.dash-period-dd.open').forEach(d => d.classList.remove('open'));
+  renderDashMetricsFromCache(); // mostra cache ou "—"
+}
+
+function renderDashMetricsFromCache() {
+  const { prevYear, prevMonth, label } = getDashPeriod();
+  const lbl = document.getElementById('dash-period-label');
+  if (lbl) lbl.textContent = label;
+  const cacheKey = `metricana_dash_${prevYear}_${prevMonth}`;
+  const cached = localStorage.getItem(cacheKey);
+  if (cached) {
+    try {
+      const m = JSON.parse(cached);
+      if (m) { renderDashMetrics(m); return; }
+    } catch(e) {}
+  }
+  renderDashMetrics(null);
+  // Sem cache: auto-busca na API
+  refreshDashMetrics();
+}
+
+async function refreshDashMetrics() {
+  const btn = document.getElementById('btn-dash-refresh');
+  if (btn) { btn.disabled = true; btn.textContent = 'Atualizando...'; }
+  const { prevYear, prevMonth, since, until } = getDashPeriod();
+  const cacheKey = `metricana_dash_${prevYear}_${prevMonth}`;
+  await fetchDashMetrics(since, until, cacheKey);
+  if (btn) { btn.disabled = false; btn.textContent = '↺ Atualizar dados'; }
+}
+
+async function fetchDashMetrics(since, until, cacheKey) {
+  const validClients = clients.filter(c => resolveToken(c) && (c.account_id || c.accountId));
+  if (!validClients.length) return;
+
+  let totalSpend = 0, totalConv = 0, totalRev = 0, cpaArr = [];
+
+  // Paralelo com timeout de 12s por cliente
+  await Promise.all(validClients.map(async c => {
+    try {
+      const acct  = c.account_id || c.accountId;
+      const token = resolveToken(c);
+      const ctrl  = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 12000);
+      const url = `https://graph.facebook.com/v18.0/${acct}/insights?fields=spend,actions,action_values&time_range={"since":"${since}","until":"${until}"}&level=account&access_token=${token}`;
+      const res  = await fetch(url, { signal: ctrl.signal });
+      clearTimeout(timer);
+      const json = await res.json();
+      if (json.error || !json.data?.[0]) return;
+      const d     = json.data[0];
+      const spend = parseFloat(d.spend || 0);
+      const conv  = parseFloat((d.actions     ||[]).find(a=>a.action_type==='purchase')?.value || 0);
+      const rev   = parseFloat((d.action_values||[]).find(a=>a.action_type==='purchase')?.value || 0);
+      totalSpend += spend; totalConv += conv; totalRev += rev;
+      if (spend > 0 && conv > 0) cpaArr.push(spend / conv);
+    } catch(e) {
+      if (e.name !== 'AbortError') console.warn(`Dash fetch (${c.name}):`, e.message);
+    }
+  }));
+
+  const roi = totalSpend > 0 && totalRev > 0 ? totalRev / totalSpend : null;
+  const metrics = { spend: totalSpend, conv: totalConv, rev: totalRev,
+    cpa: cpaArr.length ? cpaArr.reduce((a,b)=>a+b,0)/cpaArr.length : null,
+    roi };
+  renderDashMetrics(metrics);
+  if (totalSpend > 0) localStorage.setItem(cacheKey, JSON.stringify(metrics));
+}
+
+function renderDashMetrics(m) {
+  const fmtBRL = v => v != null ? 'R$' + parseFloat(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+  const fmtNum = v => v != null ? Math.round(v).toLocaleString('pt-BR') : '—';
+
+  document.getElementById('dm-roas').textContent  = m?.rev   != null ? fmtBRL(m.rev)   : '—'; // Valor Faturado
+  document.getElementById('dm-conv').textContent  = m?.conv  != null ? fmtNum(m.conv)  : '—'; // Total de Compras
+  document.getElementById('dm-cpa').textContent   = m?.cpa   != null ? fmtBRL(m.cpa)   : '—'; // CPA
+  document.getElementById('dm-spend').textContent = m?.spend != null ? fmtBRL(m.spend) : '—'; // Valor Investido
+  const roiEl = document.getElementById('dm-roi');
+  if (roiEl) roiEl.textContent = m?.roi != null ? m.roi.toFixed(2) + 'x' : '—'; // ROI
+}
+
+let dashTaskMap = {}; // { clientIdx: { id, statusCls, statusLabel } }
+
+function renderDashClientTable() {
+  const tbody = document.getElementById('dash-client-tbody');
+  if (!tbody) return;
+  if (!Array.isArray(clients) || !clients.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">Nenhum cliente cadastrado.</td></tr>`;
+    return;
+  }
+  const lastReport = {};
+  (weekHistory||[]).forEach(h => { if (h.client) lastReport[h.client] = h.date||h.week||'—'; });
+
+  tbody.innerHTML = clients.map((c,i) => {
+    const recent = lastReport[c.name] || '—';
+    return `<tr>
+      <td>
+        <button onclick="selectClient(${i})" style="background:none;border:none;padding:0;cursor:pointer;font-weight:700;font-size:14px;color:var(--text);font-family:'Bricolage Grotesque',sans-serif;text-align:left;" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='var(--text)'">${c.name}</button>
+      </td>
+      <td style="color:var(--text3)">${recent}</td>
+      <td>
+        <div class="dash-status-wrap" id="dswrap-${i}">
+          <span class="dash-status pendente" id="dstatus-${i}" onclick="toggleStatusDd(${i},event)">...</span>
+          <div class="dash-status-dd" id="dsdd-${i}">
+            <div class="dash-status-opt" onclick="updateDashStatus(${i},'pendente','Pendente',event)"><span class="dot" style="background:#7c3aed"></span>Pendente</div>
+            <div class="dash-status-opt" onclick="updateDashStatus(${i},'progresso','Em Progresso',event)"><span class="dot" style="background:#f59e0b"></span>Em Progresso</div>
+            <div class="dash-status-opt" onclick="updateDashStatus(${i},'enviar','A Enviar',event)"><span class="dot" style="background:#f59e0b"></span>A Enviar</div>
+            <div class="dash-status-opt" onclick="updateDashStatus(${i},'concluido','Concluído',event)"><span class="dot" style="background:#22c55e"></span>Concluído</div>
+          </div>
+        </div>
+      </td>
+      <td><button class="btn-view" onclick="selectClient(${i})">View</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function toggleStatusDd(i, e) {
+  e.stopPropagation();
+  // Fecha outros dropdowns abertos
+  document.querySelectorAll('.dash-status-dd.open').forEach(d => { if (d.id !== `dsdd-${i}`) d.classList.remove('open'); });
+  document.getElementById(`dsdd-${i}`)?.classList.toggle('open');
+}
+// Fecha dropdown ao clicar fora
+document.addEventListener('click', () => document.querySelectorAll('.dash-status-dd.open').forEach(d => d.classList.remove('open')));
+
+async function updateDashStatus(i, cls, label, e) {
+  e.stopPropagation();
+  document.getElementById(`dsdd-${i}`)?.classList.remove('open');
+  const el = document.getElementById(`dstatus-${i}`);
+  if (el) { el.textContent = label; el.className = `dash-status ${cls}`; }
+
+  const taskInfo = dashTaskMap[i];
+  if (!taskInfo?.id || !cfg.clickup) return;
+
+  // Mapeia cls → nome de status no ClickUp
+  const cuStatusMap = {
+    pendente:  'pendente',
+    progresso: 'em progresso',
+    enviar:    'enviar grupo cliente',
+    concluido: 'concluído'
+  };
+  const cuStatus = cuStatusMap[cls] || cls;
+  try {
+    const res = await fetch(`https://api.clickup.com/api/v2/task/${taskInfo.id}`, {
+      method: 'PUT',
+      headers: { Authorization: cfg.clickup, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: cuStatus })
+    });
+    const json = await res.json();
+    if (json.err) { toast('Erro ao atualizar no ClickUp: ' + json.err); return; }
+    toast(`✓ Status de ${clients[i]?.name} atualizado no ClickUp`);
+    dashTaskMap[i] = { ...taskInfo, statusCls: cls, statusLabel: label };
+  } catch(err) { toast('Erro de conexão com ClickUp'); }
+}
+
+async function loadClientStatuses() {
+  const pending = document.getElementById('dash-pending-txt');
+  const pendingNum = document.getElementById('dm-pending');
+  if (!cfg.clickup || !cfg.listId) {
+    if (pending) pending.textContent = '';
+    if (pendingNum) pendingNum.textContent = '—';
+    clients.forEach((_,i) => {
+      const el = document.getElementById(`dstatus-${i}`);
+      if (el) { el.textContent = '—'; el.className = 'dash-status'; }
+    });
+    return;
+  }
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10000);
+    const res = await fetch(`https://api.clickup.com/api/v2/list/${cfg.listId}/task?page=0&limit=100`,
+      { headers: { Authorization: cfg.clickup }, signal: ctrl.signal });
+    clearTimeout(timer);
+    const json = await res.json();
+    const tasks = json.tasks || [];
+    let pendCount = 0;
+
+    clients.forEach((c,i) => {
+      const el = document.getElementById(`dstatus-${i}`);
+      if (!el) return;
+      const cLow = c.name.toLowerCase().trim();
+      const words = cLow.split(/\s+/).filter(w=>w.length>2);
+      const task = tasks.find(t => {
+        const tl = t.name.toLowerCase();
+        return tl.includes(cLow) || words.some(w=>tl.includes(w));
+      });
+      if (!task) {
+        el.textContent = 'Sem task'; el.className = 'dash-status';
+        dashTaskMap[i] = null;
+        return;
+      }
+      const rawStatus = (task.status?.status||'').toLowerCase().trim();
+      let cls = 'pendente', label = 'Pendente';
+      if (rawStatus.includes('conclu'))                                        { cls='concluido'; label='Concluído'; }
+      else if (rawStatus.includes('progresso')||rawStatus.includes('progress')){ cls='progresso'; label='Em Progresso'; }
+      else if (rawStatus.includes('enviar')||rawStatus.includes('send'))       { cls='enviar';    label='A Enviar'; }
+      else if (rawStatus.includes('ativo')||rawStatus.includes('aberto'))      { cls='ativo';     label='Ativo'; }
+      if (cls==='pendente'||cls==='enviar'||cls==='progresso') pendCount++;
+      el.textContent = label;
+      el.className = `dash-status ${cls}`;
+      dashTaskMap[i] = { id: task.id, statusCls: cls, statusLabel: label };
+    });
+
+    if (pending) pending.textContent = `Você tem ${pendCount} relatório${pendCount!==1?'s':''} pendente${pendCount!==1?'s':''} para essa semana.`;
+    if (pendingNum) pendingNum.textContent = pendCount;
+  } catch(e) {
+    if (pending) pending.textContent = 'Não foi possível carregar os status do ClickUp.';
+  }
+}
+
+// ════════ SIDEBAR ════════
+let sidebarCollapsed = false;
+function isMobile() { return window.innerWidth <= 768; }
+
+function toggleSidebar() {
+  if (isMobile()) { toggleMobileSidebar(); return; }
+  sidebarCollapsed = !sidebarCollapsed;
+  const sidebar = document.getElementById('sidebar');
+  const main = document.getElementById('main-content');
+  sidebar.classList.toggle('collapsed', sidebarCollapsed);
+  if (main) main.style.marginLeft = sidebarCollapsed ? '64px' : 'var(--sidebar-width)';
+}
+function collapseSidebar() {
+  if (isMobile()) { closeMobileSidebar(); return; }
+  if (!sidebarCollapsed) toggleSidebar();
+}
+function expandSidebar() {
+  if (isMobile()) return;
+  if (sidebarCollapsed) toggleSidebar();
+}
+
+// Mobile sidebar (overlay)
+function toggleMobileSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const isOpen = sidebar.classList.contains('mobile-open');
+  sidebar.classList.toggle('mobile-open', !isOpen);
+  if (overlay) overlay.classList.toggle('open', !isOpen);
+  document.body.style.overflow = isOpen ? '' : 'hidden';
+}
+function closeMobileSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  sidebar.classList.remove('mobile-open');
+  if (overlay) overlay.classList.remove('open');
+  document.body.style.overflow = '';
+}
+// Auto-collapse: recolhe ao clicar em item do menu (etapa)
+(function() {
+  document.addEventListener('DOMContentLoaded', () => {
+    // Ao clicar fora da sidebar, recolhe
+    document.getElementById('main-content')?.addEventListener('click', () => collapseSidebar());
+  });
+})();
+
+// ════════ CLIENT SWITCHER (topbar) ════════
+function renderClientSwitcher() {
+  const wrap = document.getElementById('topbar-switcher');
+  const dd   = document.getElementById('tcs-dropdown');
+  if (!wrap || !dd) return;
+  if (!clients.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  updateClientSwitcherBtn();
+  dd.innerHTML = clients.map((c,i) => {
+    const color = clientAvatarColor(c.name);
+    const initial = c.name.trim()[0].toUpperCase();
+    const isActive = selClient?.name === c.name;
+    return `<div class="tcs-opt${isActive?' active':''}" onclick="switchClientFromTopbar(${i})">
+      <div class="tcs-opt-avatar" style="background:linear-gradient(135deg,${color},${color}99)">${initial}</div>
+      <div>
+        <div class="tcs-opt-name">${c.name}</div>
+        ${c.segmento ? `<div class="tcs-opt-seg">${c.segmento}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  // Fecha ao clicar fora
+  document.addEventListener('click', e => {
+    if (!wrap.contains(e.target)) document.getElementById('tcs-dropdown')?.classList.remove('open');
+  }, { once: false });
+}
+function updateClientSwitcherBtn() {
+  const avatar = document.getElementById('tcs-avatar');
+  const name   = document.getElementById('tcs-name');
+  if (!avatar || !name) return;
+  if (selClient) {
+    const color = clientAvatarColor(selClient.name);
+    avatar.style.background = `linear-gradient(135deg,${color},${color}99)`;
+    avatar.textContent = selClient.name.trim()[0].toUpperCase();
+    name.textContent = selClient.name;
+  } else {
+    avatar.style.background = 'var(--s3)';
+    avatar.textContent = '?';
+    name.textContent = 'Selecione um cliente';
+  }
+}
+function toggleClientSwitcher(e) {
+  e.stopPropagation();
+  document.getElementById('tcs-dropdown')?.classList.toggle('open');
+}
+function switchClientFromTopbar(i) {
+  document.getElementById('tcs-dropdown')?.classList.remove('open');
+  selectClient(i);
+  updateClientSwitcherBtn();
+  renderClientSwitcher();
+}
+
+// ════════ STEPS ════════
+let step = 0;
+function goStep(n) {
+  if (n >= 1 && !selClient) { toast('⚠️ Selecione um cliente primeiro.'); return; }
+  if (n >= 2 && !fetchedData) { toast('⚠️ Puxe os dados primeiro.'); return; }
+  if (n === 2) { buildCUPreview(); document.getElementById('btn-to-ai').style.display='none'; document.getElementById('cu-result').innerHTML=''; }
+  if (n === 3) { buildRelatorio(); setTimeout(genAnalysis, 300); }
+  if (n === 0) renderHistory();
+  document.querySelectorAll('.panel').forEach((p,i) => p.classList.toggle('active', i===n));
+  document.querySelectorAll('.sidebar-item[id^="tab"]').forEach((t,i) => {
+    t.classList.remove('active','done');
+    if(i===n) t.classList.add('active');
+    else if(i<n) t.classList.add('done');
+  });
+  step = n;
+  window.scrollTo({top:0,behavior:'smooth'});
+  // Mobile: fecha sidebar ao navegar. Desktop: recolhe ao ir pra etapas > 0
+  if (isMobile()) { closeMobileSidebar(); }
+  else if (n > 0) { collapseSidebar(); }
+}
+
+// ════════ CLIENTS ════════
+function selectTemplate(tpl) {
+  selTemplate = tpl;
+  document.querySelectorAll('.tpl-card').forEach(c => c.classList.remove('sel'));
+  const el = document.getElementById('tpl-' + tpl);
+  if (el) el.classList.add('sel');
+  updateTopbarClient();
+}
+
+const AVATAR_COLORS = [
+  '#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6','#ef4444','#14b8a6'
+];
+function clientAvatarColor(name) {
+  let h = 0; for (let i=0;i<name.length;i++) h = (h*31+name.charCodeAt(i))&0xffffffff;
+  return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+}
+function setGreeting() {
+  const h = new Date().getHours();
+  const g = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+  const el = document.getElementById('greeting-time');
+  if (el) el.textContent = g;
+}
+
+function renderClients() {
+  const grid = document.getElementById('client-grid');
+  if (!clients.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;color:var(--text3);font-size:13px;padding:24px 0;text-align:center">Nenhum cliente cadastrado. Clique em "+ Adicionar".</div>`;
+    return;
+  }
+  grid.innerHTML = clients.map((c,i) => {
+    const isSel  = selClient?.name === c.name;
+    const initial = c.name.trim()[0].toUpperCase();
+    const color   = clientAvatarColor(c.name);
+    const ts      = window.tokenStatus?.[c.id];
+    const heartIcon = ts === 'valid' ? '💚' : (ts === 'invalid' || ts === 'expired' || ts === 'permission') ? '❤️' : '🤍';
+
+    const imgInner = c.imagem_url
+      ? `<img src="${c.imagem_url}" class="cc-photo" onerror="this.style.display='none'"/><div class="cc-initial" style="position:relative;z-index:1">${initial}</div>`
+      : `<div class="cc-initial">${initial}</div>`;
+
+    return `
+    <div class="client-chip ${isSel?'sel':''}" onclick="selectClient(${i})">
+      <div class="cc-img" style="background:linear-gradient(145deg,${color},${color}99)">
+        ${imgInner}
+        <div class="cc-sel-badge">✓</div>
+        <div class="cc-status">${heartIcon}</div>
+        <button class="cc-edit-btn" onclick="event.stopPropagation();quickEditClient(${i})" title="Editar cliente">✏️</button>
+      </div>
+      <div class="cc-body">
+        <div class="cc-name">${c.name}</div>
+        ${c.segmento ? `<div class="cc-seg">${c.segmento}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectClient(i) {
+  selClient = {...clients[i], accountId: clients[i].account_id || clients[i].accountId};
+  fetchedData = null;
+  document.getElementById('lbl-client2').textContent = selClient.name;
+  document.getElementById('card-results').style.display = 'none';
+  document.getElementById('card-error').style.display = 'none';
+  document.getElementById('btn-to-cu').style.display = 'none';
+  renderClients();
+  updateTopbarClient();
+  updateClientSwitcherBtn();
+  renderClientSwitcher();
+  // Mostra o switcher no topbar
+  const sw = document.getElementById('topbar-switcher');
+  if (sw) sw.style.display = 'block';
+  goStep(1);
+}
+
+function openAddClient() {
+  const name = document.getElementById('new-client-input').value.trim();
+  cancelEditClient();
+  if (name) document.getElementById('add-cname').value = name;
+  document.getElementById('new-client-input').value = '';
+  renderClientManager();
+  document.getElementById('modal-clients').classList.add('open');
+}
+
+function openClientManager() { cancelEditClient(); renderClientManager(); document.getElementById('modal-clients').classList.add('open'); }
+function quickEditClient(i) { openClientManager(); setTimeout(() => { editClient(i); document.getElementById('edit-mode-banner').scrollIntoView({behavior:'smooth',block:'nearest'}); }, 100); }
+
+function renderClientManager() {
+  const list = document.getElementById('client-manager-list');
+  if (!clients.length) { list.innerHTML = '<p style="font-size:13px;color:var(--text3);margin-bottom:12px">Nenhum cliente ainda.</p>'; return; }
+  list.innerHTML = clients.map((c,i) => {
+    const badge = tokenBadgeHTML(c.id);
+    const tokenPreview = c.token === 'DEMO' ? 'demo' : (c.token ? c.token.substring(0,10)+'...' : '—');
+    return `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:var(--radius2);margin-bottom:8px;transition:var(--transition)">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600">${c.name}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${c.account_id||c.accountId||'—'} · token ${tokenPreview}</div>
+        ${c.nuvemshop_store_id ? `<div style="font-size:10px;color:var(--green);margin-top:3px">🛍️ Nuvemshop conectada · loja ${c.nuvemshop_store_id}</div>` : ''}
+        ${badge ? `<div style="margin-top:4px">${badge}</div>` : ''}
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;margin-left:10px">
+        <button class="btn-edit" onclick="editClient(${i})">Alterar</button>
+        <button class="btn-remove" onclick="removeClient(${i})">Remover</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function editClient(i) {
+  const c = clients[i];
+  document.getElementById('edit-client-id').value = c.id;
+  document.getElementById('add-cname').value = c.name;
+  document.getElementById('add-ctoken').value = c.token || '';
+  document.getElementById('add-caccount').value = c.account_id || c.accountId || '';
+  document.getElementById('add-ns-store-id').value = c.nuvemshop_store_id || '';
+  document.getElementById('add-ns-token').value = c.nuvemshop_token || '';
+  document.getElementById('add-segmento').value = c.segmento || '';
+  document.getElementById('add-imagem-url').value = c.imagem_url || '';
+  previewClientImage(c.imagem_url || '');
+  document.getElementById('form-section-title').textContent = 'Editar cliente';
+  document.getElementById('btn-save-client').textContent = 'Salvar alterações';
+  document.getElementById('edit-mode-name').textContent = c.name;
+  document.getElementById('edit-mode-banner').style.display = 'flex';
+  document.getElementById('token-validation-result').style.display = 'none';
+  // Scroll para o form
+  document.getElementById('edit-mode-banner').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function previewClientImage(url) {
+  const wrap = document.getElementById('img-preview-wrap');
+  const img  = document.getElementById('img-preview');
+  if (url) { img.src = url; wrap.style.display = 'block'; }
+  else { wrap.style.display = 'none'; img.src = ''; }
+}
+
+async function generateClientImage() {
+  const name = document.getElementById('add-cname').value.trim();
+  const seg  = document.getElementById('add-segmento').value.trim();
+  if (!cfg.openaiKey) { toast('⚠️ Configure a chave OpenAI em ⚙️ Config.'); return; }
+  if (!name) { toast('⚠️ Preencha o nome do cliente primeiro.'); return; }
+
+  const btn = document.getElementById('btn-gen-img');
+  btn.textContent = '⏳'; btn.disabled = true;
+
+  const prompt = `Flat design brand icon for a fashion brand called "${name}"${seg ? `, segment: ${seg}` : ''}. Minimal, modern, colorful gradient, no text, square format, clean background.`;
+  try {
+    const res = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${cfg.openaiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'dall-e-3', prompt, n: 1, size: '1024x1024', response_format: 'url' })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const url = data.data[0].url;
+    document.getElementById('add-imagem-url').value = url;
+    previewClientImage(url);
+    toast('✨ Imagem gerada! Salve o cliente para guardar.');
+  } catch(e) {
+    toast('⚠️ Erro ao gerar imagem: ' + e.message);
+  }
+  btn.textContent = '✨ IA'; btn.disabled = false;
+}
+
+function cancelEditClient() {
+  document.getElementById('edit-client-id').value = '';
+  document.getElementById('add-cname').value = '';
+  document.getElementById('add-ctoken').value = '';
+  document.getElementById('add-caccount').value = '';
+  document.getElementById('add-ns-store-id').value = '';
+  document.getElementById('add-ns-token').value = '';
+  document.getElementById('add-segmento').value = '';
+  document.getElementById('add-imagem-url').value = '';
+  previewClientImage('');
+  document.getElementById('form-section-title').textContent = 'Adicionar cliente';
+  document.getElementById('btn-save-client').textContent = 'Salvar cliente';
+  document.getElementById('edit-mode-banner').style.display = 'none';
+  document.getElementById('token-validation-result').style.display = 'none';
+}
+
+function closeClientModal() {
+  document.getElementById('modal-clients').classList.remove('open');
+  cancelEditClient();
+}
+
+async function saveNewClient() {
+  const editId    = document.getElementById('edit-client-id').value;
+  const name      = document.getElementById('add-cname').value.trim();
+  const token     = document.getElementById('add-ctoken').value.trim();
+  const account   = document.getElementById('add-caccount').value.trim();
+  const nsStoreId = document.getElementById('add-ns-store-id').value.trim();
+  const nsToken   = document.getElementById('add-ns-token').value.trim();
+  const segmento  = document.getElementById('add-segmento').value.trim();
+  const imagemUrl = document.getElementById('add-imagem-url').value.trim();
+  // Token é opcional se houver token global configurado
+  if (!name || !account) { toast('⚠️ Preencha nome e Ad Account ID.'); return; }
+  if (!token && !cfg.metaToken) { toast('⚠️ Digite um token ou configure o Token Global em ⚙️ Config.'); return; }
+  const accountId = account.startsWith('act_') ? account : 'act_' + account;
+
+  const btn = document.getElementById('btn-save-client');
+  btn.disabled = true;
+
+  // Valida com token próprio ou global
+  const tokenToValidate = token || cfg.metaToken;
+  btn.textContent = 'Validando token...';
+  const validation = await validateToken(tokenToValidate, accountId);
+  if (!validation.valid && !validation.demo) {
+    const proceed = confirm(`⚠️ ${validation.message}\n\nO token pode estar expirado ou sem as permissões necessárias.\n\nDeseja salvar assim mesmo?`);
+    if (!proceed) {
+      btn.disabled = false;
+      btn.textContent = editId ? 'Salvar alterações' : 'Salvar cliente';
+      return;
+    }
+  }
+
+  btn.textContent = 'Salvando...';
+  try {
+    if (editId) {
+      // Modo edição — atualiza no Supabase
+      await updateClientInDb(editId, { name, token, account_id: accountId, nuvemshop_store_id: nsStoreId || null, nuvemshop_token: nsToken || null, segmento: segmento || null, imagem_url: imagemUrl || null });
+      toast(`✓ ${name} atualizado!`);
+    } else {
+      // Novo cliente
+      await saveClient({ name, token, account_id: accountId, nuvemshop_store_id: nsStoreId || null, nuvemshop_token: nsToken || null, segmento: segmento || null, imagem_url: imagemUrl || null });
+      toast(`✓ ${name} adicionado!`);
+    }
+    await loadClients();
+    // Atualiza status do token salvo
+    const saved = clients.find(c => c.account_id === accountId || c.name === name);
+    if (saved) {
+      tokenStatuses[saved.id] = validation.valid ? 'valid' : (validation.reason || 'invalid');
+    }
+    renderClients();
+    cancelEditClient();
+    renderClientManager();
+  } catch(e) {
+    toast('⚠️ Erro ao salvar: ' + e.message);
+  }
+  btn.disabled = false;
+  btn.textContent = 'Salvar cliente';
+}
+
+async function removeClient(i) {
+  if (!confirm(`Remover "${clients[i].name}"?`)) return;
+  if (selClient?.name === clients[i].name) selClient = null;
+  try {
+    await deleteClient(clients[i].id);
+    await loadClients();
+    renderClients(); renderClientManager();
+  } catch(e) { toast('⚠️ Erro ao remover: ' + e.message); }
+}
+
+function renderHistory() {
+  const tbody = document.getElementById('hist-body');
+  if (!weekHistory.length) return;
+
+  // Detecta template predominante no histórico para definir cabeçalho
+  const hasMsgs = weekHistory.some(h => h.template === 'mensagens');
+  const hasEcom = weekHistory.some(h => h.template !== 'mensagens');
+  const col3Label = hasMsgs && !hasEcom ? 'Msgs' : hasEcom && !hasMsgs ? 'ROI' : 'ROI / Msgs';
+  const col4Label = hasMsgs && !hasEcom ? 'Custo/Msg' : hasEcom && !hasMsgs ? 'Vendas' : 'Vendas / Custo';
+  const c3 = document.getElementById('hist-col3');
+  const c4 = document.getElementById('hist-col4');
+  if (c3) c3.textContent = col3Label;
+  if (c4) c4.textContent = col4Label;
+
+  tbody.innerHTML = weekHistory.map(h => {
+    const isMsgRow = h.template === 'mensagens';
+    const initial = h.client.trim()[0].toUpperCase();
+    const color = clientAvatarColor(h.client);
+    // col3: ROI colorido para ecommerce, msgs para mensagens
+    let col3Html;
+    if (isMsgRow) {
+      col3Html = `<span style="font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:700;color:var(--accent2)">${h.col3}</span>`;
+    } else {
+      const roi = parseFloat(h.col3);
+      const roiColor = roi >= 5 ? '#10b981' : roi >= 2 ? '#818cf8' : roi >= 1 ? '#f59e0b' : '#ef4444';
+      col3Html = `<span style="font-family:'Bricolage Grotesque',sans-serif;font-size:15px;font-weight:800;color:${roiColor}">${roi.toFixed(1)}x</span>`;
+    }
+    return `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:9px">
+          <div style="width:28px;height:28px;border-radius:8px;background:${color};display:flex;align-items:center;justify-content:center;font-family:'Bricolage Grotesque',sans-serif;font-size:12px;font-weight:800;color:#fff;flex-shrink:0">${initial}</div>
+          <span style="font-weight:600;font-size:13px">${h.client}</span>
+        </div>
+      </td>
+      <td style="font-size:13px">${h.investido}</td>
+      <td>${col3Html}</td>
+      <td style="font-size:13px">${h.col4 ?? h.vendas ?? '—'}</td>
+      <td><span class="status-pill ${h.status==='ok'?'ok':'warn'}" style="font-size:11px">${h.status==='ok'?'✓ Enviado':'Pendente'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ════════ PERIOD ════════
+function applyQuickPeriod() {
+  const days = parseInt(document.getElementById('quick-period')?.value);
+  if (!days) return;
+  const to = new Date(); to.setDate(to.getDate()-1);
+  const from = new Date(to); from.setDate(to.getDate()-(days-1));
+  document.getElementById('date-from').value = from.toISOString().split('T')[0];
+  document.getElementById('date-to').value   = to.toISOString().split('T')[0];
+  document.getElementById('custom-date-banner').style.display = 'none';
+  updateWeekLabel();
+}
+
+function onDateChange() {
+  // Se o atalho for "Personalizado", mostra o banner de atualizar
+  const period = document.getElementById('quick-period')?.value;
+  if (!period) {
+    document.getElementById('custom-date-banner').style.display = 'flex';
+  }
+}
+
+function applyCustomDate() {
+  document.getElementById('custom-date-banner').style.display = 'none';
+  updateWeekLabel();
+  // Se já há dados puxados, avisa que precisa buscar novamente
+  if (fetchedData) {
+    fetchedData = null;
+    document.getElementById('card-results').style.display = 'none';
+    document.getElementById('btn-to-cu').style.display = 'none';
+    toast('📅 Datas atualizadas — puxe os dados novamente.');
+  }
+}
+
+function updateWeekLabel() {
+  const f = document.getElementById('date-from')?.value;
+  const t = document.getElementById('date-to')?.value;
+  const el = document.getElementById('week-label');
+  if (f && t && el) el.textContent = `${fmt2(f)} – ${fmt2(t)}`;
+}
+
+// ════════ NUVEMSHOP ════════
+async function fetchNuvemshopRevenue(storeId, nsToken, dateFrom, dateTo) {
+  // Chama o proxy /api/nuvemshop (Vercel serverless) para evitar CORS
+  let totalRevenue     = 0;
+  let totalOrders      = 0;
+  let totalProductsSold = 0;
+  let couponsUsed      = 0;
+  const seenCustomers       = new Set();
+  const newCustomerIds      = new Set();
+  const returningCustomerIds = new Set();
+  const stateMap   = {};
+  const trafficMap  = {};
+  let page = 1;
+  const perPage = 200;
+  const fromDate = new Date(dateFrom + 'T00:00:00');
+  const toDate   = new Date(dateTo   + 'T23:59:59');
+
+  while (true) {
+    const url = `/api/nuvemshop?storeId=${storeId}&from=${dateFrom}&to=${dateTo}&perPage=${perPage}&page=${page}`;
+    const res = await fetch(url, { headers: { 'x-ns-token': nsToken } });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`Nuvemshop API HTTP ${res.status}: ${txt.slice(0,200)}`);
+    }
+    const orders = await res.json();
+    if (!Array.isArray(orders) || orders.length === 0) break;
+    for (const o of orders) {
+      const orderTotal = parseFloat(o.total || 0);
+      totalRevenue += orderTotal;
+      totalOrders++;
+
+      // Produtos vendidos (soma quantidade de cada item)
+      if (Array.isArray(o.products)) {
+        for (const p of o.products) totalProductsSold += parseInt(p.quantity || 1);
+      }
+
+      // Cupons utilizados
+      if ((Array.isArray(o.coupon) && o.coupon.length > 0) ||
+          (o.coupon && typeof o.coupon === 'object' && o.coupon.code)) {
+        couponsUsed++;
+      }
+
+      // Clientes novos vs recorrentes — por data de cadastro do cliente
+      const custId = o.customer?.id;
+      if (custId && !seenCustomers.has(custId)) {
+        seenCustomers.add(custId);
+        const custCreated = o.customer.created_at ? new Date(o.customer.created_at) : null;
+        if (custCreated && custCreated >= fromDate && custCreated <= toDate) {
+          newCustomerIds.add(custId);
+        } else {
+          returningCustomerIds.add(custId);
+        }
+      }
+
+      // Desempenho por estado
+      const state = o.shipping_address?.province || o.billing_address?.province || 'Desconhecido';
+      if (!stateMap[state]) stateMap[state] = { revenue: 0, orders: 0, shippingCost: 0 };
+      stateMap[state].revenue     += orderTotal;
+      stateMap[state].orders++;
+      stateMap[state].shippingCost += parseFloat(o.shipping_cost_owner || o.shipping_cost_customer || 0);
+
+      // Fontes de tráfego (UTM / marketing)
+      const mktType = o.marketing?.type || o.utm_source || 'Direto/Desconhecido';
+      const mktLabel = ({
+        organic: 'Orgânico', direct: 'Direto', email: 'E-mail',
+        referral: 'Referência', social: 'Social', paid_search: 'Busca Paga',
+        display: 'Display', affiliate: 'Afiliado', sms: 'SMS'
+      })[mktType] || mktType;
+      if (!trafficMap[mktLabel]) trafficMap[mktLabel] = { orders: 0, revenue: 0 };
+      trafficMap[mktLabel].orders++;
+      trafficMap[mktLabel].revenue += orderTotal;
+    }
+    // Se retornou menos que perPage, acabaram as páginas
+    if (orders.length < perPage) break;
+    page++;
+    // Rate limit: 2 req/s — aguarda 600ms entre páginas
+    await new Promise(r => setTimeout(r, 600));
+  }
+
+  const statePerf = Object.entries(stateMap)
+    .map(([state, data]) => ({ state, ...data }))
+    .sort((a, b) => b.revenue - a.revenue);
+
+  const trafficSources = Object.entries(trafficMap)
+    .map(([source, data]) => ({ source, ...data }))
+    .sort((a, b) => b.orders - a.orders);
+
+  return {
+    revenue: totalRevenue,
+    orders: totalOrders,
+    newCustomers: newCustomerIds.size,
+    returningCustomers: returningCustomerIds.size,
+    productsSold: totalProductsSold,
+    couponsUsed,
+    statePerf,
+    trafficSources
+  };
+}
+
+// ════════ FETCH META — FASE 1: LISTAR CAMPANHAS ════════
+async function fetchData() {
+  if (!selClient) { toast('⚠️ Selecione um cliente.'); return; }
+  const from = document.getElementById('date-from').value;
+  const to   = document.getElementById('date-to').value;
+  if (!from||!to) { toast('⚠️ Defina o período.'); return; }
+
+  const loading  = document.getElementById('card-loading');
+  const results  = document.getElementById('card-results');
+  const errBox   = document.getElementById('card-error');
+  const campCard = document.getElementById('card-camp-select');
+  const btn      = document.getElementById('btn-fetch');
+  const prog     = document.getElementById('prog-bar');
+  const progLbl  = document.getElementById('prog-lbl');
+
+  loading.style.display  = 'block';
+  results.style.display  = 'none';
+  errBox.style.display   = 'none';
+  campCard.style.display = 'none';
+  btn.disabled = true;
+  document.getElementById('btn-to-cu').style.display = 'none';
+  selectedCampaignIds = [];
+  allCampaigns = [];
+
+  // ── DEMO ──
+  if (cfg.isDemo || selClient.token === 'DEMO') {
+    prog.style.width = '60%'; progLbl.textContent = 'Carregando campanhas demo...';
+    document.getElementById('loading-msg').innerHTML = 'Carregando campanhas<span class="dots"></span>';
+    await new Promise(r => setTimeout(r, 800));
+    allCampaigns = [
+      { id: 'demo1', name: '[DEMO] Campanha Produto A', status: 'ACTIVE',  objective: 'OUTCOME_SALES'   },
+      { id: 'demo2', name: '[DEMO] Mensagens WhatsApp',  status: 'ACTIVE',  objective: 'MESSAGES'        },
+      { id: 'demo3', name: '[DEMO] Retargeting',         status: 'ACTIVE',  objective: 'OUTCOME_SALES'   },
+      { id: 'demo4', name: '[DEMO] Tráfego Instagram',   status: 'PAUSED', objective: 'OUTCOME_TRAFFIC' },
+    ];
+    prog.style.width = '100%'; progLbl.textContent = 'Campanhas carregadas!';
+    await new Promise(r => setTimeout(r, 300));
+    loading.style.display = 'none';
+    btn.disabled = false;
+    campFilterMode = 'delivery';
+    document.getElementById('camp-total-count').textContent = allCampaigns.length;
+    renderCampaignList();
+    updateCampSelCount();
+    campCard.style.display = 'block';
+    document.getElementById('btn-confirm-camps').onclick = async () => {
+      if (!selectedCampaignIds.length) { toast('⚠️ Selecione ao menos uma campanha.'); return; }
+      campCard.style.display = 'none';
+      loading.style.display  = 'block';
+      await new Promise(r => setTimeout(r, 900));
+      fetchedData = genDemoData(selClient.name, from, to);
+      loading.style.display = 'none';
+      results.style.display = 'block';
+      renderMetrics(fetchedData);
+      btn.disabled = false;
+      document.getElementById('btn-to-cu').style.display = 'flex';
+    };
+    return;
+  }
+
+  // ── TOKEN ──
+  const token = resolveToken(selClient);
+  if (!token) {
+    loading.style.display = 'none'; btn.disabled = false;
+    errBox.style.display = 'block';
+    errBox.innerHTML = `<div class="err-box">❌ Nenhum token configurado para este cliente.<br><small style="opacity:.7">Configure um token global em ⚙️ Config ou adicione um token individual ao cliente.</small></div>`;
+    return;
+  }
+
+  try {
+    prog.style.width = '30%'; progLbl.textContent = 'Buscando campanhas...';
+    document.getElementById('loading-msg').innerHTML = 'Carregando campanhas do Meta<span class="dots"></span>';
+
+    const accountId = selClient.accountId || selClient.account_id;
+    const campUrl = `https://graph.facebook.com/v18.0/${accountId}/campaigns?fields=name,status,effective_status,objective&limit=200&access_token=${token}`;
+    const campRes  = await fetch(campUrl);
+    const campData = await campRes.json();
+    if (campData.error) throw new Error(campData.error.message);
+
+    prog.style.width = '100%'; progLbl.textContent = 'Campanhas carregadas!';
+    await new Promise(r => setTimeout(r, 300));
+
+    allCampaigns = campData.data || [];
+    loading.style.display = 'none';
+    btn.disabled = false;
+    campFilterMode = 'delivery';
+    document.getElementById('camp-total-count').textContent = allCampaigns.length;
+    renderCampaignList();
+    updateCampSelCount();
+    campCard.style.display = 'block';
+    document.getElementById('btn-confirm-camps').onclick = confirmCampaignSelection;
+
+  } catch(e) {
+    loading.style.display = 'none'; btn.disabled = false;
+    errBox.style.display = 'block';
+    errBox.innerHTML = `<div class="err-box">❌ Erro ao carregar campanhas: ${e.message}<br><small style="opacity:.7">Verifique o token do cliente e o Ad Account ID.</small></div>`;
+  }
+}
+
+// ════════ CAMPAIGN SELECTOR ════════
+function objLabel(obj) {
+  const map = {
+    MESSAGES: '💬 Mensagens', OUTCOME_TRAFFIC: '🔗 Tráfego', LINK_CLICKS: '🔗 Tráfego',
+    OUTCOME_SALES: '🛍️ Vendas', CONVERSIONS: '🛍️ Vendas', OUTCOME_LEADS: '📋 Leads',
+    LEAD_GENERATION: '📋 Leads', OUTCOME_ENGAGEMENT: '❤️ Engajamento',
+    POST_ENGAGEMENT: '❤️ Engajamento', OUTCOME_AWARENESS: '👁️ Awareness',
+    REACH: '👁️ Awareness', VIDEO_VIEWS: '▶️ Vídeos', APP_INSTALLS: '📱 App',
+  };
+  return map[obj] || obj || '—';
+}
+
+function matchCampFilter(camp, filter) {
+  if (filter === 'delivery') return camp.effective_status !== 'ARCHIVED' && camp.effective_status !== 'DELETED';
+  if (filter === 'active') return camp.effective_status === 'ACTIVE';
+  return true;
+}
+
+function updateCampSelCount() {
+  const count = selectedCampaignIds.length;
+  document.getElementById('camp-sel-count').textContent = count;
+  const badge = document.getElementById('camp-sel-badge');
+  badge.textContent = count;
+  badge.style.display = count > 0 ? 'inline' : 'none';
+  document.getElementById('btn-confirm-camps').disabled = count === 0;
+}
+
+function renderCampaignList() {
+  const list    = document.getElementById('camp-list');
+  const visible = allCampaigns.filter(c => matchCampFilter(c, campFilterMode));
+  document.getElementById('camp-total-count').textContent = allCampaigns.length;
+
+  if (!visible.length) {
+    list.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Nenhuma campanha neste filtro.</div>`;
+    return;
+  }
+
+  list.innerHTML = visible.map(camp => {
+    const isSel     = selectedCampaignIds.includes(camp.id);
+    const isActive  = camp.effective_status === 'ACTIVE';
+    const statusCls = isActive ? 'active' : 'paused';
+    const statusLbl = isActive ? 'ATIVA' : 'PAUSADA';
+    return `<div class="camp-item ${isSel ? 'selected' : ''}" onclick="toggleCampaign('${camp.id}')">
+      <input type="checkbox" ${isSel ? 'checked' : ''} onclick="event.stopPropagation();toggleCampaign('${camp.id}')"/>
+      <div style="flex:1;min-width:0">
+        <div class="ci-name">${camp.name}</div>
+        <div class="ci-obj">${objLabel(camp.objective)}</div>
+      </div>
+      <span class="camp-status-pill ${statusCls}">${statusLbl}</span>
+    </div>`;
+  }).join('');
+}
+
+function toggleCampaign(id) {
+  const idx = selectedCampaignIds.indexOf(id);
+  if (idx >= 0) selectedCampaignIds.splice(idx, 1);
+  else selectedCampaignIds.push(id);
+  renderCampaignList();
+  updateCampSelCount();
+}
+
+function filterCampaignList(filter) {
+  campFilterMode = filter;
+  ['delivery','active'].forEach(f => {
+    document.getElementById('cf-' + f)?.classList.toggle('active', f === filter);
+  });
+  renderCampaignList();
+}
+
+function toggleAllCampaigns(select) {
+  const visible    = allCampaigns.filter(c => matchCampFilter(c, campFilterMode));
+  const visibleIds = visible.map(c => c.id);
+  if (select) {
+    visibleIds.forEach(id => { if (!selectedCampaignIds.includes(id)) selectedCampaignIds.push(id); });
+  } else {
+    selectedCampaignIds = selectedCampaignIds.filter(id => !visibleIds.includes(id));
+  }
+  renderCampaignList();
+  updateCampSelCount();
+}
+
+function selectActiveCampaigns() {
+  allCampaigns.filter(c => c.effective_status === 'ACTIVE').forEach(c => {
+    if (!selectedCampaignIds.includes(c.id)) selectedCampaignIds.push(c.id);
+  });
+  renderCampaignList();
+  updateCampSelCount();
+}
+
+// ════════ FETCH META — FASE 2: INSIGHTS DAS CAMPANHAS SELECIONADAS ════════
+async function confirmCampaignSelection() {
+  if (!selectedCampaignIds.length) { toast('⚠️ Selecione ao menos uma campanha.'); return; }
+
+  const from     = document.getElementById('date-from').value;
+  const to       = document.getElementById('date-to').value;
+  const loading  = document.getElementById('card-loading');
+  const results  = document.getElementById('card-results');
+  const errBox   = document.getElementById('card-error');
+  const campCard = document.getElementById('card-camp-select');
+  const prog     = document.getElementById('prog-bar');
+  const progLbl  = document.getElementById('prog-lbl');
+
+  campCard.style.display = 'none';
+  loading.style.display  = 'block';
+  results.style.display  = 'none';
+  errBox.style.display   = 'none';
+
+  const token     = resolveToken(selClient);
+  const accountId = selClient.accountId || selClient.account_id;
+
+  try {
+    prog.style.width = '25%'; progLbl.textContent = 'Buscando insights agregados...';
+    document.getElementById('loading-msg').innerHTML = 'Buscando dados das campanhas selecionadas<span class="dots"></span>';
+
+    // ── Insights agregados filtrados pelos IDs selecionados ──
+    const filtering = encodeURIComponent(JSON.stringify([
+      { field: 'campaign.id', operator: 'IN', value: selectedCampaignIds }
+    ]));
+    const insightsUrl = `https://graph.facebook.com/v18.0/${accountId}/insights?fields=spend,clicks,impressions,reach,ctr,cpm,actions,action_values,cost_per_action_type&time_range={"since":"${from}","until":"${to}"}&filtering=${filtering}&level=account&access_token=${token}`;
+    const insRes  = await fetch(insightsUrl);
+    const insData = await insRes.json();
+    if (insData.error) throw new Error(insData.error.message);
+
+    prog.style.width = '55%'; progLbl.textContent = 'Buscando detalhes por campanha...';
+
+    // ── Insights por campanha (para a tabela de campanhas) ──
+    const campInsUrl = `https://graph.facebook.com/v18.0/${accountId}/insights?fields=campaign_name,campaign_id,spend,clicks,ctr,actions,cost_per_action_type&time_range={"since":"${from}","until":"${to}"}&filtering=${filtering}&level=campaign&access_token=${token}`;
+    const campInsRes  = await fetch(campInsUrl);
+    const campInsData = await campInsRes.json();
+
+    prog.style.width = '75%'; progLbl.textContent = 'Processando métricas...';
+
+    const ins   = insData.data?.[0] || {};
+    const spend = parseFloat(ins.spend||0);
+    const clicks= parseInt(ins.clicks||0);
+    const impr  = parseInt(ins.impressions||0);
+    const reach = parseInt(ins.reach||0);
+    const ctr   = parseFloat(ins.ctr||0);
+    const cpm   = parseFloat(ins.cpm||0);
+    const actions = ins.actions||[];
+    const actVals = ins.action_values||[];
+    const purchases = actions.find(a=>a.action_type==='purchase');
+    const revenue   = actVals.find(a=>a.action_type==='purchase');
+    const msgs      = actions.find(a=>a.action_type==='onsite_conversion.messaging_conversation_started_7d');
+    const leads     = actions.find(a=>a.action_type==='lead');
+    const convQty   = parseInt(purchases?.value||0);
+    const revVal    = parseFloat(revenue?.value||0);
+    const roi = spend > 0 && revVal > 0 ? (revVal/spend).toFixed(2) : '—';
+    const cpa = convQty > 0 ? (spend/convQty).toFixed(2) : '—';
+
+    // ── Nuvemshop ──
+    let nsSource = false, nsExtra = null;
+    const nsStoreId = selClient.nuvemshop_store_id;
+    const nsToken   = selClient.nuvemshop_token;
+    if (nsStoreId && nsToken) {
+      try {
+        prog.style.width = '88%'; progLbl.textContent = 'Buscando dados da loja na Nuvemshop...';
+        document.getElementById('loading-msg').innerHTML = 'Conectando à Nuvemshop<span class="dots"></span>';
+        const nsData = await fetchNuvemshopRevenue(nsStoreId, nsToken, from, to);
+        if (nsData.revenue > 0 || nsData.orders > 0) {
+          nsSource = true;
+          nsExtra  = {
+            revenue: nsData.revenue, orders: nsData.orders,
+            newCustomers: nsData.newCustomers, returningCustomers: nsData.returningCustomers,
+            productsSold: nsData.productsSold, couponsUsed: nsData.couponsUsed,
+            statePerf: nsData.statePerf, trafficSources: nsData.trafficSources
+          };
+        }
+      } catch(nsErr) {
+        console.warn('Nuvemshop fetch falhou:', nsErr.message);
+        toast('⚠️ Nuvemshop: ' + nsErr.message.slice(0,80), 4000);
+      }
+    }
+
+    // ── Tabela de campanhas a partir dos insights por campanha ──
+    const camps = (campInsData.data||[]).map(ci => {
+      const ca  = ci.actions||[];
+      const cp  = ca.find(a=>a.action_type==='purchase');
+      const cc  = ca.find(a=>a.action_type==='onsite_conversion.messaging_conversation_started_7d');
+      const obj = allCampaigns.find(c => c.id === ci.campaign_id);
+      return {
+        name: ci.campaign_name, status: obj?.status || 'ACTIVE',
+        spend: parseFloat(ci.spend||0), clicks: parseInt(ci.clicks||0),
+        ctr: parseFloat(ci.ctr||0), conv: parseInt(cp?.value||cc?.value||0),
+        cpa_val: ci.cost_per_action_type?.[0]?.value||'—'
+      };
+    });
+
+    prog.style.width = '100%'; progLbl.textContent = 'Concluído!';
+    await new Promise(r => setTimeout(r, 400));
+
+    fetchedData = {
+      spend, clicks, impr, reach, ctr, cpm,
+      convQty, revVal, roi, cpa,
+      msgs: parseInt(msgs?.value||0), leads: parseInt(leads?.value||0),
+      camps, from, to, nsSource,
+      nsRevenue:            nsExtra?.revenue            || 0,
+      nsOrders:             nsExtra?.orders             || 0,
+      nsNewCustomers:       nsExtra?.newCustomers       || 0,
+      nsReturningCustomers: nsExtra?.returningCustomers || 0,
+      nsProductsSold:       nsExtra?.productsSold       || 0,
+      nsCouponsUsed:        nsExtra?.couponsUsed        || 0,
+      nsStatePerf:          nsExtra?.statePerf          || [],
+      nsTrafficSources:     nsExtra?.trafficSources     || []
+    };
+
+    loading.style.display = 'none';
+    results.style.display = 'block';
+    renderMetrics(fetchedData);
+    document.getElementById('btn-fetch').disabled = false;
+    document.getElementById('btn-to-cu').style.display = 'flex';
+
+  } catch(e) {
+    loading.style.display  = 'none';
+    errBox.style.display   = 'block';
+    campCard.style.display = 'block';
+    errBox.innerHTML = `<div class="err-box">❌ Erro ao buscar dados: ${e.message}<br><small style="opacity:.7">Verifique o token do cliente e o Ad Account ID.</small></div>`;
+  }
+}
+
+function genDemoData(name, from, to) {
+  const spend = 800+Math.random()*400;
+  const conv  = 12+Math.floor(Math.random()*10);
+  const rev   = spend*(1.8+Math.random());
+  return {
+    spend, clicks:320+Math.floor(Math.random()*200),
+    impr:8000+Math.floor(Math.random()*4000),
+    ctr:1.2+Math.random()*2, cpm:12+Math.random()*8,
+    convQty:conv, revVal:rev, roi:(rev/spend).toFixed(2),
+    cpa:(spend/conv).toFixed(2), msgs:45+Math.floor(Math.random()*30),
+    leads:8+Math.floor(Math.random()*8),
+    camps:[
+      {name:'[DEMO] Campanha Produto A',status:'ACTIVE',spend:spend*0.6,clicks:200,ctr:2.1,conv:Math.floor(conv*0.6),cpa_val:(spend*0.6/Math.floor(conv*0.6)).toFixed(2)},
+      {name:'[DEMO] Campanha Retargeting',status:'ACTIVE',spend:spend*0.4,clicks:120,ctr:3.4,conv:Math.floor(conv*0.4),cpa_val:(spend*0.4/Math.floor(conv*0.4)).toFixed(2)},
+    ],
+    from, to
+  };
+}
+
+function renderMetrics(d) {
+  const box       = document.getElementById('metrics-display');
+  const isMsgsTpl = selTemplate === 'mensagens';
+  const msgsQty   = d.msgs;
+  const custoMsg  = msgsQty > 0 ? fmtBRL(d.spend / msgsQty) : '—';
+
+  // Contexto enriquecido passado ao catalog getValue
+  const ctx = { ...d, msgs: msgsQty, _costMsg: msgsQty > 0 ? d.spend / msgsQty : null };
+
+  // Renderizar métricas a partir do catálogo
+  const active = getActiveMetrics();
+  box.innerHTML = active.map(id => {
+    const m = METRIC_CATALOG.find(m => m.id === id);
+    if (!m) return '';
+    const val = m.getValue(ctx);
+    if (val === null || val === undefined) return '';
+    const display = m.fmt(val);
+    return `<div class="metric-box" draggable="true" data-metric-id="${id}"
+        ondragstart="onMetricDragStart(event)"
+        ondragover="onMetricDragOver(event)"
+        ondrop="onMetricDrop(event)"
+        ondragend="onMetricDragEnd(event)">
+      <div class="drag-handle"><span></span><span></span><span></span></div>
+      <button class="metric-remove-btn" onclick="removeMetric('${id}')" title="Remover métrica">✕</button>
+      <div class="mlabel">${m.label}</div>
+      <div class="mvalue${m.hi ? ' hi' : ''}">${display}</div>
+    </div>`;
+  }).filter(Boolean).join('');
+
+  // Restaura modo edição se estava ativo
+  if (metricsEditMode) box.classList.add('metrics-edit-mode');
+
+  // ── Card Nuvemshop (e-commerce) ──
+  const cardNs = document.getElementById('card-ns');
+  if (cardNs) {
+    if (d.nsSource) {
+      cardNs.style.display = 'block';
+      const lblNs = document.getElementById('lbl-client-ns');
+      if (lblNs && selClient) lblNs.textContent = selClient.name;
+
+      const nsTicket = d.nsOrders > 0 ? fmtBRL(d.nsRevenue / d.nsOrders) : null;
+      document.getElementById('ns-metrics-display').innerHTML = `
+        <div class="metric-box"><div class="mlabel">Receita Total</div><div class="mvalue">${fmtBRL(d.nsRevenue)}</div></div>
+        <div class="metric-box"><div class="mlabel">Pedidos</div><div class="mvalue">${d.nsOrders}</div></div>
+        ${nsTicket ? `<div class="metric-box"><div class="mlabel">Ticket Médio</div><div class="mvalue">${nsTicket}</div></div>` : ''}
+        ${(d.nsNewCustomers>0||d.nsReturningCustomers>0) ? `
+          <div class="metric-box"><div class="mlabel">Clientes Novos</div><div class="mvalue">${d.nsNewCustomers}</div></div>
+          <div class="metric-box"><div class="mlabel">Recorrentes</div><div class="mvalue">${d.nsReturningCustomers}</div></div>` : ''}
+        ${d.nsProductsSold>0 ? `<div class="metric-box"><div class="mlabel">Prod. Vendidos</div><div class="mvalue">${d.nsProductsSold.toLocaleString('pt-BR')}</div></div>` : ''}
+        ${d.nsCouponsUsed>0 ? `<div class="metric-box"><div class="mlabel">Cupons Usados</div><div class="mvalue">${d.nsCouponsUsed}</div></div>` : ''}
+      `;
+
+      let nsTablesHtml = '';
+      if (d.nsStatePerf.length > 0) nsTablesHtml += `
+        <div style="margin-top:12px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:6px">🗺️ Por Estado</div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="font-size:10px;text-transform:uppercase">
+              <th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--border);color:var(--text3)">Estado</th>
+              <th style="text-align:right;padding:4px 6px;border-bottom:1px solid var(--border);color:var(--text3)">Receita</th>
+              <th style="text-align:right;padding:4px 6px;border-bottom:1px solid var(--border);color:var(--text3)">Pedidos</th>
+              <th style="text-align:right;padding:4px 6px;border-bottom:1px solid var(--border);color:var(--text3)">Frete</th>
+            </tr></thead>
+            <tbody>${d.nsStatePerf.map((s,i)=>`
+              <tr style="border-bottom:1px solid var(--border)${i===0?';font-weight:600':''}">
+                <td style="padding:5px 6px">${s.state}</td>
+                <td style="padding:5px 6px;text-align:right">${fmtBRL(s.revenue)}</td>
+                <td style="padding:5px 6px;text-align:right">${s.orders}</td>
+                <td style="padding:5px 6px;text-align:right">${s.shippingCost>0?fmtBRL(s.shippingCost):'—'}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+      if (d.nsTrafficSources.length > 0) nsTablesHtml += `
+        <div style="margin-top:12px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:6px">📡 Fontes de Tráfego</div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="font-size:10px;text-transform:uppercase">
+              <th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--border);color:var(--text3)">Fonte</th>
+              <th style="text-align:right;padding:4px 6px;border-bottom:1px solid var(--border);color:var(--text3)">Pedidos</th>
+              <th style="text-align:right;padding:4px 6px;border-bottom:1px solid var(--border);color:var(--text3)">Receita</th>
+            </tr></thead>
+            <tbody>${d.nsTrafficSources.map((t,i)=>`
+              <tr style="border-bottom:1px solid var(--border)${i===0?';font-weight:600':''}">
+                <td style="padding:5px 6px">${t.source}</td>
+                <td style="padding:5px 6px;text-align:right">${t.orders}</td>
+                <td style="padding:5px 6px;text-align:right">${fmtBRL(t.revenue)}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+      document.getElementById('ns-tables-display').innerHTML = nsTablesHtml;
+    } else {
+      cardNs.style.display = 'none';
+    }
+  }
+
+  // Campanhas — sempre ativas primeiro
+  if (d.camps && d.camps.length) {
+    document.getElementById('camp-section').style.display = 'block';
+    campSortCol = 'status'; campSortAsc = true;
+    sortCamps('status', true);
+  }
+
+  updateTopbarClient();
+  renderCuSummary(d, isMsgsTpl, msgsQty, custoMsg, fmtBRL);
+}
+
+function updateTopbarClient() {
+  // Badge antigo substituído pelo client switcher — mantém oculto
+  const el = document.getElementById('topbar-client-name');
+  if (el) { el.style.display = 'none'; el.innerHTML = ''; }
+}
+
+function renderCuSummary(d, isMsgsTpl, msgsQty, custoMsg, fmtBRL) {
+  const card = document.getElementById('cu-summary-card');
+  const metricsEl = document.getElementById('cu-summary-metrics');
+  const clientEl = document.getElementById('cu-summary-client');
+  if (!card || !metricsEl) return;
+  clientEl.textContent = selClient?.name || '—';
+  card.style.display = 'block';
+  const mb = (label, value, hi) => `<div class="metric-box"><div class="mlabel">${label}</div><div class="mvalue${hi?' hi':''}">${value}</div></div>`;
+  if (isMsgsTpl) {
+    metricsEl.innerHTML =
+      mb('Investido', fmtBRL(d.spend), true) +
+      mb('Alcance', (d.reach||d.impr).toLocaleString('pt-BR')) +
+      mb('Cliques', parseInt(d.clicks).toLocaleString('pt-BR')) +
+      mb('CTR', parseFloat(d.ctr).toFixed(2)+'%') +
+      (msgsQty>0 ? mb('Msgs Iniciadas', msgsQty.toLocaleString('pt-BR'), true) : '') +
+      (msgsQty>0 ? mb('Custo/Msg', custoMsg) : '');
+  } else {
+    const nsBadge = d.nsSource ? ' 🛍️' : '';
+    metricsEl.innerHTML =
+      mb('Investido', fmtBRL(d.spend), true) +
+      mb('ROI', d.roi !== '—' ? d.roi+'x' : '—') +
+      mb('Conversões'+nsBadge, d.convQty) +
+      mb('Receita'+nsBadge, d.revVal>0?fmtBRL(d.revVal):'—') +
+      (d.nsSource && d.convQty>0 ? mb('Ticket Médio'+nsBadge, fmtBRL(d.revVal/d.convQty)) : '') +
+      mb('CPA', d.cpa!=='—'?'R$ '+parseFloat(d.cpa).toFixed(2):'—') +
+      mb('Cliques', parseInt(d.clicks).toLocaleString('pt-BR')) +
+      mb('CTR', parseFloat(d.ctr).toFixed(2)+'%');
+  }
+}
+
+// ════════ SORT CAMPAIGNS ════════
+let campSortCol = 'status'; let campSortAsc = true;
+function sortCamps(col, forceAsc) {
+  // Se mesma coluna e não forçado, inverte; se nova coluna, status começa asc (ativas primeiro), resto desc
+  if (forceAsc !== undefined) {
+    campSortAsc = forceAsc;
+  } else if (campSortCol === col) {
+    campSortAsc = !campSortAsc;
+  } else {
+    campSortAsc = col === 'status'; // status: asc=ativas primeiro; outros: desc=maiores primeiro
+    if (col !== 'status') campSortAsc = false;
+  }
+  campSortCol = col;
+  // Update indicators
+  ['status','spend','clicks','ctr','conv'].forEach(c => {
+    const el = document.getElementById('sort-ind-'+c);
+    if (!el) return;
+    if (c === campSortCol) { el.textContent = campSortAsc ? '↑' : '↓'; el.style.opacity = '1'; }
+    else { el.textContent = '↕'; el.style.opacity = '.5'; }
+  });
+  if (!fetchedData?.camps) return;
+  const sorted = [...fetchedData.camps].sort((a, b) => {
+    let av, bv;
+    if (col === 'status') { av = a.status === 'ACTIVE' ? 0 : 1; bv = b.status === 'ACTIVE' ? 0 : 1; }
+    else { av = parseFloat(a[col])||0; bv = parseFloat(b[col])||0; }
+    return campSortAsc ? av - bv : bv - av;
+  });
+  document.getElementById('camp-body').innerHTML = sorted.map(c=>`
+    <tr>
+      <td style="font-weight:500;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</td>
+      <td><span class="status-pill ${c.status==='ACTIVE'?'ok':'idle'}">${c.status==='ACTIVE'?'Ativo':'Pausado'}</span></td>
+      <td>R$ ${parseFloat(c.spend).toFixed(2)}</td>
+      <td>${c.clicks.toLocaleString('pt-BR')}</td>
+      <td>${parseFloat(c.ctr).toFixed(2)}%</td>
+      <td>${c.conv}</td>
+      <td>${c.cpa_val!=='—'?'R$ '+parseFloat(c.cpa_val).toFixed(2):'—'}</td>
+    </tr>`).join('');
+}
+
+
+// ════════ CLICKUP PREVIEW ════════
+function setReportType(type) {
+  selReportType = type;
+  const btnS = document.getElementById('btn-type-semanal');
+  const btnM = document.getElementById('btn-type-mensal');
+  if (type === 'semanal') {
+    btnS.style.background = 'var(--accent2)'; btnS.style.color = '#fff'; btnS.style.borderColor = 'var(--accent2)';
+    btnM.style.background = 'transparent';    btnM.style.color = 'var(--text2)'; btnM.style.borderColor = 'var(--border)';
+  } else {
+    btnM.style.background = 'var(--accent2)'; btnM.style.color = '#fff'; btnM.style.borderColor = 'var(--accent2)';
+    btnS.style.background = 'transparent';    btnS.style.color = 'var(--text2)'; btnS.style.borderColor = 'var(--border)';
+  }
+}
+
+function buildCUPreview() {
+  if (!fetchedData) return;
+  const d = fetchedData;
+  const msgsQty  = d.msgs;
+  const custoMsg = msgsQty > 0 ? fmtBRL(d.spend / msgsQty) : '—';
+
+  let rows;
+  if (selTemplate === 'mensagens') {
+    rows = [
+      ['Investido',       fmtBRL(d.spend)],
+      ['Alcance',         (d.reach||d.impr).toLocaleString('pt-BR')],
+      ['Cliques no link', parseInt(d.clicks).toLocaleString('pt-BR')],
+      ['CTR',             parseFloat(d.ctr).toFixed(2)+'%'],
+      ['CPM',             fmtBRL(d.cpm)],
+      ['Período',         `${fmt2(d.from)} – ${fmt2(d.to)}`],
+    ];
+    if (msgsQty > 0) rows.push(['Mensagens Iniciadas', msgsQty.toLocaleString('pt-BR')]);
+    if (msgsQty > 0) rows.push(['Custo por Msg', custoMsg]);
+  } else {
+    rows = [
+      ['Investido',   fmtBRL(d.spend)],
+      ['Receita',     d.revVal>0 ? fmtBRL(d.revVal)+(d.nsSource?' (Nuvemshop)':'') : '—'],
+      ['ROI',         d.roi+'x'],
+      ['Conversões',  String(d.convQty)+(d.nsSource?' (Nuvemshop)':'')],
+      ['CPA',         d.cpa!=='—' ? fmtBRL(parseFloat(d.cpa)) : '—'],
+      ['Cliques',     d.clicks.toLocaleString('pt-BR')],
+      ['Impressões',  d.impr.toLocaleString('pt-BR')],
+      ['CTR',         parseFloat(d.ctr).toFixed(2)+'%'],
+      ['Período',     `${fmt2(d.from)} – ${fmt2(d.to)}`],
+    ];
+    if (d.nsSource && d.convQty > 0) rows.push(['Ticket Médio (NS)', fmtBRL(d.revVal / d.convQty)]);
+    if (d.nsSource && (d.nsNewCustomers > 0 || d.nsReturningCustomers > 0)) {
+      rows.push(['Clientes Novos (NS)',      d.nsNewCustomers]);
+      rows.push(['Clientes Recorrentes (NS)', d.nsReturningCustomers]);
+    }
+    if (d.nsSource && d.nsProductsSold > 0) rows.push(['Produtos Vendidos (NS)', d.nsProductsSold.toLocaleString('pt-BR')]);
+    if (d.nsSource && d.nsCouponsUsed  > 0) rows.push(['Cupons Usados (NS)', d.nsCouponsUsed]);
+    if (d.msgs > 0) rows.push(['Mensagens', d.msgs]);
+  }
+  document.getElementById('cu-rows').innerHTML = rows.map(([k,v])=>`
+    <div class="cu-row"><span class="crk">${k}</span><span class="crv">${v}</span></div>`).join('');
+}
+
+async function sendClickUp() {
+  if (!fetchedData || !selClient) return;
+  const btn = document.getElementById('btn-send-cu');
+  const res = document.getElementById('cu-result');
+  btn.disabled=true; btn.textContent='Enviando...';
+
+  if (cfg.isDemo) {
+    await new Promise(r=>setTimeout(r,1000));
+    res.innerHTML='<div class="status-pill ok" style="font-size:13px;padding:8px 14px">✓ [DEMO] Enviado com sucesso!</div>';
+    btn.disabled=false; btn.textContent='✓ Enviar ao ClickUp';
+    const _d0 = fetchedData;
+    const _msgs0 = _d0.msgs;
+    const _custMsg0 = _msgs0>0 ? fmtBRL(parseFloat(_d0.spend)/_msgs0) : '—';
+    weekHistory.push({
+      client: selClient.name,
+      investido: 'R$ '+parseFloat(_d0.spend).toFixed(2),
+      col3: selTemplate==='mensagens' ? (_msgs0>0?String(_msgs0):'—') : _d0.roi+'x',
+      col4: selTemplate==='mensagens' ? _custMsg0 : String(_d0.convQty),
+      template: selTemplate,
+      status:'ok'
+    });
+    renderHistory();
+    document.getElementById('btn-to-ai').style.display='flex';
+    toast('✓ Relatório registrado!');
+    return;
+  }
+
+  try {
+    const d = fetchedData;
+
+    // Helper para fazer request ao ClickUp com tratamento de erro detalhado
+    const cuFetch = async (url, options = {}) => {
+      const r = await fetch(url, {
+        ...options,
+        headers: {
+          'Authorization': cfg.clickup,
+          'Content-Type': 'application/json',
+          ...(options.headers || {})
+        }
+      });
+      const text = await r.text();
+      let body = {};
+      try { body = JSON.parse(text); } catch(_) { body = { raw: text }; }
+      if (!r.ok) {
+        // Monta mensagem de erro completa para debug
+        const detail = body.err || body.message || body.raw || ('Status ' + r.status);
+        throw new Error(`ClickUp ${r.status}: ${detail}`);
+      }
+      return body;
+    };
+
+    // 1. Valida que o token e lista funcionam buscando info da lista primeiro
+    res.innerHTML = '<span style="font-size:12px;color:var(--text3)">Validando acesso ao ClickUp<span class="dots"></span></span>';
+    let listInfo;
+    try {
+      listInfo = await cuFetch(`https://api.clickup.com/api/v2/list/${cfg.listId}`);
+    } catch(e) {
+      throw new Error(`Não foi possível acessar a lista "${cfg.listId}". ${e.message}. Verifique o ID da lista e o token em ⚙️ Config.`);
+    }
+
+    // 2. Busca todas as tarefas da lista (paginação: até 100 por página)
+    res.innerHTML = '<span style="font-size:12px;color:var(--text3)">Buscando tarefas<span class="dots"></span></span>';
+    const tasksData = await cuFetch(
+      `https://api.clickup.com/api/v2/list/${cfg.listId}/task?include_closed=true`
+    );
+    const allTasks = tasksData.tasks || [];
+
+    // 3. Busca a tarefa que contém o nome do cliente
+    const clientLower = selClient.name.toLowerCase().trim();
+    const clientWords = clientLower.split(/\s+/).filter(w => w.length > 2);
+    const reportWord  = selReportType; // 'semanal' ou 'mensal'
+    const matchesClient = t => {
+      const tl = t.name.toLowerCase();
+      return tl.includes(clientLower) || clientWords.some(w => tl.includes(w));
+    };
+    // Primeiro tenta achar tarefa com tipo + cliente; fallback só pelo cliente
+    const task = allTasks.find(t => matchesClient(t) && t.name.toLowerCase().includes(reportWord))
+              || allTasks.find(t => matchesClient(t));
+
+    // Monta comentário conforme template selecionado
+    let commentLines;
+    if (selTemplate === 'mensagens') {
+      // Template Mensagens / Tráfego IG
+      const msgs     = d.msgs;
+      const custoMsg = msgs > 0 ? fmtBRL(parseFloat(d.spend) / msgs) : '—';
+      commentLines = [
+        `📊 *Relatório ${selReportType === 'mensal' ? 'Mensal' : 'Semanal'} Meta Ads — ${selClient.name}*`,
+        `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,
+        ``,
+        `📱 *Tráfego p/ Perfil IG*`,
+        `👁️ Alcance: ${(d.reach||d.impr).toLocaleString('pt-BR')}`,
+        `👆 Cliques no link: ${d.clicks.toLocaleString('pt-BR')}`,
+        `🎯 CTR: ${parseFloat(d.ctr).toFixed(2)}%`,
+        msgs > 0 ? `💬 Mensagens Iniciadas: ${msgs.toLocaleString('pt-BR')}` : null,
+        msgs > 0 ? `💲 Custo por Msg: ${custoMsg}` : null,
+        ``,
+        `💰 *Valor Geral Investido: ${fmtBRL(d.spend)}*`,
+      ].filter(Boolean).join('\n');
+    } else {
+      // Template E-commerce (padrão)
+      const nsTicketCU = d.nsSource && d.nsOrders > 0 ? fmtBRL(d.nsRevenue / d.nsOrders) : null;
+      commentLines = [
+        `📊 *Relatório ${selReportType === 'mensal' ? 'Mensal' : 'Semanal'} Meta Ads — ${selClient.name}*`,
+        `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,
+        ``,
+        `📣 *Meta Ads*`,
+        `💰 Investido: ${fmtBRL(d.spend)}`,
+        d.revVal > 0 ? `💵 Receita (anúncios): ${fmtBRL(d.revVal)}` : null,
+        `📈 ROI: ${d.roi}x`,
+        `🛒 Conversões: ${d.convQty}`,
+        d.cpa !== '—' ? `💲 CPA: R$ ${parseFloat(d.cpa).toFixed(2)}` : null,
+        `👆 Cliques: ${d.clicks.toLocaleString('pt-BR')}`,
+        `👁️ Impressões: ${d.impr.toLocaleString('pt-BR')}`,
+        `🎯 CTR: ${parseFloat(d.ctr).toFixed(2)}%`,
+        `💡 CPM: R$ ${parseFloat(d.cpm).toFixed(2)}`,
+        d.msgs > 0 ? `💬 Mensagens: ${d.msgs}` : null,
+        d.nsSource ? `\n🛍️ *Nuvemshop — Dados da Loja*` : null,
+        d.nsSource ? `📦 Pedidos totais: ${d.nsOrders}` : null,
+        d.nsSource ? `💵 Receita total: ${fmtBRL(d.nsRevenue)}` : null,
+        nsTicketCU ? `🎯 Ticket médio: ${nsTicketCU}` : null,
+        (d.nsSource && (d.nsNewCustomers>0||d.nsReturningCustomers>0)) ? `👤 Clientes novos: ${d.nsNewCustomers} | Recorrentes: ${d.nsReturningCustomers}` : null,
+        (d.nsSource && d.nsProductsSold>0) ? `📦 Produtos vendidos: ${d.nsProductsSold.toLocaleString('pt-BR')}` : null,
+        (d.nsSource && d.nsCouponsUsed>0) ? `🏷️ Cupons usados: ${d.nsCouponsUsed}` : null,
+      ].filter(Boolean).join('\n');
+    }
+
+    if (task) {
+      // Tarefa encontrada — adiciona comentário
+      res.innerHTML = `<span style="font-size:12px;color:var(--text3)">Comentando em "${task.name}"<span class="dots"></span></span>`;
+      await cuFetch(`https://api.clickup.com/api/v2/task/${task.id}/comment`, {
+        method: 'POST',
+        body: JSON.stringify({ comment_text: commentLines, notify_all: true })
+      });
+      res.innerHTML = `<div class="status-pill ok" style="font-size:13px;padding:8px 14px">✓ Comentário adicionado em "${task.name}"</div>`;
+    } else {
+      // Tarefa não encontrada — cria nova na lista
+      res.innerHTML = `<span style="font-size:12px;color:var(--text3)">Criando nova tarefa<span class="dots"></span></span>`;
+      const created = await cuFetch(`https://api.clickup.com/api/v2/list/${cfg.listId}/task`, {
+        method: 'POST',
+        body: JSON.stringify({ name: `Relatório — ${selClient.name} — ${fmt2(d.from)}`, description: commentLines })
+      });
+      res.innerHTML = `<div class="status-pill ok" style="font-size:13px;padding:8px 14px">✓ Nova tarefa criada para ${selClient.name}</div>`;
+    }
+
+    const _msgsR = d.msgs;
+    const _custMsgR = _msgsR>0 ? fmtBRL(parseFloat(d.spend)/_msgsR) : '—';
+    weekHistory.push({
+      client: selClient.name,
+      investido: fmtBRL(d.spend),
+      col3: selTemplate==='mensagens' ? (_msgsR>0?_msgsR.toLocaleString('pt-BR'):'—') : (d.roi!=='—'?d.roi+'x':'—'),
+      col4: selTemplate==='mensagens' ? _custMsgR : String(d.convQty),
+      template: selTemplate,
+      status:'ok'
+    });
+    renderHistory();
+    document.getElementById('btn-to-ai').style.display='flex';
+    toast('✓ Enviado ao ClickUp!');
+  } catch(e) {
+    res.innerHTML=`<div class="err-box">❌ ${e.message}</div>`;
+  }
+  btn.disabled=false; btn.textContent='✓ Enviar ao ClickUp';
+}
+
+// ════════ RELATÓRIO ════════
+function buildRelatorio() {
+  if (!fetchedData) return;
+  const d    = fetchedData;
+  const fmtN = v => parseFloat(v).toLocaleString('pt-BR');
+
+  let rel;
+  if (selTemplate === 'mensagens') {
+    const msgs     = d.msgs;
+    const custoMsg = msgs > 0 ? fmtBRL(d.spend / msgs) : '—';
+    rel = [
+      `📊 *Relatório ${selReportType === 'mensal' ? 'Mensal' : 'Semanal'} — ${selClient.name}*`,
+      `📅 ${fmt2(d.from)} a ${fmt2(d.to)}`,
+      ``,
+      `📱 *Tráfego p/ Perfil IG*`,
+      `• Alcance: *${fmtN(d.reach||d.impr)}*`,
+      `• Cliques no link: *${fmtN(d.clicks)}*`,
+      `• CTR: *${parseFloat(d.ctr).toFixed(2)}%*`,
+      `• CPM: *${fmtBRL(d.cpm)}*`,
+      msgs > 0 ? `• Mensagens Iniciadas: *${msgs.toLocaleString('pt-BR')}*` : null,
+      msgs > 0 ? `• Custo por Msg: *${custoMsg}*` : null,
+      ``,
+      `💰 *Valor Geral Investido: ${fmtBRL(d.spend)}*`,
+      ``,
+      `_Relatório gerado por Metricana_`,
+    ].filter(v => v !== null).join('\n');
+  } else {
+    const metaTicketRel = d.convQty > 0 && d.revVal > 0 ? fmtBRL(d.revVal / d.convQty) : null;
+    const nsTicketRel   = d.nsSource && d.nsOrders > 0   ? fmtBRL(d.nsRevenue / d.nsOrders) : null;
+    rel = [
+      `📊 *Relatório ${selReportType === 'mensal' ? 'Mensal' : 'Semanal'} — ${selClient.name}*`,
+      `📅 ${fmt2(d.from)} a ${fmt2(d.to)}`,
+      ``,
+      `💰 Investido: *${fmtBRL(d.spend)}*`,
+      d.revVal > 0    ? `💵 Receita gerada (anúncios): *${fmtBRL(d.revVal)}*` : null,
+      d.roi !== '—'   ? `📈 ROI: *${d.roi}x*` : null,
+      `🛒 Vendas/Conversões (anúncios): *${d.convQty}*`,
+      metaTicketRel   ? `🎯 Ticket Médio (anúncios): *${metaTicketRel}*` : null,
+      d.cpa !== '—'   ? `💲 Custo por conversão: *${fmtBRL(parseFloat(d.cpa))}*` : null,
+      d.nsSource      ? `` : null,
+      d.nsSource      ? `🏪 *Vendas totais do Site (Nuvemshop)*` : null,
+      d.nsSource      ? `🛒 Pedidos: *${d.nsOrders}* — Receita: *${fmtBRL(d.nsRevenue)}*` : null,
+      nsTicketRel     ? `🎯 Ticket Médio: *${nsTicketRel}*` : null,
+      (d.nsSource && (d.nsNewCustomers>0||d.nsReturningCustomers>0)) ? `👤 Clientes novos: *${d.nsNewCustomers}* | Recorrentes: *${d.nsReturningCustomers}*` : null,
+      (d.nsSource && d.nsProductsSold>0) ? `📦 Produtos vendidos: *${d.nsProductsSold.toLocaleString('pt-BR')}*` : null,
+      ``,
+      `📉 Detalhes:`,
+      `• Cliques: ${fmtN(d.clicks)}`,
+      `• Impressões: ${fmtN(d.impr)}`,
+      `• CTR: ${parseFloat(d.ctr).toFixed(2)}%`,
+      `• CPM: ${fmtBRL(d.cpm)}`,
+      d.msgs > 0  ? `• Mensagens iniciadas: ${d.msgs}` : null,
+      d.leads > 0 ? `• Leads: ${d.leads}` : null,
+      ``,
+      `_Relatório gerado por Metricana_`,
+    ].filter(v => v !== null).join('\n');
+  }
+
+  document.getElementById('rel-preview').textContent = rel;
+}
+
+async function genAnalysis() {
+  if (!fetchedData) return;
+  const box = document.getElementById('ai-box');
+  box.className = 'ai-box loading';
+  box.innerHTML = 'Gerando análise<span class="dots"></span>';
+
+  if (cfg.isDemo || !cfg.openaiKey) {
+    await new Promise(r=>setTimeout(r,1500));
+    box.className='ai-box';
+    const d = fetchedData;
+    box.textContent = `Resumo da semana:\nCada R$ 1 investido trouxe R$ ${d.roi} de volta em vendas. Tivemos ${d.convQty} conversões no período, com um custo por venda de ${d.cpa !== '—' ? 'R$ '+parseFloat(d.cpa).toFixed(2) : 'valores em análise'}. O CTR de ${parseFloat(d.ctr).toFixed(2)}% mostra que os anúncios estão chamando atenção de quem importa.${d.msgs > 0 ? ` A campanha de mensagens gerou ${d.msgs} contatos — como estão evoluindo essas conversas do lado de vocês?` : ''}\n\n🗓️ O que planejamos para a semana:\nOtimizar as campanhas de melhor desempenho e testar novos criativos para manter o resultado crescendo. O que vocês acham de investirmos mais no que está funcionando?`;
+    return;
+  }
+
+  const d      = fetchedData;
+  const isMsgs = selTemplate === 'mensagens';
+  const msgsQty    = d.msgs;
+  const custoMsgAI = msgsQty > 0 ? 'R$ ' + (d.spend / msgsQty).toFixed(2) : null;
+
+  const dadosAI = isMsgs
+    ? `Alcance: ${(d.reach||d.impr).toLocaleString('pt-BR')}
+Cliques: ${parseInt(d.clicks).toLocaleString('pt-BR')}
+CTR: ${parseFloat(d.ctr).toFixed(2)}%
+${msgsQty > 0 ? 'Mensagens iniciadas: '+msgsQty.toLocaleString('pt-BR') : ''}
+${custoMsgAI ? 'Custo por mensagem: '+custoMsgAI : ''}
+Investido: R$ ${parseFloat(d.spend).toFixed(2)}`
+    : `[META ADS — Anúncios]
+Investido: R$ ${parseFloat(d.spend).toFixed(2)}
+${d.revVal>0 ? 'Receita atribuída aos anúncios: R$ '+parseFloat(d.revVal).toFixed(2) : 'Sem receita rastreada pelo pixel'}
+ROI (Meta): ${d.roi!=='—'?d.roi+'x':'—'}
+Conversões (Meta/pixel): ${d.convQty}
+${d.convQty>0&&d.revVal>0 ? 'Ticket médio (Meta): R$ '+(d.revVal/d.convQty).toFixed(2) : ''}
+${d.cpa!=='—' ? 'CPA: R$ '+parseFloat(d.cpa).toFixed(2) : ''}
+Cliques: ${d.clicks} | CTR: ${parseFloat(d.ctr).toFixed(2)}% | CPM: R$ ${parseFloat(d.cpm).toFixed(2)}
+${d.msgs>0 ? 'Mensagens iniciadas: '+d.msgs : ''}
+${d.nsSource ? `
+[NUVEMSHOP — Dados reais da loja]
+Pedidos totais no site: ${d.nsOrders}
+Receita total da loja: R$ ${parseFloat(d.nsRevenue).toFixed(2)}
+${d.nsOrders>0 ? 'Ticket médio real: R$ '+(d.nsRevenue/d.nsOrders).toFixed(2) : ''}
+${(d.nsNewCustomers>0||d.nsReturningCustomers>0) ? 'Clientes novos: '+d.nsNewCustomers+' | Recorrentes: '+d.nsReturningCustomers : ''}
+${d.nsProductsSold>0 ? 'Produtos vendidos: '+d.nsProductsSold : ''}
+${d.nsTrafficSources.length>0 ? 'Principais fontes: '+d.nsTrafficSources.slice(0,3).map(t=>t.source+' ('+t.orders+' pedidos)').join(', ') : ''}` : ''}`;
+
+  const regrasExtra = isMsgs
+    ? '- Este cliente trabalha com tráfego para perfil e mensagens no WhatsApp, NÃO com e-commerce. Fale sobre alcance, cliques, mensagens geradas e custo por mensagem.'
+    : d.nsSource
+      ? '- Este cliente tem e-commerce. Você tem dados de DOIS lugares: Meta Ads (anúncios/pixel) e Nuvemshop (loja real). Destaque a diferença entre conversões rastreadas pelos anúncios e o total real da loja. Mencione ticket médio e de onde vêm os clientes.'
+      : '- Este cliente tem e-commerce com vendas rastreadas. Foque em ROI, conversões e custo por venda.';
+
+  const prompt = `Você é gestor de tráfego e vai escrever um resumo semanal para o cliente "${selClient.name}", estilo mensagem de WhatsApp — próximo, humano e direto.
+
+REGRAS OBRIGATÓRIAS:
+- Máximo 150 palavras no total
+- SEM bullet points, SEM headers, SEM formatação técnica
+- Tom de gestor falando COM o cliente, não um relatório técnico
+- Incorpore os dados reais naturalmente no texto (não liste, use na narrativa)
+- Comece com "Resumo da semana:" e inclua dados reais
+- Termine com uma pergunta ou gancho que gere resposta do cliente
+${regrasExtra}
+
+Dados da semana:
+Período: ${fmt2(d.from)} a ${fmt2(d.to)}
+${dadosAI}
+
+Escreva APENAS o texto final, sem introdução ou explicação.`;
+
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method:'POST',
+      headers:{'Authorization':'Bearer '+cfg.openaiKey,'Content-Type':'application/json'},
+      body: JSON.stringify({model:'gpt-4o-mini',messages:[{role:'user',content:prompt}],max_tokens:280,temperature:0.75})
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    box.className='ai-box';
+    box.textContent = data.choices[0].message.content;
+  } catch(e) {
+    box.className='ai-box';
+    box.textContent = '⚠️ Erro ao gerar análise: '+e.message;
+  }
+}
+
+// ════════ COPY ════════
+function copyRel() {
+  const text = document.getElementById('rel-preview').textContent;
+  navigator.clipboard.writeText(text).then(()=>toast('✓ Copiado!')).catch(()=>toast('⚠️ Erro ao copiar'));
+}
+function copyAI() {
+  const text = document.getElementById('ai-box').textContent;
+  navigator.clipboard.writeText(text).then(()=>toast('✓ Análise copiada!')).catch(()=>toast('⚠️ Erro ao copiar'));
+}
+
+// ════════ NEXT CLIENT ════════
+function nextClient() {
+  selClient=null; fetchedData=null; selReportType='semanal';
+  renderHistory();
+  goStep(0);
+}
+
+// ════════ HELPERS ════════
+function fmt2(d) {
+  if (!d) return '';
+  const [y,m,dd] = d.split('-');
+  return `${dd}/${m}/${y}`;
+}
+
+function openTutorial() { document.getElementById('modal-tutorial').classList.add('open'); }
+
+function toast(msg, dur=2800) {
+  const el = document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), dur);
+}
+</script>
+</body>
+</html>

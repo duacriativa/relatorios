@@ -1155,28 +1155,16 @@ Meta Ads — <span id="lbl-client2" style="color:var(--accent2)">—</span>
 <div class="action-row">
 <button class="btn-act" onclick="goStep(1)">← Editar</button>
 <button class="btn-act accent" id="btn-send-cu" onclick="sendClickUp()">✓ Enviar ao ClickUp</button>
-<button class="btn-act green" id="btn-to-ai" style="display:none" onclick="goStep(3)">→ Relatório + IA</button>
+<button class="btn-act green" id="btn-to-ai" onclick="goStep(3)">→ Relatório + IA</button>
 </div>
 </div>
 
 <!-- STEP 3 -->
 <div class="panel" id="panel3">
 <div class="panel3-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
-  <!-- Coluna esquerda: Insights IA -->
+  <!-- Coluna esquerda: Pré-visualização do Relatório -->
   <div class="card" style="height:100%;">
-    <div class="card-title" style="font-size:18px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;margin-bottom:4px;">Insights da Metricana (IA)
-      <span style="font-size:10px;font-weight:700;background:var(--accentbg);border:1px solid rgba(124,58,237,.3);color:var(--accent2);border-radius:50px;padding:2px 10px;margin-left:8px;">AI Generated</span>
-    </div>
-    <div class="ai-box loading" id="ai-box">Gerando análise<span class="dots"></span></div>
-    <div class="action-row">
-      <button class="btn-act" onclick="genAnalysis()">↺ Regenerar</button>
-      <button class="btn-act green" onclick="copyAI()">Copiar resumo IA</button>
-    </div>
-  </div>
-  <!-- Coluna direita: Pré-visualização WhatsApp -->
-  <div class="card" style="height:100%;">
-    <div class="card-title" style="font-size:18px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;margin-bottom:12px;">Pré-visualização do Relatório (WhatsApp)</div>
-    <!-- Mockup WhatsApp -->
+    <div class="card-title" style="font-size:18px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;margin-bottom:12px;">Pré-visualização do Relatório</div>
     <div style="background:#1a1a1a;border-radius:14px;overflow:hidden;border:1px solid var(--border);">
       <div style="background:#1f1f1f;padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.06);">
         <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#9333ea);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;">M</div>
@@ -1185,19 +1173,36 @@ Meta Ads — <span id="lbl-client2" style="color:var(--accent2)">—</span>
           <div style="font-size:10px;color:rgba(255,255,255,.4);">online</div>
         </div>
       </div>
-      <div style="padding:14px 16px;max-height:280px;overflow-y:auto;">
+      <div style="padding:14px 16px;max-height:320px;overflow-y:auto;">
         <div style="background:#2a2a2a;border-radius:10px;padding:12px;font-size:12px;line-height:1.7;color:rgba(255,255,255,.85);white-space:pre-wrap;font-family:'Lato',sans-serif;" id="rel-preview">—</div>
       </div>
     </div>
     <div class="action-row" style="margin-top:16px;">
-      <button class="btn-act accent" style="width:100%;justify-content:center;gap:8px;" onclick="copyRel()">
+      <button class="btn-act" onclick="copyRel()">📋 Copiar</button>
+      <button class="btn-act accent" style="gap:8px;" onclick="copyRel()">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8a16 16 0 0 0 6 6l.77-.77a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
         Enviar para WhatsApp
       </button>
     </div>
   </div>
+  <!-- Coluna direita: Próximos Passos (IA) -->
+  <div class="card" style="height:100%;">
+    <div class="card-title" style="font-size:18px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;margin-bottom:4px;">Próximos Passos
+      <span style="font-size:10px;font-weight:700;background:var(--accentbg);border:1px solid rgba(124,58,237,.3);color:var(--accent2);border-radius:50px;padding:2px 10px;margin-left:8px;">AI Generated</span>
+    </div>
+    <div class="ai-box loading" id="ai-box">Gerando próximos passos<span class="dots"></span></div>
+    <div class="action-row" style="margin-top:12px;">
+      <button class="btn-act" onclick="genAnalysis()">↺ Regenerar</button>
+      <button class="btn-act green" onclick="copyAI()">📋 Copiar</button>
+    </div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+      <button class="btn-act accent" style="width:100%;justify-content:center;" id="btn-send-cu-full" onclick="sendClickUpFull()">✓ Enviar ao ClickUp</button>
+      <div id="cu-result-p3" style="margin-top:8px;"></div>
+    </div>
+  </div>
 </div>
 <div class="action-row" style="margin-top:8px;">
+  <button class="btn-act" onclick="goStep(2)">← Voltar</button>
   <button class="btn-act accent" onclick="nextClient()">Próximo cliente</button>
 </div>
 </div> <!-- fim panel3 -->
@@ -2287,7 +2292,7 @@ let step = 0;
 function goStep(n) {
   if (n >= 1 && !selClient) { toast('⚠️ Selecione um cliente primeiro.'); return; }
   if (n >= 2 && !fetchedData) { toast('⚠️ Puxe os dados primeiro.'); return; }
-  if (n === 2) { buildCUPreview(); document.getElementById('btn-to-ai').style.display='none'; document.getElementById('cu-result').innerHTML=''; }
+  if (n === 2) { buildCUPreview(); document.getElementById('cu-result').innerHTML=''; }
   if (n === 3) { buildRelatorio(); setTimeout(genAnalysis, 300); }
   if (n === 0) renderHistory();
   document.querySelectorAll('.panel').forEach((p,i) => p.classList.toggle('active', i===n));
@@ -3359,7 +3364,7 @@ async function sendClickUp() {
       status:'ok'
     });
     renderHistory();
-    document.getElementById('btn-to-ai').style.display='flex';
+    document.getElementById('btn-to-ai').style.display='inline-flex';
     toast('✓ Relatório registrado!');
     return;
   }
@@ -3492,12 +3497,129 @@ async function sendClickUp() {
       status:'ok'
     });
     renderHistory();
-    document.getElementById('btn-to-ai').style.display='flex';
+    document.getElementById('btn-to-ai').style.display='inline-flex';
     toast('✓ Enviado ao ClickUp!');
   } catch(e) {
     res.innerHTML=`<div class="err-box">❌ ${e.message}</div>`;
   }
   btn.disabled=false; btn.textContent='✓ Enviar ao ClickUp';
+}
+
+// ════════ SEND CLICKUP FULL (comment + description) ════════
+async function sendClickUpFull() {
+  if (!fetchedData || !selClient) return;
+  const btn = document.getElementById('btn-send-cu-full');
+  const res = document.getElementById('cu-result-p3');
+  const aiText = document.getElementById('ai-box').textContent || '';
+
+  if (aiText.includes('Gerando') || aiText.includes('dots')) {
+    toast('⚠️ Aguarde a IA terminar de gerar os próximos passos.'); return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Enviando...';
+
+  if (cfg.isDemo) {
+    await new Promise(r => setTimeout(r, 1000));
+    res.innerHTML = '<div class="status-pill ok" style="font-size:13px;padding:8px 14px">✓ [DEMO] Enviado ao ClickUp!</div>';
+    btn.disabled = false; btn.textContent = '✓ Enviar ao ClickUp';
+    return;
+  }
+
+  try {
+    const d = fetchedData;
+    const cuFetch = async (url, options = {}) => {
+      const r = await fetch(url, {
+        ...options,
+        headers: { 'Authorization': cfg.clickup, 'Content-Type': 'application/json', ...(options.headers||{}) }
+      });
+      const text = await r.text();
+      let body = {};
+      try { body = JSON.parse(text); } catch(_) { body = { raw: text }; }
+      if (!r.ok) throw new Error(`ClickUp ${r.status}: ${body.err||body.message||body.raw||('Status '+r.status)}`);
+      return body;
+    };
+
+    res.innerHTML = '<span style="font-size:12px;color:var(--text3)">Buscando tarefa<span class="dots"></span></span>';
+    const tasksData = await cuFetch(`https://api.clickup.com/api/v2/list/${cfg.listId}/task?include_closed=true`);
+    const allTasks  = tasksData.tasks || [];
+    const clientLower = selClient.name.toLowerCase().trim();
+    const clientWords = clientLower.split(/\s+/).filter(w => w.length > 2);
+    const reportWord  = selReportType;
+    const matchesClient = t => { const tl = t.name.toLowerCase(); return tl.includes(clientLower) || clientWords.some(w => tl.includes(w)); };
+    const task = allTasks.find(t => matchesClient(t) && t.name.toLowerCase().includes(reportWord))
+              || allTasks.find(t => matchesClient(t));
+
+    // Monta comentário (resumo dos dados → Activity)
+    const nsRev = d.nsSource && d.nsRevenue > 0 ? d.nsRevenue : d.revVal;
+    const nsOrd = d.nsSource && d.nsOrders  > 0 ? d.nsOrders  : d.convQty;
+    const nsROI = d.spend > 0 && nsRev > 0 ? (nsRev / d.spend).toFixed(2) : d.roi;
+    const nsCPAv = nsOrd > 0 ? fmtBRL(d.spend / nsOrd) : (d.cpa !== '—' ? fmtBRL(parseFloat(d.cpa)) : '—');
+    const nsTicketFull = d.nsSource && nsOrd > 0 ? fmtBRL(nsRev / nsOrd) : null;
+    const commentLines = selTemplate === 'mensagens'
+      ? [
+          `📊 *Relatório ${selReportType==='mensal'?'Mensal':'Semanal'} Meta Ads — ${selClient.name}*`,
+          `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,``,
+          `📱 *Tráfego*`,
+          `👁️ Alcance: ${(d.reach||d.impr).toLocaleString('pt-BR')}`,
+          `👆 Cliques: ${d.clicks.toLocaleString('pt-BR')}`,
+          `🎯 CTR: ${parseFloat(d.ctr).toFixed(2)}%`,
+          d.msgs > 0 ? `💬 Mensagens: ${d.msgs.toLocaleString('pt-BR')}` : null,
+          d.msgs > 0 ? `💲 Custo/Msg: ${fmtBRL(d.spend/d.msgs)}` : null,
+          ``,`💰 *Investido: ${fmtBRL(d.spend)}*`,
+        ].filter(Boolean).join('\n')
+      : [
+          `📊 *Relatório ${selReportType==='mensal'?'Mensal':'Semanal'} Meta Ads — ${selClient.name}*`,
+          `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,``,
+          `📣 *Meta Ads*`,
+          `💰 Investido: ${fmtBRL(d.spend)}`,
+          d.revVal > 0 ? `💵 Receita (anúncios): ${fmtBRL(d.revVal)}` : null,
+          `📈 ROI: ${nsROI}x`,
+          `🛒 Conversões: ${nsOrd}`,
+          `💲 CPA: ${nsCPAv}`,
+          nsTicketFull ? `🎯 Ticket Médio: ${nsTicketFull}` : null,
+          `👆 Cliques: ${d.clicks.toLocaleString('pt-BR')}`,
+          `👁️ Impressões: ${d.impr.toLocaleString('pt-BR')}`,
+          `🎯 CTR: ${parseFloat(d.ctr).toFixed(2)}%`,
+          `💡 CPM: ${fmtBRL(d.cpm)}`,
+          d.msgs > 0 ? `💬 Mensagens: ${d.msgs}` : null,
+          d.nsSource ? `\n🛍️ *Nuvemshop — Dados da Loja*` : null,
+          d.nsSource ? `📦 Pedidos: ${d.nsOrders}` : null,
+          d.nsSource ? `💵 Receita total: ${fmtBRL(d.nsRevenue)}` : null,
+          d.nsSource && d.nsOrders > 0 ? `🎯 Ticket Médio (NS): ${fmtBRL(d.nsRevenue/d.nsOrders)}` : null,
+          (d.nsSource && d.nsProductsSold > 0) ? `📦 Produtos vendidos: ${d.nsProductsSold.toLocaleString('pt-BR')}` : null,
+          (d.nsSource && d.nsCouponsUsed > 0)  ? `🏷️ Cupons usados: ${d.nsCouponsUsed}` : null,
+        ].filter(Boolean).join('\n');
+
+    if (task) {
+      res.innerHTML = `<span style="font-size:12px;color:var(--text3)">Atualizando tarefa "${task.name}"<span class="dots"></span></span>`;
+      // Atualiza descrição (Próximos Passos)
+      await cuFetch(`https://api.clickup.com/api/v2/task/${task.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ description: aiText })
+      });
+      // Adiciona comentário (resumo dos dados)
+      await cuFetch(`https://api.clickup.com/api/v2/task/${task.id}/comment`, {
+        method: 'POST',
+        body: JSON.stringify({ comment_text: commentLines, notify_all: true })
+      });
+      res.innerHTML = `<div class="status-pill ok" style="font-size:13px;padding:8px 14px">✓ ClickUp atualizado: "${task.name}"</div>`;
+    } else {
+      res.innerHTML = `<span style="font-size:12px;color:var(--text3)">Criando nova tarefa<span class="dots"></span></span>`;
+      const created = await cuFetch(`https://api.clickup.com/api/v2/list/${cfg.listId}/task`, {
+        method: 'POST',
+        body: JSON.stringify({ name: `Relatório — ${selClient.name} — ${fmt2(d.from)}`, description: aiText })
+      });
+      await cuFetch(`https://api.clickup.com/api/v2/task/${created.id}/comment`, {
+        method: 'POST',
+        body: JSON.stringify({ comment_text: commentLines, notify_all: true })
+      });
+      res.innerHTML = `<div class="status-pill ok" style="font-size:13px;padding:8px 14px">✓ Nova tarefa criada para ${selClient.name}</div>`;
+    }
+    toast('✓ Enviado ao ClickUp!');
+  } catch(e) {
+    res.innerHTML = `<div class="err-box">❌ ${e.message}</div>`;
+  }
+  btn.disabled = false; btn.textContent = '✓ Enviar ao ClickUp';
 }
 
 // ════════ RELATÓRIO ════════
@@ -3571,7 +3693,9 @@ async function genAnalysis() {
     await new Promise(r=>setTimeout(r,1500));
     box.className='ai-box';
     const d = fetchedData;
-    box.textContent = `Resumo da semana:\nCada R$ 1 investido trouxe R$ ${d.roi} de volta em vendas. Tivemos ${d.convQty} conversões no período, com um custo por venda de ${d.cpa !== '—' ? 'R$ '+parseFloat(d.cpa).toFixed(2) : 'valores em análise'}. O CTR de ${parseFloat(d.ctr).toFixed(2)}% mostra que os anúncios estão chamando atenção de quem importa.${d.msgs > 0 ? ` A campanha de mensagens gerou ${d.msgs} contatos — como estão evoluindo essas conversas do lado de vocês?` : ''}\n\n🗓️ O que planejamos para a semana:\nOtimizar as campanhas de melhor desempenho e testar novos criativos para manter o resultado crescendo. O que vocês acham de investirmos mais no que está funcionando?`;
+    const _roi = d.roi !== '—' ? d.roi : '—';
+    const _cpa = d.cpa !== '—' ? 'R$ '+parseFloat(d.cpa).toFixed(2) : '—';
+    box.textContent = `📌 Próximos Passos\n\n🟢 Semana sólida! ROI de ${_roi}x — para cada R$ 1 investido, a loja gerou R$ ${_roi} em vendas rastreadas.\n\nOportunidade de escala\n\nO CPA de ${_cpa} está eficiente. Há margem para aumentar o orçamento sem comprometer o custo por venda.\nAvaliar aumentar verba nos conjuntos com melhor desempenho entre 15-20% nesta semana.\n\nTicket Médio\n\n${d.convQty > 0 && d.revVal > 0 ? 'Ticket de R$ '+(d.revVal/d.convQty).toFixed(2)+' está saudável. Vale testar upsell ou kits para aumentar o valor médio.' : 'Monitorar evolução do ticket médio conforme volume de conversões cresce.'}\n\nPróxima semana\n\nManter campanhas ativas e testar 1 novo criativo de alto impacto (vídeo curto ou depoimento de cliente).`;
     return;
   }
 
@@ -3611,18 +3735,37 @@ ${d.nsTrafficSources.length>0 ? 'Principais fontes: '+d.nsTrafficSources.slice(0
       ? '- Este cliente tem e-commerce. Você tem dados de DOIS lugares: Meta Ads (anúncios/pixel) e Nuvemshop (loja real). Destaque a diferença entre conversões rastreadas pelos anúncios e o total real da loja. Mencione ticket médio e de onde vêm os clientes.'
       : '- Este cliente tem e-commerce com vendas rastreadas. Foque em ROI, conversões e custo por venda.';
 
-  const prompt = `Você é gestor de tráfego e vai escrever um resumo semanal para o cliente "${selClient.name}", estilo mensagem de WhatsApp — próximo, humano e direto.
+  const prompt = `Você é gestor de tráfego sênior. Escreva os "Próximos Passos" para o cliente "${selClient.name}" com base nos dados da semana.
 
-REGRAS OBRIGATÓRIAS:
-- Máximo 150 palavras no total
-- SEM bullet points, SEM headers, SEM formatação técnica
-- Tom de gestor falando COM o cliente, não um relatório técnico
-- Incorpore os dados reais naturalmente no texto (não liste, use na narrativa)
-- Comece com "Resumo da semana:" e inclua dados reais
-- Termine com uma pergunta ou gancho que gere resposta do cliente
+FORMATO OBRIGATÓRIO — siga exatamente esta estrutura, sem markdown, sem asteriscos:
+
+📌 Próximos Passos
+
+[🟢 🟡 ou 🔴 conforme performance] [Uma frase avaliando o desempenho geral com dados reais do ROI ou resultado principal]
+
+[Título da 1ª recomendação — ex: Oportunidade de escala]
+
+[1-2 linhas com análise baseada nos dados + ação prática específica]
+
+[Título da 2ª recomendação — ex: Ticket Médio ou CPA]
+
+[1-2 linhas com análise + sugestão]
+${d.nsSource ? `
+Diferença site x Meta
+
+[Comparar pedidos Nuvemshop vs conversões Meta, explicar diferença em 1-2 frases com os números reais]` : ''}
+Próxima semana
+
+[1 ação concreta e específica]
+
+REGRAS:
+- Use os dados reais nas frases (valores, ROI, CPA, conversões)
+- Seja direto e acionável — nada genérico
+- Máximo 200 palavras
+- SEM asteriscos, SEM markdown, SEM formatação especial
 ${regrasExtra}
 
-Dados da semana:
+Dados:
 Período: ${fmt2(d.from)} a ${fmt2(d.to)}
 ${dadosAI}
 

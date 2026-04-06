@@ -288,6 +288,7 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 .dash-pending-txt{font-size:14px;color:var(--text3);margin-top:12px;position:relative;z-index:1;}
 .dash-metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px;}
 .dash-metric-grid-2{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:36px;}
+.dash-metric-grid-all{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:36px;}
 .dash-mc{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:20px 22px;position:relative;overflow:hidden;transition:var(--transition);}
 .dash-mc:hover{border-color:var(--border2);box-shadow:0 8px 28px rgba(0,0,0,.22);transform:translateY(-2px);}
 .dash-mc::after{content:'';position:absolute;inset:0;border-radius:16px;border:1px solid rgba(124,58,237,.18);pointer-events:none;}
@@ -501,6 +502,7 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 @media(max-width:900px){
   .dash-metric-grid{grid-template-columns:repeat(2,1fr);}
   .dash-metric-grid-2{grid-template-columns:repeat(2,1fr);}
+  .dash-metric-grid-all{grid-template-columns:repeat(2,1fr);}
   .dash-wrap{padding:28px 24px;}
 }
 
@@ -541,9 +543,17 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
   /* Metric grids — 2 colunas */
   .dash-metric-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
   .dash-metric-grid-2{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px;}
+  .dash-metric-grid-all{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px;}
   .dash-mc{padding:14px 12px;}
   .dash-mc-label{font-size:11px;margin-bottom:6px;}
   .dash-mc-value{font-size:clamp(15px,4.5vw,22px);}
+
+  /* Datas — empilhar em 2 cols: Início+Fim em cima, Atalho embaixo */
+  .date-period-grid{grid-template-columns:1fr 1fr !important;gap:10px !important;}
+  .date-period-grid .date-atalho{grid-column:1/-1;}
+
+  /* Panel 3 (IA + WhatsApp) — coluna única no mobile */
+  .panel3-grid{grid-template-columns:1fr !important;}
 
   /* Período picker — wrap */
   #dash-period-wrap + button{font-size:11px;padding:3px 9px;}
@@ -577,6 +587,7 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 @media(max-width:480px){
   .dash-metric-grid{grid-template-columns:1fr 1fr;}
   .dash-metric-grid-2{grid-template-columns:1fr 1fr;}
+  .dash-metric-grid-all{grid-template-columns:1fr 1fr;}
   .dash-mc-value{font-size:clamp(13px,3.8vw,18px);}
   .dash-h1{font-size:22px;}
 }
@@ -945,8 +956,8 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
     <button id="btn-dash-refresh" onclick="refreshDashMetrics()" style="background:transparent;border:1px solid var(--border);border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700;color:var(--text3);cursor:pointer;transition:var(--transition);" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">↺ Atualizar dados</button>
   </div>
 
-  <!-- Metric cards row 1 -->
-  <div class="dash-metric-grid">
+  <!-- Metric cards — único grid 3-col desktop / 2-col mobile -->
+  <div class="dash-metric-grid-all">
     <div class="dash-mc">
       <div class="dash-mc-label">Valor Faturado</div>
       <div><span class="dash-mc-value" id="dm-roas">—</span></div>
@@ -959,10 +970,6 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
       <div class="dash-mc-label">CPA</div>
       <div><span class="dash-mc-value" id="dm-cpa">—</span></div>
     </div>
-  </div>
-
-  <!-- Metric cards row 2 -->
-  <div class="dash-metric-grid-2">
     <div class="dash-mc">
       <div class="dash-mc-label">Valor Investido</div>
       <div><span class="dash-mc-value" id="dm-spend">—</span></div>
@@ -1024,10 +1031,10 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 </div>
 <div class="card">
 <div class="card-title" style="font-size:20px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800">Período</div>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+<div class="date-period-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
 <div class="field" style="margin:0"><label>Início</label><input type="date" id="date-from" onchange="onDateChange()"/></div>
 <div class="field" style="margin:0"><label>Fim</label><input type="date" id="date-to" onchange="onDateChange()"/></div>
-<div class="field" style="margin:0">
+<div class="field date-atalho" style="margin:0">
 <label>Atalho</label>
 <select id="quick-period" onchange="applyQuickPeriod()">
 <option value="">Personalizado</option>
@@ -1157,7 +1164,7 @@ Meta Ads — <span id="lbl-client2" style="color:var(--accent2)">—</span>
 
 <!-- STEP 3 -->
 <div class="panel" id="panel3">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+<div class="panel3-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
   <!-- Coluna esquerda: Insights IA -->
   <div class="card" style="height:100%;">
     <div class="card-title" style="font-size:18px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;margin-bottom:4px;">Insights da Metricana (IA)

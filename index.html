@@ -3377,6 +3377,7 @@ async function sendClickUp() {
       col3: selTemplate==='mensagens' ? (_msgs0>0?String(_msgs0):'—') : _d0.roi+'x',
       col4: selTemplate==='mensagens' ? _custMsg0 : String(_d0.convQty),
       template: selTemplate,
+      date: `${fmt2(_d0.from)} – ${fmt2(_d0.to)}`,
       status:'ok'
     });
     renderHistory();
@@ -3513,6 +3514,7 @@ async function sendClickUp() {
       col3: selTemplate==='mensagens' ? (_msgsR>0?_msgsR.toLocaleString('pt-BR'):'—') : (d.roi!=='—'?d.roi+'x':'—'),
       col4: selTemplate==='mensagens' ? _custMsgR : String(d.convQty),
       template: selTemplate,
+      date: `${fmt2(d.from)} – ${fmt2(d.to)}`,
       status:'ok'
     });
     renderHistory();
@@ -3637,6 +3639,19 @@ async function sendClickUpFull() {
       });
       res.innerHTML = `<div class="status-pill ok" style="font-size:13px;padding:8px 14px">✓ Nova tarefa criada para ${selClient.name}</div>`;
     }
+    const _msgsF = d.msgs;
+    const _custMsgF = _msgsF > 0 ? fmtBRL(d.spend/_msgsF) : '—';
+    weekHistory.push({
+      client: selClient.name,
+      investido: fmtBRL(d.spend),
+      col3: selTemplate==='mensagens' ? (_msgsF>0?_msgsF.toLocaleString('pt-BR'):'—') : (d.roi!=='—'?d.roi+'x':'—'),
+      col4: selTemplate==='mensagens' ? _custMsgF : String(d.convQty),
+      template: selTemplate,
+      date: `${fmt2(d.from)} – ${fmt2(d.to)}`,
+      status:'ok'
+    });
+    renderHistory();
+    renderDashClientTable();
     toast('✓ Enviado ao ClickUp!');
   } catch(e) {
     res.innerHTML = `<div class="err-box">❌ ${e.message}</div>`;

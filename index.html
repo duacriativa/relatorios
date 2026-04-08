@@ -1230,25 +1230,21 @@ Meta Ads — <span id="lbl-client2" style="color:var(--accent2)">—</span>
 <script>
 // ════════ CONSTANTS ════════
 const PASS = 'Ads2026@';
-const SUPA_URL = 'https://ugvmbtufwtpfqmvfmsde.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVndm1idHVmd3RwZnFtdmZtc2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjM2ODQsImV4cCI6MjA5MDAzOTY4NH0.yrJDf5iC1hcDfloF6QWmgkCrTgut7s10BfZWSi8AjNk';
 
 // ════════ SUPABASE HELPER ════════
 async function sbFetch(path, options = {}) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 12000);
   try {
-    const res = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
-      ...options,
+    const fetchOpts = {
+      method: options.method || 'GET',
       signal: ctrl.signal,
-      headers: {
-        'apikey': SUPA_KEY,
-        'Authorization': `Bearer ${SUPA_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': options.prefer || '',
-        ...options.headers,
-      }
-    });
+      headers: { 'Content-Type': 'application/json' },
+    };
+    if (options.prefer) fetchOpts.headers['Prefer'] = options.prefer;
+    if (options.headers) Object.assign(fetchOpts.headers, options.headers);
+    if (options.body) fetchOpts.body = options.body;
+    const res = await fetch(`/api/supabase?p=${encodeURIComponent(path)}`, fetchOpts);
     clearTimeout(timer);
     const text = await res.text();
     if (!res.ok) {

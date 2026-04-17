@@ -1027,6 +1027,10 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
     <div class="tpl-name" style="font-size:20px;font-weight:800;font-family:'Bricolage Grotesque',sans-serif;">Mensagens / Tráfego</div>
     <div class="tpl-desc">Visitas IG, Seguidores, Alcance, Mensagens iniciadas, Custo/msg. Ideal para infoprodutos e locais.</div>
   </div>
+  <div class="tpl-card" onclick="selectTemplate('completo')" id="tpl-completo">
+    <div class="tpl-name" style="font-size:20px;font-weight:800;font-family:'Bricolage Grotesque',sans-serif;">Completo</div>
+    <div class="tpl-desc">Vendas + Mensagens + Tráfego num relatório só. Para clientes que rodam todos os objetivos no Meta.</div>
+  </div>
 </div>
 </div>
 <div class="card">
@@ -1525,11 +1529,24 @@ const METRIC_CATALOG = [
   { id:'followers',      label:'Seguidores',             icon:'➕', group:'Instagram',  hi:false, desc:'Novos seguidores conquistados pelos anúncios',
     getValue: d => d.followers > 0 ? d.followers : null,
     fmt: v => parseInt(v).toLocaleString('pt-BR') },
+  { id:'msgsWpp',        label:'Msgs WhatsApp',          icon:'🟢', group:'WhatsApp',   hi:false, desc:'Conversas iniciadas especificamente no WhatsApp',
+    getValue: d => d.msgsWpp > 0 ? d.msgsWpp : null,
+    fmt: v => parseInt(v).toLocaleString('pt-BR') },
+  { id:'costMsgWpp',     label:'Custo/Msg WPP',          icon:'💵', group:'WhatsApp',   hi:false, desc:'Custo médio por conversa iniciada no WhatsApp',
+    getValue: d => d.msgsWpp > 0 ? d.spend / d.msgsWpp : null,
+    fmt: v => fmtBRL(v) },
+  { id:'msgsDirect',     label:'Msgs Direct (IG)',       icon:'📩', group:'Instagram',  hi:false, desc:'Conversas iniciadas no Instagram Direct',
+    getValue: d => d.msgsDirect > 0 ? d.msgsDirect : null,
+    fmt: v => parseInt(v).toLocaleString('pt-BR') },
+  { id:'costMsgDirect',  label:'Custo/Msg Direct',       icon:'💵', group:'Instagram',  hi:false, desc:'Custo médio por conversa iniciada no Instagram Direct',
+    getValue: d => d.msgsDirect > 0 ? d.spend / d.msgsDirect : null,
+    fmt: v => fmtBRL(v) },
 ];
 
 const DEFAULT_METRICS = {
   ecommerce: ['spend','revenue','roi','convQty','cpa','ticket','linkClicks','clicks','impr','ctr','cpm','cps','msgs','leads'],
-  mensagens: ['spend','reach','linkClicks','clicks','profileVisits','cpProfileVisit','ctr','cpm','msgs','costMsg','followers'],
+  mensagens: ['spend','reach','linkClicks','clicks','profileVisits','cpProfileVisit','ctr','cpm','msgs','costMsg','msgsWpp','costMsgWpp','msgsDirect','costMsgDirect','followers'],
+  completo:  ['spend','revenue','roi','convQty','cpa','ticket','linkClicks','clicks','impr','reach','ctr','cpm','cps','profileVisits','cpProfileVisit','msgs','costMsg','msgsWpp','costMsgWpp','msgsDirect','costMsgDirect','followers','leads'],
 };
 
 function getActiveMetrics() {
@@ -1543,6 +1560,84 @@ function getActiveMetrics() {
 
 function saveActiveMetrics(list) {
   localStorage.setItem('metricana_metrics_' + selTemplate, JSON.stringify(list));
+}
+
+// ════════ METRIC RENDERING (usa seleção ativa do usuário) ════════
+// Estilos suportados: 'cu-comment' (ClickUp emoji), 'rel' (Relatório com *bold*),
+// 'rel-plain' (sem bold), 'cu-row' ([label, value]) para preview HTML.
+function _enrichData(d) {
+  return {
+    ...d,
+    _costMsg: d.msgs > 0 ? d.spend / d.msgs : null,
+  };
+}
+
+function formatMetricLine(m, d, style) {
+  const v = m.getValue(d);
+  if (v === null || v === undefined) return null;
+  const formatted = m.fmt(v);
+  const label = m.label;
+  const icon  = m.icon || '';
+  if (style === 'cu-row')     return [label, formatted];
+  if (style === 'cu-comment') return `${icon} ${label}: ${formatted}`.trim();
+  if (style === 'rel')        return `• ${label}: *${formatted}*`;
+  if (style === 'rel-plain')  return `• ${label}: ${formatted}`;
+  return `${label}: ${formatted}`;
+}
+
+// Renderiza as métricas ATIVAS do usuário no estilo pedido.
+// opts.exclude: ids a omitir (ex.: quando o cabeçalho já lista "spend").
+// opts.include: ids extras (além dos ativos) a incluir sempre que tiverem valor.
+function renderActiveMetrics(d, style, opts = {}) {
+  const enriched = _enrichData(d);
+  const active   = getActiveMetrics();
+  const exclude  = new Set(opts.exclude || []);
+  const include  = opts.include || [];
+  const ids      = [...active, ...include.filter(id => !active.includes(id))];
+  return ids
+    .filter(id => !exclude.has(id))
+    .map(id => {
+      const m = METRIC_CATALOG.find(x => x.id === id);
+      if (!m) return null;
+      return formatMetricLine(m, enriched, style);
+    })
+    .filter(Boolean);
+}
+
+// Renderiza a tabela "Valor investido por campanha" (item 6 do backlog).
+function renderCampaignsSpendLines(camps, style) {
+  if (!camps || !camps.length) return [];
+  const active = camps.filter(c => parseFloat(c.spend||0) > 0);
+  if (!active.length) return [];
+  const total  = active.reduce((s, c) => s + parseFloat(c.spend||0), 0);
+  const lines  = [];
+  if (style === 'cu-comment') {
+    lines.push(`💼 *Valor por campanha*`);
+    active.forEach(c => lines.push(`• ${c.name}: ${fmtBRL(c.spend)}`));
+    lines.push(`➡️ *Total investido: ${fmtBRL(total)}*`);
+  } else if (style === 'rel' || style === 'rel-plain') {
+    lines.push(`💼 *Valor por campanha*`);
+    active.forEach(c => {
+      const val = style === 'rel' ? `*${fmtBRL(c.spend)}*` : fmtBRL(c.spend);
+      lines.push(`• ${c.name}: ${val}`);
+    });
+    const t = style === 'rel' ? `*${fmtBRL(total)}*` : fmtBRL(total);
+    lines.push(`➡️ Total investido: ${t}`);
+  } else if (style === 'cu-row') {
+    active.forEach(c => lines.push([`💼 ${c.name}`, fmtBRL(c.spend)]));
+    lines.push(['➡️ Total investido', fmtBRL(total)]);
+  }
+  return lines;
+}
+
+// Normaliza string para matching (sem acento, minúsculas, sem pontuação).
+function _normalizeName(s) {
+  return String(s||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 // ════════ METRIC EDIT MODE ════════
@@ -3039,6 +3134,29 @@ async function confirmCampaignSelection() {
     const roi = spend > 0 && revVal > 0 ? (revVal/spend).toFixed(2) : '—';
     const cpa = convQty > 0 ? (spend/convQty).toFixed(2) : '—';
 
+    // ── Breakdown mensagens por destino (WhatsApp vs Instagram Direct) ──
+    // Chamada separada para não interferir nos action_types não-msgs da call principal.
+    let msgsWpp = 0, msgsDirect = 0, msgsMessenger = 0;
+    try {
+      const msgsBreakUrl = `https://graph.facebook.com/v18.0/${accountId}/insights?fields=actions&time_range={"since":"${from}","until":"${to}"}&filtering=${filtering}&action_breakdowns=action_destination&level=account&access_token=${token}`;
+      const mbRes  = await fetch(msgsBreakUrl);
+      const mbData = await mbRes.json();
+      if (!mbData.error) {
+        const msgActs = (mbData.data?.[0]?.actions)||[];
+        msgActs
+          .filter(a => a.action_type === 'onsite_conversion.messaging_conversation_started_7d')
+          .forEach(a => {
+            const dest = (a.action_destination||'').toUpperCase();
+            const val  = parseInt(a.value||0);
+            if (dest === 'WHATSAPP') msgsWpp += val;
+            else if (dest === 'INSTAGRAM_DIRECT' || dest === 'INSTAGRAM') msgsDirect += val;
+            else if (dest === 'MESSENGER') msgsMessenger += val;
+          });
+      }
+    } catch(mbErr) {
+      console.warn('Breakdown msgs por destino falhou:', mbErr.message);
+    }
+
     // ── Nuvemshop ──
     let nsSource = false, nsExtra = null;
     const nsStoreId = selClient.nuvemshop_store_id;
@@ -3084,6 +3202,7 @@ async function confirmCampaignSelection() {
       spend, clicks, linkClicks, impr, reach, ctr, cpm,
       convQty, revVal, roi, cpa,
       msgs: parseInt(msgs?.value||0), leads: parseInt(leads?.value||0),
+      msgsWpp, msgsDirect, msgsMessenger,
       profileVisits: parseInt(profileVisitsA?.value||0),
       followers:     parseInt(followersA?.value||0),
       camps, from, to, nsSource,
@@ -3335,52 +3454,29 @@ function setReportType(type) {
 function buildCUPreview() {
   if (!fetchedData) return;
   const d = fetchedData;
-  const msgsQty  = d.msgs;
-  const custoMsg = msgsQty > 0 ? fmtBRL(d.spend / msgsQty) : '—';
 
-  let rows;
-  if (selTemplate === 'mensagens') {
-    const lcMsgs = d.linkClicks || d.clicks;
-    rows = [
-      ['Investido',                    fmtBRL(d.spend)],
-      ['Alcance',                      (d.reach||d.impr).toLocaleString('pt-BR')],
-      [d.linkClicks > 0 ? 'Cliques no Link' : 'Cliques', lcMsgs.toLocaleString('pt-BR')],
-      ['CPS',                          lcMsgs > 0 ? fmtBRL(d.spend/lcMsgs) : '—'],
-      ['CTR',                          parseFloat(d.ctr).toFixed(2)+'%'],
-      ['CPM',                          fmtBRL(d.cpm)],
-      ['Período',                      `${fmt2(d.from)} – ${fmt2(d.to)}`],
-    ];
-    if (d.profileVisits > 0) rows.push(['Visitas ao Perfil', d.profileVisits.toLocaleString('pt-BR')]);
-    if (d.profileVisits > 0) rows.push(['Custo/Visita Perfil', fmtBRL(d.spend / d.profileVisits)]);
-    if (msgsQty > 0) rows.push(['Mensagens Iniciadas', msgsQty.toLocaleString('pt-BR')]);
-    if (msgsQty > 0) rows.push(['Custo por Msg', custoMsg]);
-    if (d.followers > 0) rows.push(['Seguidores', d.followers.toLocaleString('pt-BR')]);
-  } else {
-    const nsRev    = d.nsSource && d.nsRevenue > 0 ? d.nsRevenue : d.revVal;
-    const nsOrd    = d.nsSource && d.nsOrders  > 0 ? d.nsOrders  : d.convQty;
-    const nsROI    = d.spend > 0 && nsRev > 0 ? (nsRev / d.spend).toFixed(2) : d.roi;
-    const nsCPA    = nsOrd > 0 ? fmtBRL(d.spend / nsOrd) : (d.cpa !== '—' ? fmtBRL(parseFloat(d.cpa)) : '—');
-    const suffix   = d.nsSource ? ' (Nuvemshop)' : '';
-    rows = [
-      ['Investido',   fmtBRL(d.spend)],
-      ['Receita',     nsRev > 0 ? fmtBRL(nsRev) + suffix : '—'],
-      ['ROI',         nsROI + 'x'],
-      ['Conversões',  String(nsOrd) + suffix],
-      ['CPA',         nsCPA],
-      ['Cliques',     d.clicks.toLocaleString('pt-BR')],
-      ['Impressões',  d.impr.toLocaleString('pt-BR')],
-      ['CTR',         parseFloat(d.ctr).toFixed(2)+'%'],
-      ['Período',     `${fmt2(d.from)} – ${fmt2(d.to)}`],
-    ];
-    if (d.nsSource && nsOrd > 0) rows.push(['Ticket Médio (NS)', fmtBRL(nsRev / nsOrd)]);
-    if (d.nsSource && (d.nsNewCustomers > 0 || d.nsReturningCustomers > 0)) {
-      rows.push(['Clientes Novos (NS)',      d.nsNewCustomers]);
+  // Preview usa mesmas métricas ativas do usuário (pareadas com o comentário final)
+  let rows = renderActiveMetrics(d, 'cu-row');
+
+  // Sempre inclui período ao final do preview
+  rows.push(['Período', `${fmt2(d.from)} – ${fmt2(d.to)}`]);
+
+  // E-commerce / Completo: mostra dados Nuvemshop se disponíveis
+  if ((selTemplate === 'ecommerce' || selTemplate === 'completo') && d.nsSource) {
+    const nsRev = d.nsRevenue > 0 ? d.nsRevenue : d.revVal;
+    const nsOrd = d.nsOrders  > 0 ? d.nsOrders  : d.convQty;
+    if (nsOrd > 0) rows.push(['Ticket Médio (NS)', fmtBRL(nsRev / nsOrd)]);
+    if (d.nsNewCustomers > 0 || d.nsReturningCustomers > 0) {
+      rows.push(['Clientes Novos (NS)',       d.nsNewCustomers]);
       rows.push(['Clientes Recorrentes (NS)', d.nsReturningCustomers]);
     }
-    if (d.nsSource && d.nsProductsSold > 0) rows.push(['Produtos Vendidos (NS)', d.nsProductsSold.toLocaleString('pt-BR')]);
-    if (d.nsSource && d.nsCouponsUsed  > 0) rows.push(['Cupons Usados (NS)', d.nsCouponsUsed]);
-    if (d.msgs > 0) rows.push(['Mensagens', d.msgs]);
+    if (d.nsProductsSold > 0) rows.push(['Produtos Vendidos (NS)', d.nsProductsSold.toLocaleString('pt-BR')]);
+    if (d.nsCouponsUsed  > 0) rows.push(['Cupons Usados (NS)',     d.nsCouponsUsed]);
   }
+
+  // Bloco de valor investido por campanha + total geral
+  rows = rows.concat(renderCampaignsSpendLines(d.camps, 'cu-row'));
+
   document.getElementById('cu-rows').innerHTML = rows.map(([k,v])=>`
     <div class="cu-row"><span class="crk">${k}</span><span class="crv">${v}</span></div>`).join('');
 }
@@ -3453,60 +3549,67 @@ async function sendClickUp() {
     );
     const allTasks = tasksData.tasks || [];
 
-    // 3. Busca a tarefa que contém o nome do cliente
-    const clientLower = selClient.name.toLowerCase().trim();
-    const clientWords = clientLower.split(/\s+/).filter(w => w.length > 2);
-    const reportWord  = selReportType; // 'semanal' ou 'mensal'
+    // 3. Busca a tarefa que contém o nome do cliente (match com normalização de acentos)
+    const clientNorm  = _normalizeName(selClient.name);
+    const clientWords = clientNorm.split(/\s+/).filter(w => w.length >= 3);
+    const reportWord  = _normalizeName(selReportType); // 'semanal' ou 'mensal'
     const matchesClient = t => {
-      const tl = t.name.toLowerCase();
-      return tl.includes(clientLower) || clientWords.some(w => tl.includes(w));
+      const tl = _normalizeName(t.name);
+      if (tl.includes(clientNorm)) return true;
+      // Match por palavra: pelo menos 1 palavra do nome do cliente precisa estar no nome da task
+      return clientWords.length > 0 && clientWords.some(w => tl.includes(w));
     };
     // Primeiro tenta achar tarefa com tipo + cliente; fallback só pelo cliente
-    const task = allTasks.find(t => matchesClient(t) && t.name.toLowerCase().includes(reportWord))
+    const task = allTasks.find(t => matchesClient(t) && _normalizeName(t.name).includes(reportWord))
               || allTasks.find(t => matchesClient(t));
+    if (!task) {
+      console.warn(`[Metricana] ClickUp: nenhuma tarefa encontrada para "${selClient.name}". Tasks na lista:`, allTasks.map(t => t.name));
+    }
 
-    // Monta comentário conforme template selecionado
+    // Monta comentário conforme template selecionado (usa métricas ATIVAS do usuário)
+    const metricLinesCU = renderActiveMetrics(d, 'cu-comment');
+    const campLinesCU   = renderCampaignsSpendLines(d.camps, 'cu-comment');
+    const headerCU = [
+      `📊 *Relatório ${selReportType === 'mensal' ? 'Mensal' : 'Semanal'} Meta Ads — ${selClient.name}*`,
+      `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,
+      ``,
+    ];
     let commentLines;
     if (selTemplate === 'mensagens') {
-      // Template Mensagens / Tráfego IG
-      const msgs     = d.msgs;
-      const custoMsg = msgs > 0 ? fmtBRL(parseFloat(d.spend) / msgs) : '—';
-      const lcCU = d.linkClicks || d.clicks;
       commentLines = [
-        `📊 *Relatório ${selReportType === 'mensal' ? 'Mensal' : 'Semanal'} Meta Ads — ${selClient.name}*`,
-        `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,
-        ``,
+        ...headerCU,
         `📱 *Tráfego p/ Perfil IG*`,
-        `👁️ Alcance: ${(d.reach||d.impr).toLocaleString('pt-BR')}`,
-        `👆 ${d.linkClicks>0?'Cliques no link':'Cliques'}: ${lcCU.toLocaleString('pt-BR')}`,
-        lcCU > 0 ? `🖱️ CPS: ${fmtBRL(d.spend/lcCU)}` : null,
-        `🎯 CTR: ${parseFloat(d.ctr).toFixed(2)}%`,
-        d.profileVisits > 0 ? `👤 Visitas ao Perfil: ${d.profileVisits.toLocaleString('pt-BR')}` : null,
-        d.profileVisits > 0 ? `💲 Custo/Visita: ${fmtBRL(d.spend/d.profileVisits)}` : null,
-        msgs > 0 ? `💬 Mensagens Iniciadas: ${msgs.toLocaleString('pt-BR')}` : null,
-        msgs > 0 ? `💲 Custo por Msg: ${custoMsg}` : null,
-        d.followers > 0 ? `➕ Seguidores: ${d.followers.toLocaleString('pt-BR')}` : null,
+        ...metricLinesCU,
+        ``,
+        ...campLinesCU,
         ``,
         `💰 *Valor Geral Investido: ${fmtBRL(d.spend)}*`,
+      ].filter(Boolean).join('\n');
+    } else if (selTemplate === 'completo') {
+      // Relatório combinado: Vendas + Mensagens + Tráfego num comentário só
+      const nsTicketCU = d.nsSource && d.nsOrders > 0 ? fmtBRL(d.nsRevenue / d.nsOrders) : null;
+      commentLines = [
+        ...headerCU,
+        `📣 *Meta Ads — Vendas + Mensagens + Tráfego*`,
+        ...metricLinesCU,
+        d.nsSource ? `` : null,
+        d.nsSource ? `🛍️ *Nuvemshop — Dados da Loja*` : null,
+        d.nsSource ? `📦 Pedidos totais: ${d.nsOrders}` : null,
+        d.nsSource ? `💵 Receita total: ${fmtBRL(d.nsRevenue)}` : null,
+        nsTicketCU ? `🎯 Ticket médio: ${nsTicketCU}` : null,
+        (d.nsSource && (d.nsNewCustomers>0||d.nsReturningCustomers>0)) ? `👤 Clientes novos: ${d.nsNewCustomers} | Recorrentes: ${d.nsReturningCustomers}` : null,
+        (d.nsSource && d.nsProductsSold>0) ? `📦 Produtos vendidos: ${d.nsProductsSold.toLocaleString('pt-BR')}` : null,
+        (d.nsSource && d.nsCouponsUsed>0) ? `🏷️ Cupons usados: ${d.nsCouponsUsed}` : null,
+        ``,
+        ...campLinesCU,
       ].filter(Boolean).join('\n');
     } else {
       // Template E-commerce (padrão)
       const nsTicketCU = d.nsSource && d.nsOrders > 0 ? fmtBRL(d.nsRevenue / d.nsOrders) : null;
       commentLines = [
-        `📊 *Relatório ${selReportType === 'mensal' ? 'Mensal' : 'Semanal'} Meta Ads — ${selClient.name}*`,
-        `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,
-        ``,
+        ...headerCU,
         `📣 *Meta Ads*`,
-        `💰 Investido: ${fmtBRL(d.spend)}`,
-        d.revVal > 0 ? `💵 Receita (anúncios): ${fmtBRL(d.revVal)}` : null,
-        `📈 ROI: ${d.roi}x`,
-        `🛒 Conversões: ${d.convQty}`,
-        d.cpa !== '—' ? `💲 CPA: R$ ${parseFloat(d.cpa).toFixed(2)}` : null,
-        `👆 Cliques: ${d.clicks.toLocaleString('pt-BR')}`,
-        `👁️ Impressões: ${d.impr.toLocaleString('pt-BR')}`,
-        `🎯 CTR: ${parseFloat(d.ctr).toFixed(2)}%`,
-        `💡 CPM: R$ ${parseFloat(d.cpm).toFixed(2)}`,
-        d.msgs > 0 ? `💬 Mensagens: ${d.msgs}` : null,
+        ...metricLinesCU,
         d.nsSource ? `\n🛍️ *Nuvemshop — Dados da Loja*` : null,
         d.nsSource ? `📦 Pedidos totais: ${d.nsOrders}` : null,
         d.nsSource ? `💵 Receita total: ${fmtBRL(d.nsRevenue)}` : null,
@@ -3514,6 +3617,8 @@ async function sendClickUp() {
         (d.nsSource && (d.nsNewCustomers>0||d.nsReturningCustomers>0)) ? `👤 Clientes novos: ${d.nsNewCustomers} | Recorrentes: ${d.nsReturningCustomers}` : null,
         (d.nsSource && d.nsProductsSold>0) ? `📦 Produtos vendidos: ${d.nsProductsSold.toLocaleString('pt-BR')}` : null,
         (d.nsSource && d.nsCouponsUsed>0) ? `🏷️ Cupons usados: ${d.nsCouponsUsed}` : null,
+        ``,
+        ...campLinesCU,
       ].filter(Boolean).join('\n');
     }
 
@@ -3592,58 +3697,66 @@ async function sendClickUpFull() {
     res.innerHTML = '<span style="font-size:12px;color:var(--text3)">Buscando tarefa<span class="dots"></span></span>';
     const tasksData = await cuFetch(`https://api.clickup.com/api/v2/list/${cfg.listId}/task?include_closed=true`);
     const allTasks  = tasksData.tasks || [];
-    const clientLower = selClient.name.toLowerCase().trim();
-    const clientWords = clientLower.split(/\s+/).filter(w => w.length > 2);
-    const reportWord  = selReportType;
-    const matchesClient = t => { const tl = t.name.toLowerCase(); return tl.includes(clientLower) || clientWords.some(w => tl.includes(w)); };
-    const task = allTasks.find(t => matchesClient(t) && t.name.toLowerCase().includes(reportWord))
+    const clientNormF  = _normalizeName(selClient.name);
+    const clientWordsF = clientNormF.split(/\s+/).filter(w => w.length >= 3);
+    const reportWordF  = _normalizeName(selReportType);
+    const matchesClient = t => {
+      const tl = _normalizeName(t.name);
+      if (tl.includes(clientNormF)) return true;
+      return clientWordsF.length > 0 && clientWordsF.some(w => tl.includes(w));
+    };
+    const task = allTasks.find(t => matchesClient(t) && _normalizeName(t.name).includes(reportWordF))
               || allTasks.find(t => matchesClient(t));
+    if (!task) {
+      console.warn(`[Metricana] ClickUp (full): nenhuma tarefa encontrada para "${selClient.name}". Tasks na lista:`, allTasks.map(t => t.name));
+    }
 
-    // Monta comentário (resumo dos dados → Activity)
-    const nsRev = d.nsSource && d.nsRevenue > 0 ? d.nsRevenue : d.revVal;
-    const nsOrd = d.nsSource && d.nsOrders  > 0 ? d.nsOrders  : d.convQty;
-    const nsROI = d.spend > 0 && nsRev > 0 ? (nsRev / d.spend).toFixed(2) : d.roi;
-    const nsCPAv = nsOrd > 0 ? fmtBRL(d.spend / nsOrd) : (d.cpa !== '—' ? fmtBRL(parseFloat(d.cpa)) : '—');
-    const nsTicketFull = d.nsSource && nsOrd > 0 ? fmtBRL(nsRev / nsOrd) : null;
-    const lcFull = d.linkClicks || d.clicks;
-    const commentLines = selTemplate === 'mensagens'
-      ? [
-          `📊 *Relatório ${selReportType==='mensal'?'Mensal':'Semanal'} Meta Ads — ${selClient.name}*`,
-          `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,``,
-          `📱 *Tráfego*`,
-          `👁️ Alcance: ${(d.reach||d.impr).toLocaleString('pt-BR')}`,
-          `👆 ${d.linkClicks>0?'Cliques no link':'Cliques'}: ${lcFull.toLocaleString('pt-BR')}`,
-          lcFull > 0 ? `🖱️ CPS: ${fmtBRL(d.spend/lcFull)}` : null,
-          `🎯 CTR: ${parseFloat(d.ctr).toFixed(2)}%`,
-          d.profileVisits > 0 ? `👤 Visitas ao Perfil: ${d.profileVisits.toLocaleString('pt-BR')}` : null,
-          d.profileVisits > 0 ? `💲 Custo/Visita: ${fmtBRL(d.spend/d.profileVisits)}` : null,
-          d.msgs > 0 ? `💬 Mensagens: ${d.msgs.toLocaleString('pt-BR')}` : null,
-          d.msgs > 0 ? `💲 Custo/Msg: ${fmtBRL(d.spend/d.msgs)}` : null,
-          d.followers > 0 ? `➕ Seguidores: ${d.followers.toLocaleString('pt-BR')}` : null,
-          ``,`💰 *Investido: ${fmtBRL(d.spend)}*`,
-        ].filter(Boolean).join('\n')
-      : [
-          `📊 *Relatório ${selReportType==='mensal'?'Mensal':'Semanal'} Meta Ads — ${selClient.name}*`,
-          `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,``,
-          `📣 *Meta Ads*`,
-          `💰 Investido: ${fmtBRL(d.spend)}`,
-          d.revVal > 0 ? `💵 Receita (anúncios): ${fmtBRL(d.revVal)}` : null,
-          `📈 ROI: ${nsROI}x`,
-          `🛒 Conversões: ${nsOrd}`,
-          `💲 CPA: ${nsCPAv}`,
-          nsTicketFull ? `🎯 Ticket Médio: ${nsTicketFull}` : null,
-          `👆 Cliques: ${d.clicks.toLocaleString('pt-BR')}`,
-          `👁️ Impressões: ${d.impr.toLocaleString('pt-BR')}`,
-          `🎯 CTR: ${parseFloat(d.ctr).toFixed(2)}%`,
-          `💡 CPM: ${fmtBRL(d.cpm)}`,
-          d.msgs > 0 ? `💬 Mensagens: ${d.msgs}` : null,
-          d.nsSource ? `\n🛍️ *Nuvemshop — Dados da Loja*` : null,
-          d.nsSource ? `📦 Pedidos: ${d.nsOrders}` : null,
-          d.nsSource ? `💵 Receita total: ${fmtBRL(d.nsRevenue)}` : null,
-          d.nsSource && d.nsOrders > 0 ? `🎯 Ticket Médio (NS): ${fmtBRL(d.nsRevenue/d.nsOrders)}` : null,
-          (d.nsSource && d.nsProductsSold > 0) ? `📦 Produtos vendidos: ${d.nsProductsSold.toLocaleString('pt-BR')}` : null,
-          (d.nsSource && d.nsCouponsUsed > 0)  ? `🏷️ Cupons usados: ${d.nsCouponsUsed}` : null,
-        ].filter(Boolean).join('\n');
+    // Monta comentário (resumo dos dados → Activity) — usa métricas ATIVAS
+    const metricLinesF = renderActiveMetrics(d, 'cu-comment');
+    const campLinesF   = renderCampaignsSpendLines(d.camps, 'cu-comment');
+    const headerF = [
+      `📊 *Relatório ${selReportType==='mensal'?'Mensal':'Semanal'} Meta Ads — ${selClient.name}*`,
+      `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,``,
+    ];
+    let commentLines;
+    if (selTemplate === 'mensagens') {
+      commentLines = [
+        ...headerF,
+        `📱 *Tráfego*`,
+        ...metricLinesF,
+        ``,
+        ...campLinesF,
+        ``,`💰 *Investido: ${fmtBRL(d.spend)}*`,
+      ].filter(Boolean).join('\n');
+    } else if (selTemplate === 'completo') {
+      commentLines = [
+        ...headerF,
+        `📣 *Meta Ads — Vendas + Mensagens + Tráfego*`,
+        ...metricLinesF,
+        d.nsSource ? `\n🛍️ *Nuvemshop — Dados da Loja*` : null,
+        d.nsSource ? `📦 Pedidos: ${d.nsOrders}` : null,
+        d.nsSource ? `💵 Receita total: ${fmtBRL(d.nsRevenue)}` : null,
+        d.nsSource && d.nsOrders > 0 ? `🎯 Ticket Médio (NS): ${fmtBRL(d.nsRevenue/d.nsOrders)}` : null,
+        (d.nsSource && d.nsProductsSold > 0) ? `📦 Produtos vendidos: ${d.nsProductsSold.toLocaleString('pt-BR')}` : null,
+        (d.nsSource && d.nsCouponsUsed > 0)  ? `🏷️ Cupons usados: ${d.nsCouponsUsed}` : null,
+        ``,
+        ...campLinesF,
+      ].filter(Boolean).join('\n');
+    } else {
+      commentLines = [
+        ...headerF,
+        `📣 *Meta Ads*`,
+        ...metricLinesF,
+        d.nsSource ? `\n🛍️ *Nuvemshop — Dados da Loja*` : null,
+        d.nsSource ? `📦 Pedidos: ${d.nsOrders}` : null,
+        d.nsSource ? `💵 Receita total: ${fmtBRL(d.nsRevenue)}` : null,
+        d.nsSource && d.nsOrders > 0 ? `🎯 Ticket Médio (NS): ${fmtBRL(d.nsRevenue/d.nsOrders)}` : null,
+        (d.nsSource && d.nsProductsSold > 0) ? `📦 Produtos vendidos: ${d.nsProductsSold.toLocaleString('pt-BR')}` : null,
+        (d.nsSource && d.nsCouponsUsed > 0)  ? `🏷️ Cupons usados: ${d.nsCouponsUsed}` : null,
+        ``,
+        ...campLinesF,
+      ].filter(Boolean).join('\n');
+    }
 
     if (task) {
       res.innerHTML = `<span style="font-size:12px;color:var(--text3)">Atualizando tarefa "${task.name}"<span class="dots"></span></span>`;
@@ -3695,59 +3808,61 @@ function buildRelatorio() {
   if (!fetchedData) return;
   const d    = fetchedData;
   const fmtN = v => parseFloat(v).toLocaleString('pt-BR');
+  const header = [
+    `📊 *Relatório ${selReportType === 'mensal' ? 'Mensal' : 'Semanal'} — ${selClient.name}*`,
+    `📅 ${fmt2(d.from)} a ${fmt2(d.to)}`,
+    ``,
+  ];
+  const metricLines = renderActiveMetrics(d, 'rel');
+  const campLines   = renderCampaignsSpendLines(d.camps, 'rel');
 
   let rel;
   if (selTemplate === 'mensagens') {
-    const msgs     = d.msgs;
-    const custoMsg = msgs > 0 ? fmtBRL(d.spend / msgs) : '—';
     rel = [
-      `📊 *Relatório ${selReportType === 'mensal' ? 'Mensal' : 'Semanal'} — ${selClient.name}*`,
-      `📅 ${fmt2(d.from)} a ${fmt2(d.to)}`,
-      ``,
+      ...header,
       `📱 *Tráfego p/ Perfil IG*`,
-      `• Alcance: *${fmtN(d.reach||d.impr)}*`,
-      d.linkClicks > 0 ? `• Cliques no link: *${fmtN(d.linkClicks)}*` : `• Cliques: *${fmtN(d.clicks)}*`,
-      (d.linkClicks||d.clicks) > 0 ? `• CPS: *${fmtBRL(d.spend/(d.linkClicks||d.clicks))}*` : null,
-      `• CTR: *${parseFloat(d.ctr).toFixed(2)}%*`,
-      `• CPM: *${fmtBRL(d.cpm)}*`,
-      d.profileVisits > 0 ? `• Visitas ao Perfil: *${d.profileVisits.toLocaleString('pt-BR')}*` : null,
-      d.profileVisits > 0 ? `• Custo/Visita: *${fmtBRL(d.spend/d.profileVisits)}*` : null,
-      msgs > 0 ? `• Mensagens Iniciadas: *${msgs.toLocaleString('pt-BR')}*` : null,
-      msgs > 0 ? `• Custo por Msg: *${custoMsg}*` : null,
-      d.followers > 0 ? `• Seguidores: *${d.followers.toLocaleString('pt-BR')}*` : null,
+      ...metricLines,
+      ``,
+      ...campLines,
+      ``,
+      `💰 *Valor Geral Investido: ${fmtBRL(d.spend)}*`,
+      ``,
+      `_Relatório gerado por Metricana_`,
+    ].filter(v => v !== null).join('\n');
+  } else if (selTemplate === 'completo') {
+    const nsTicketRel = d.nsSource && d.nsOrders > 0 ? fmtBRL(d.nsRevenue / d.nsOrders) : null;
+    rel = [
+      ...header,
+      `📣 *Meta Ads — Visão Completa (Vendas + Mensagens + Tráfego)*`,
+      ...metricLines,
+      d.nsSource ? `` : null,
+      d.nsSource ? `🏪 *Vendas totais do Site (Nuvemshop)*` : null,
+      d.nsSource ? `🛒 Pedidos: *${d.nsOrders}* — Receita: *${fmtBRL(d.nsRevenue)}*` : null,
+      nsTicketRel ? `🎯 Ticket Médio: *${nsTicketRel}*` : null,
+      (d.nsSource && (d.nsNewCustomers>0||d.nsReturningCustomers>0)) ? `👤 Clientes novos: *${d.nsNewCustomers}* | Recorrentes: *${d.nsReturningCustomers}*` : null,
+      (d.nsSource && d.nsProductsSold>0) ? `📦 Produtos vendidos: *${d.nsProductsSold.toLocaleString('pt-BR')}*` : null,
+      ``,
+      ...campLines,
       ``,
       `💰 *Valor Geral Investido: ${fmtBRL(d.spend)}*`,
       ``,
       `_Relatório gerado por Metricana_`,
     ].filter(v => v !== null).join('\n');
   } else {
-    const metaTicketRel = d.convQty > 0 && d.revVal > 0 ? fmtBRL(d.revVal / d.convQty) : null;
-    const nsTicketRel   = d.nsSource && d.nsOrders > 0   ? fmtBRL(d.nsRevenue / d.nsOrders) : null;
+    // e-commerce (padrão)
+    const nsTicketRel = d.nsSource && d.nsOrders > 0 ? fmtBRL(d.nsRevenue / d.nsOrders) : null;
     rel = [
-      `📊 *Relatório ${selReportType === 'mensal' ? 'Mensal' : 'Semanal'} — ${selClient.name}*`,
-      `📅 ${fmt2(d.from)} a ${fmt2(d.to)}`,
-      ``,
-      `💰 Investido: *${fmtBRL(d.spend)}*`,
-      d.revVal > 0    ? `💵 Receita gerada (anúncios): *${fmtBRL(d.revVal)}*` : null,
-      d.roi !== '—'   ? `📈 ROI: *${d.roi}x*` : null,
-      `🛒 Vendas/Conversões (anúncios): *${d.convQty}*`,
-      metaTicketRel   ? `🎯 Ticket Médio (anúncios): *${metaTicketRel}*` : null,
-      d.cpa !== '—'   ? `💲 Custo por conversão: *${fmtBRL(parseFloat(d.cpa))}*` : null,
-      d.nsSource      ? `` : null,
-      d.nsSource      ? `🏪 *Vendas totais do Site (Nuvemshop)*` : null,
-      d.nsSource      ? `🛒 Pedidos: *${d.nsOrders}* — Receita: *${fmtBRL(d.nsRevenue)}*` : null,
-      nsTicketRel     ? `🎯 Ticket Médio: *${nsTicketRel}*` : null,
+      ...header,
+      `📣 *Meta Ads*`,
+      ...metricLines,
+      d.nsSource ? `` : null,
+      d.nsSource ? `🏪 *Vendas totais do Site (Nuvemshop)*` : null,
+      d.nsSource ? `🛒 Pedidos: *${d.nsOrders}* — Receita: *${fmtBRL(d.nsRevenue)}*` : null,
+      nsTicketRel ? `🎯 Ticket Médio: *${nsTicketRel}*` : null,
       (d.nsSource && (d.nsNewCustomers>0||d.nsReturningCustomers>0)) ? `👤 Clientes novos: *${d.nsNewCustomers}* | Recorrentes: *${d.nsReturningCustomers}*` : null,
       (d.nsSource && d.nsProductsSold>0) ? `📦 Produtos vendidos: *${d.nsProductsSold.toLocaleString('pt-BR')}*` : null,
       ``,
-      `📉 Detalhes:`,
-      d.linkClicks > 0 ? `• Cliques no link: ${fmtN(d.linkClicks)}` : `• Cliques: ${fmtN(d.clicks)}`,
-      (d.linkClicks||d.clicks) > 0 ? `• CPS: ${fmtBRL(d.spend/(d.linkClicks||d.clicks))}` : null,
-      `• Impressões: ${fmtN(d.impr)}`,
-      `• CTR: ${parseFloat(d.ctr).toFixed(2)}%`,
-      `• CPM: ${fmtBRL(d.cpm)}`,
-      d.msgs > 0  ? `• Mensagens iniciadas: ${d.msgs}` : null,
-      d.leads > 0 ? `• Leads: ${d.leads}` : null,
+      ...campLines,
       ``,
       `_Relatório gerado por Metricana_`,
     ].filter(v => v !== null).join('\n');

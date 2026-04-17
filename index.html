@@ -1936,39 +1936,64 @@ function getWeekKey() {
 let dashPeriodMonth = null; // 1-based
 let dashPeriodYear  = null;
 
+const MONTH_NAMES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
 function getDashPeriod() {
-  const monthNames = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  // Usa o selecionado, ou calcula mês anterior
+  const now = new Date();
+  const todayM = now.getMonth() + 1; // 1-based
+  const todayY = now.getFullYear();
+  const todayD = now.getDate();
+
+  // Padrão = mês atual (não mais o mês anterior)
   let m = dashPeriodMonth, y = dashPeriodYear;
   if (!m || !y) {
-    const now = new Date();
-    m = now.getMonth(); // 0-based = mês anterior em 1-based
-    y = now.getFullYear();
-    if (m === 0) { m = 12; y--; }
+    m = todayM; y = todayY;
     dashPeriodMonth = m; dashPeriodYear = y;
   }
-  const lastDay = new Date(y, m, 0).getDate();
-  const since = `${y}-${String(m).padStart(2,'0')}-01`;
-  const until = `${y}-${String(m).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
-  return { prevMonth: m, prevYear: y, since, until, label: `${monthNames[m]} ${y}` };
+
+  const isCurrentMonth = (m === todayM && y === todayY);
+  const pad = v => String(v).padStart(2,'0');
+  const since = `${y}-${pad(m)}-01`;
+
+  let until, cacheKey;
+  if (isCurrentMonth) {
+    // Mês corrente: até hoje. Cache diário para pegar dados novos a cada dia.
+    until = `${y}-${pad(m)}-${pad(todayD)}`;
+    cacheKey = `metricana_dash_${y}_${m}_d${todayD}`;
+  } else {
+    // Mês passado: até o último dia. Cache permanente.
+    const lastDay = new Date(y, m, 0).getDate();
+    until = `${y}-${pad(m)}-${pad(lastDay)}`;
+    cacheKey = `metricana_dash_${y}_${m}`;
+  }
+
+  const label = isCurrentMonth
+    ? `${MONTH_NAMES[m]} ${y} (1–${todayD})`
+    : `${MONTH_NAMES[m]} ${y}`;
+
+  return { prevMonth: m, prevYear: y, since, until, label, cacheKey, isCurrentMonth };
 }
 
 function renderDashPeriodDropdown() {
   const dd = document.getElementById('dash-period-dd');
   if (!dd) return;
-  const monthNames = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  // Gera últimos 18 meses
-  const options = [];
   const now = new Date();
+  const todayM = now.getMonth() + 1;
+  const todayY = now.getFullYear();
+  const todayD = now.getDate();
+  const options = [];
+
+  // Mês atual no topo
+  options.push({ m: todayM, y: todayY, label: `${MONTH_NAMES[todayM]} ${todayY} (1–${todayD}) ·atual` });
+
+  // Últimos 18 meses anteriores
   for (let i = 1; i <= 18; i++) {
-    let m = now.getMonth() - i + 1; // getMonth() é 0-based, queremos 1-based do mês anterior
-    let y = now.getFullYear();
-    // ajuste: mês anterior em 1-based
-    m = now.getMonth() - i + 1;
+    let m = todayM - i;
+    let y = todayY;
     if (m <= 0) { m += 12; y--; }
-    if (m <= 0) { m += 12; y--; }
-    options.push({ m, y, label: `${monthNames[m]} ${y}` });
+    options.push({ m, y, label: `${MONTH_NAMES[m]} ${y}` });
   }
+
   const curM = dashPeriodMonth, curY = dashPeriodYear;
   dd.innerHTML = options.map(o =>
     `<div class="dash-period-opt ${o.m===curM&&o.y===curY?'active':''}" onclick="selectDashPeriod(${o.m},${o.y},event)">${o.label}</div>`
@@ -1989,14 +2014,13 @@ function selectDashPeriod(m, y, e) {
   if (e) e.stopPropagation();
   dashPeriodMonth = m; dashPeriodYear = y;
   document.querySelectorAll('.dash-period-dd.open').forEach(d => d.classList.remove('open'));
-  renderDashMetricsFromCache(); // mostra cache ou "—"
+  renderDashMetricsFromCache();
 }
 
 function renderDashMetricsFromCache() {
-  const { prevYear, prevMonth, label } = getDashPeriod();
+  const { label, cacheKey } = getDashPeriod();
   const lbl = document.getElementById('dash-period-label');
   if (lbl) lbl.textContent = label;
-  const cacheKey = `metricana_dash_${prevYear}_${prevMonth}`;
   const cached = localStorage.getItem(cacheKey);
   if (cached) {
     try {
@@ -2012,8 +2036,7 @@ function renderDashMetricsFromCache() {
 async function refreshDashMetrics() {
   const btn = document.getElementById('btn-dash-refresh');
   if (btn) { btn.disabled = true; btn.textContent = 'Atualizando...'; }
-  const { prevYear, prevMonth, since, until } = getDashPeriod();
-  const cacheKey = `metricana_dash_${prevYear}_${prevMonth}`;
+  const { since, until, cacheKey } = getDashPeriod();
   await fetchDashMetrics(since, until, cacheKey);
   if (btn) { btn.disabled = false; btn.textContent = '↺ Atualizar dados'; }
 }

@@ -642,6 +642,10 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 .camp-status-pill{font-size:9px;font-weight:700;letter-spacing:.05em;border-radius:4px;padding:2px 7px;white-space:nowrap;flex-shrink:0;}
 .camp-status-pill.active{background:var(--greenbg);border:1px solid rgba(34,197,94,.2);color:var(--green);}
 .camp-status-pill.paused{background:var(--s3);border:1px solid var(--border);color:var(--text3);}
+.camp-tag-btn{font-size:10px;font-weight:700;border-radius:4px;padding:2px 8px;cursor:pointer;border:1px solid transparent;transition:var(--transition);white-space:nowrap;display:inline-block;margin-top:3px;user-select:none;}
+.camp-tag-btn.none{background:var(--s3);border-color:var(--border);color:var(--text3);}
+.camp-tag-btn.vendas{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.35);color:var(--green);}
+.camp-tag-btn.mensagens{background:var(--accentbg);border-color:var(--accent);color:var(--accent2);}
 .camp-count-badge{background:var(--accent);color:#fff;border-radius:50px;padding:1px 8px;font-size:10px;font-weight:700;margin-left:6px;}
 .camp-select-actions{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
 .camp-select-label{font-size:12px;color:var(--text2);}
@@ -2928,6 +2932,24 @@ function updateCampSelCount() {
   document.getElementById('btn-confirm-camps').disabled = count === 0;
 }
 
+// ════════ CAMPAIGN TAGS (Vendas / Mensagens split) ════════
+function getCampTags() {
+  if (!selClient) return {};
+  try { return JSON.parse(localStorage.getItem('camp_tags_' + selClient.id) || '{}'); } catch(_) { return {}; }
+}
+function cycleCampTag(campName) {
+  const tags = getCampTags();
+  const cur  = tags[campName] || 'none';
+  const next = cur === 'none' ? 'vendas' : cur === 'vendas' ? 'mensagens' : 'none';
+  if (next === 'none') delete tags[campName];
+  else tags[campName] = next;
+  if (selClient) localStorage.setItem('camp_tags_' + selClient.id, JSON.stringify(tags));
+  sortAndRenderCamps();
+}
+function campTagLabel(tag) {
+  return tag === 'vendas' ? '🛒 Vendas' : tag === 'mensagens' ? '💬 Mensagens' : '— Sem tag';
+}
+
 function renderCampaignList() {
   const list    = document.getElementById('camp-list');
   const visible = allCampaigns.filter(c => matchCampFilter(c, campFilterMode));
@@ -3027,7 +3049,7 @@ async function confirmCampaignSelection() {
     prog.style.width = '55%'; progLbl.textContent = 'Buscando detalhes por campanha...';
 
     // ── Insights por campanha (para a tabela de campanhas) ──
-    const campInsUrl = `https://graph.facebook.com/v18.0/${accountId}/insights?fields=campaign_name,campaign_id,spend,clicks,ctr,actions,cost_per_action_type&time_range={"since":"${from}","until":"${to}"}&filtering=${filtering}&level=campaign&access_token=${token}`;
+    const campInsUrl = `https://graph.facebook.com/v18.0/${accountId}/insights?fields=campaign_name,campaign_id,spend,clicks,ctr,actions,action_values,cost_per_action_type&time_range={"since":"${from}","until":"${to}"}&filtering=${filtering}&level=campaign&access_token=${token}`;
     const campInsRes  = await fetch(campInsUrl);
     const campInsData = await campInsRes.json();
 
@@ -3083,15 +3105,26 @@ async function confirmCampaignSelection() {
 
     // ── Tabela de campanhas a partir dos insights por campanha ──
     const camps = (campInsData.data||[]).map(ci => {
-      const ca  = ci.actions||[];
-      const cp  = ca.find(a=>a.action_type==='purchase');
-      const cc  = ca.find(a=>a.action_type==='onsite_conversion.messaging_conversation_started_7d');
-      const obj = allCampaigns.find(c => c.id === ci.campaign_id);
+      const ca   = ci.actions||[];
+      const cav  = ci.action_values||[];
+      const cp   = ca.find(a=>a.action_type==='purchase');
+      const cc   = ca.find(a=>a.action_type==='onsite_conversion.messaging_conversation_started_7d');
+      const ccWPP= ca.find(a=>a.action_type==='onsite_conversion.messaging_whatsapp_conversation_started_7d');
+      const ccIG = ca.find(a=>a.action_type==='onsite_conversion.messaging_instagram_conversation_started_7d');
+      const rev  = cav.find(a=>a.action_type==='purchase');
+      const obj  = allCampaigns.find(c => c.id === ci.campaign_id);
       return {
-        name: ci.campaign_name, status: obj?.status || 'ACTIVE',
-        spend: parseFloat(ci.spend||0), clicks: parseInt(ci.clicks||0),
-        ctr: parseFloat(ci.ctr||0), conv: parseInt(cp?.value||cc?.value||0),
-        cpa_val: ci.cost_per_action_type?.[0]?.value||'—'
+        name: ci.campaign_name, id: ci.campaign_id, status: obj?.status || 'ACTIVE',
+        spend:       parseFloat(ci.spend||0),
+        clicks:      parseInt(ci.clicks||0),
+        ctr:         parseFloat(ci.ctr||0),
+        convPurchase:parseInt(cp?.value||0),
+        convMsgs:    parseInt(cc?.value||0),
+        convMsgsWPP: parseInt(ccWPP?.value||0),
+        convMsgsIG:  parseInt(ccIG?.value||0),
+        revenue:     parseFloat(rev?.value||0),
+        conv:        parseInt(cp?.value||cc?.value||0),
+        cpa_val:     ci.cost_per_action_type?.[0]?.value||'—'
       };
     });
 
@@ -3324,18 +3357,85 @@ function sortCamps(col, forceAsc) {
     else { av = parseFloat(a[col])||0; bv = parseFloat(b[col])||0; }
     return campSortAsc ? av - bv : bv - av;
   });
-  document.getElementById('camp-body').innerHTML = sorted.map(c=>`
-    <tr>
-      <td style="font-weight:500;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</td>
+  const campTags = getCampTags();
+  document.getElementById('camp-body').innerHTML = sorted.map(c => {
+    const tag = campTags[c.name] || 'none';
+    const safeName = c.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<tr>
+      <td style="max-width:220px">
+        <div style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:210px">${c.name}</div>
+        <span class="camp-tag-btn ${tag}" onclick="cycleCampTag('${safeName}')" title="Clique para marcar tipo de campanha">${campTagLabel(tag)}</span>
+      </td>
       <td><span class="status-pill ${c.status==='ACTIVE'?'ok':'idle'}">${c.status==='ACTIVE'?'Ativo':'Pausado'}</span></td>
       <td>R$ ${parseFloat(c.spend).toFixed(2)}</td>
       <td>${c.clicks.toLocaleString('pt-BR')}</td>
       <td>${parseFloat(c.ctr).toFixed(2)}%</td>
       <td>${c.conv}</td>
       <td>${c.cpa_val!=='—'?'R$ '+parseFloat(c.cpa_val).toFixed(2):'—'}</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
+function sortAndRenderCamps() { sortCamps(campSortCol); }
+
+
+// ════════ SPLIT REPORT BUILDER ════════
+// Monta linhas do relatório separando campanhas por tag (🛒 Vendas / 💬 Mensagens)
+function buildSplitReport(d, tipoRel) {
+  const tags        = getCampTags();
+  const vendasCamps = (d.camps||[]).filter(c => tags[c.name] === 'vendas');
+  const msgsCamps   = (d.camps||[]).filter(c => tags[c.name] === 'mensagens');
+  if (vendasCamps.length === 0 && msgsCamps.length === 0) return null; // sem tags → usar formato padrão
+
+  const lines = [
+    `📊 *Relatório ${tipoRel} Meta Ads — ${selClient.name}*`,
+    `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,
+    ``,
+  ];
+
+  // Bloco E-commerce (Vendas)
+  if (vendasCamps.length > 0) {
+    const vs = vendasCamps.reduce((s,c) => s + c.spend, 0);
+    const vc = vendasCamps.reduce((s,c) => s + c.convPurchase, 0);
+    const vr = vendasCamps.reduce((s,c) => s + c.revenue, 0);
+    // Prefere NS se disponível (receita real da loja)
+    const useNS = d.nsSource && d.nsRevenue > 0;
+    const finalRev = useNS ? d.nsRevenue : vr;
+    const finalOrd = useNS ? d.nsOrders  : vc;
+    const vROI = vs > 0 && finalRev > 0 ? (finalRev/vs).toFixed(2) : null;
+    const vTicket = finalOrd > 0 && finalRev > 0 ? fmtBRL(finalRev/finalOrd) : null;
+    const vCPA  = finalOrd > 0 ? fmtBRL(vs/finalOrd) : null;
+    lines.push(`🛒 *E-commerce*`);
+    lines.push(`💰 Investido: ${fmtBRL(vs)}`);
+    if (finalRev > 0) lines.push(`💵 Receita: ${fmtBRL(finalRev)}${useNS?' (Nuvemshop)':''}`);
+    if (vROI)    lines.push(`📈 ROI: ${vROI}x`);
+    if (finalOrd > 0) lines.push(`🛒 Vendas: ${finalOrd}`);
+    if (vTicket) lines.push(`🎯 Ticket Médio: ${vTicket}`);
+    if (vCPA)    lines.push(`💲 CPA: ${vCPA}`);
+    if (d.nsSource && d.nsNewCustomers > 0) lines.push(`👤 Novos: ${d.nsNewCustomers} | Recorrentes: ${d.nsReturningCustomers}`);
+    lines.push(``);
+  }
+
+  // Bloco Mensagens
+  if (msgsCamps.length > 0) {
+    const ms     = msgsCamps.reduce((s,c) => s + c.spend, 0);
+    const mMsgs  = msgsCamps.reduce((s,c) => s + c.convMsgs, 0);
+    const mWPP   = msgsCamps.reduce((s,c) => s + c.convMsgsWPP, 0);
+    const mIG    = msgsCamps.reduce((s,c) => s + c.convMsgsIG, 0);
+    const totalM = mMsgs || mWPP || mIG;
+    const cpMsg  = totalM > 0 ? fmtBRL(ms/totalM) : '—';
+    lines.push(`💬 *Mensagens*`);
+    lines.push(`💰 Investido: ${fmtBRL(ms)}`);
+    if (totalM > 0) lines.push(`💬 Mensagens iniciadas: ${totalM.toLocaleString('pt-BR')}`);
+    if (mWPP  > 0)  lines.push(`📨 Msgs WhatsApp: ${mWPP.toLocaleString('pt-BR')}`);
+    if (mIG   > 0)  lines.push(`📩 Msgs Direct (IG): ${mIG.toLocaleString('pt-BR')}`);
+    if (totalM > 0) lines.push(`💲 Custo por Msg: ${cpMsg}`);
+    lines.push(``);
+  }
+
+  lines.push(`💰 *Valor Geral Investido: ${fmtBRL(d.spend)}*`);
+  return lines.join('\n');
+}
 
 // ════════ CLICKUP PREVIEW ════════
 function setReportType(type) {
@@ -3514,6 +3614,10 @@ async function sendClickUp() {
     // Monta comentário conforme template selecionado
     const tipoRelCU = selReportType === 'mensal' ? 'Mensal' : 'Semanal';
     const lcCUv     = d.linkClicks || d.clicks;
+
+    // Tenta relatório dividido por tags (Vendas / Mensagens)
+    const splitReport = buildSplitReport(d, tipoRelCU);
+
     let commentLines;
     if (selTemplate === 'mensagens') {
       const msgs     = d.msgs;
@@ -3595,12 +3699,15 @@ async function sendClickUp() {
       ].filter(Boolean).join('\n');
     }
 
+    // Se houver campanhas tagueadas, usa relatório dividido
+    const finalComment = splitReport || commentLines;
+
     if (task) {
       // Tarefa encontrada — adiciona comentário
       res.innerHTML = `<span style="font-size:12px;color:var(--text3)">Comentando em "${task.name}"<span class="dots"></span></span>`;
       await cuFetch(`https://api.clickup.com/api/v2/task/${task.id}/comment`, {
         method: 'POST',
-        body: JSON.stringify({ comment_text: commentLines, notify_all: true })
+        body: JSON.stringify({ comment_text: finalComment, notify_all: true })
       });
       res.innerHTML = `<div class="status-pill ok" style="font-size:13px;padding:8px 14px">✓ Comentário adicionado em "${task.name}"</div>`;
     } else {
@@ -3608,7 +3715,7 @@ async function sendClickUp() {
       res.innerHTML = `<span style="font-size:12px;color:var(--text3)">Criando nova tarefa<span class="dots"></span></span>`;
       const created = await cuFetch(`https://api.clickup.com/api/v2/list/${cfg.listId}/task`, {
         method: 'POST',
-        body: JSON.stringify({ name: `Relatório — ${selClient.name} — ${fmt2(d.from)}`, description: commentLines })
+        body: JSON.stringify({ name: `Relatório — ${selClient.name} — ${fmt2(d.from)}`, description: finalComment })
       });
       res.innerHTML = `<div class="status-pill ok" style="font-size:13px;padding:8px 14px">✓ Nova tarefa criada para ${selClient.name}</div>`;
     }
@@ -3727,6 +3834,10 @@ async function sendClickUpFull() {
           (d.nsSource && d.nsCouponsUsed > 0)  ? `🏷️ Cupons usados: ${d.nsCouponsUsed}` : null,
         ].filter(Boolean).join('\n');
 
+    // Se houver campanhas tagueadas, usa relatório dividido
+    const tipoRelFull = selReportType === 'mensal' ? 'Mensal' : 'Semanal';
+    const finalCommentFull = buildSplitReport(d, tipoRelFull) || commentLines;
+
     if (task) {
       res.innerHTML = `<span style="font-size:12px;color:var(--text3)">Atualizando tarefa "${task.name}"<span class="dots"></span></span>`;
       // Atualiza descrição (Próximos Passos)
@@ -3737,7 +3848,7 @@ async function sendClickUpFull() {
       // Adiciona comentário (resumo dos dados)
       await cuFetch(`https://api.clickup.com/api/v2/task/${task.id}/comment`, {
         method: 'POST',
-        body: JSON.stringify({ comment_text: commentLines, notify_all: true })
+        body: JSON.stringify({ comment_text: finalCommentFull, notify_all: true })
       });
       res.innerHTML = `<div class="status-pill ok" style="font-size:13px;padding:8px 14px">✓ ClickUp atualizado: "${task.name}"</div>`;
     } else {
@@ -3748,7 +3859,7 @@ async function sendClickUpFull() {
       });
       await cuFetch(`https://api.clickup.com/api/v2/task/${created.id}/comment`, {
         method: 'POST',
-        body: JSON.stringify({ comment_text: commentLines, notify_all: true })
+        body: JSON.stringify({ comment_text: finalCommentFull, notify_all: true })
       });
       res.innerHTML = `<div class="status-pill ok" style="font-size:13px;padding:8px 14px">✓ Nova tarefa criada para ${selClient.name}</div>`;
     }

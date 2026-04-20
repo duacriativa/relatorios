@@ -3071,7 +3071,8 @@ async function confirmCampaignSelection() {
     const msgsWPPA       = actions.find(a=>a.action_type==='onsite_conversion.messaging_whatsapp_conversation_started_7d');
     const igDirectA      = actions.find(a=>a.action_type==='onsite_conversion.messaging_instagram_conversation_started_7d');
     const leads          = actions.find(a=>a.action_type==='lead');
-    const profileVisitsA = actions.find(a=>a.action_type==='instagram_profile_visit');
+    const profileVisitsA = actions.find(a=>a.action_type==='instagram_profile_visit')
+                        || actions.find(a=>a.action_type==='view_content');
     const followersA     = actions.find(a=>a.action_type==='instagram_follow')
                         || actions.find(a=>a.action_type==='page_fan');
     const convQty   = parseInt(purchases?.value||0);
@@ -3422,7 +3423,8 @@ function buildSplitReport(d, tipoRel) {
     const mMsgs  = msgsCamps.reduce((s,c) => s + c.convMsgs, 0);
     const mWPP   = msgsCamps.reduce((s,c) => s + c.convMsgsWPP, 0);
     const mIG    = msgsCamps.reduce((s,c) => s + c.convMsgsIG, 0);
-    const totalM = mMsgs || mWPP || mIG;
+    // totalM: usa WPP+IG se disponíveis, senão usa o total geral de msgs
+    const totalM = (mWPP + mIG) > 0 ? (mWPP + mIG) : mMsgs;
     const cpMsg  = totalM > 0 ? fmtBRL(ms/totalM) : '—';
     lines.push(`💬 *Mensagens*`);
     lines.push(`💰 Investido: ${fmtBRL(ms)}`);
@@ -3893,6 +3895,13 @@ function buildRelatorio() {
   const lc      = d.linkClicks || d.clicks;
   let rel;
 
+  // Se campanhas estão tagueadas (Vendas/Mensagens), usa formato dividido
+  const splitRel = buildSplitReport(d, tipoRel);
+  if (splitRel) {
+    document.getElementById('rel-preview').textContent = splitRel + '\n\n_Relatório gerado por Metricana_';
+    return;
+  }
+
   if (selTemplate === 'mensagens') {
     const msgs     = d.msgs;
     const custoMsg = msgs > 0 ? fmtBRL(d.spend / msgs) : '—';
@@ -3935,6 +3944,7 @@ function buildRelatorio() {
       `📅 ${fmt2(d.from)} a ${fmt2(d.to)}`,
       ``,
       `🛒 *E-commerce*`,
+      `💰 Investido: *${fmtBRL(d.spend)}*`,
       d.revVal > 0  ? `• Receita (anúncios): *${fmtBRL(d.revVal)}*` : null,
       nsROI !== '—' ? `• ROI: *${nsROI}x*` : null,
       `• Vendas/Conversões: *${nsOrd}*`,

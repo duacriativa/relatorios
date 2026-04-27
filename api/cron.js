@@ -1,6 +1,6 @@
 // api/cron.js — Metricana Weekly Report Automation
 // Roda toda segunda-feira às 09:00 (BRT = UTC-3 → 12:00 UTC)
-// Vercel Cron: "0 12 * * 1" 
+// Vercel Cron: "0 12 * * 1"
 
 export const config = { maxDuration: 300 };
 
@@ -446,8 +446,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const from = (req.query && req.query.from) || getLastWeek().from;
-  const to   = (req.query && req.query.to)   || getLastWeek().to;
+  const { from, to } = getLastWeek();
   console.log(`[cron] Período: ${from} → ${to}`);
 
   // Carregar config do Supabase

@@ -1,6 +1,6 @@
 // api/cron.js — Metricana Weekly Report Automation
 // Roda toda segunda-feira às 09:00 (BRT = UTC-3 → 12:00 UTC)
-// Vercel Cron: "0 12 * * 1"
+// Vercel Cron: "0 12 * * 1" 
 
 export const config = { maxDuration: 300 };
 

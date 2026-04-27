@@ -21,18 +21,14 @@ function fmt2(d) {
   return `${dd}/${m}/${y}`;
 }
 
-/** Retorna { from: 'YYYY-MM-DD', to: 'YYYY-MM-DD' } da semana anterior (seg-dom)
- *  Cron roda toda segunda. Semana anterior = seg passada (hoje-6) a dom passado (hoje-1)
- */
+/** Retorna { from: 'YYYY-MM-DD', to: 'YYYY-MM-DD' } da semana anterior (seg-dom) */
 function getLastWeek() {
   const now = new Date();
   const toISO = d => d.toISOString().slice(0, 10);
-  const sun = new Date(now); sun.setUTCDate(now.getUTCDate() - 1); // domingo passado
-  const mon = new Date(now); mon.setUTCDate(now.getUTCDate() - 6); // segunda passada
+  const sun = new Date(now); sun.setUTCDate(now.getUTCDate() - 1);
+  const mon = new Date(now); mon.setUTCDate(now.getUTCDate() - 6);
   return { from: toISO(mon), to: toISO(sun) };
 }
-
-// ── Supabase ──────────────────────────────────────────────────────────────────
 
 async function sbGet(path) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {

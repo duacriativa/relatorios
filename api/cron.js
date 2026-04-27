@@ -25,11 +25,7 @@ function fmt2(d) {
  *  Cron roda toda segunda. Semana anterior = seg passada (hoje-6) a dom passado (hoje-1)
  */
 function getLastWeek() {
-  const now = new Date();
-  const toISO = d => d.toISOString().slice(0, 10);
-  const sun = new Date(now); sun.setUTCDate(now.getUTCDate() - 1); // domingo passado
-  const mon = new Date(now); mon.setUTCDate(now.getUTCDate() - 6); // segunda passada
-  return { from: toISO(mon), to: toISO(sun) };
+  return { from: '2026-04-21', to: '2026-04-26' };
 }
 
 // ── Supabase ──────────────────────────────────────────────────────────────────
@@ -446,7 +442,8 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const { from, to } = getLastWeek();
+  const from = (req.query && req.query.from) || getLastWeek().from;
+  const to   = (req.query && req.query.to)   || getLastWeek().to;
   console.log(`[cron] Período: ${from} → ${to}`);
 
   // Carregar config do Supabase

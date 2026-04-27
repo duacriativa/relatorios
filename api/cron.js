@@ -21,16 +21,14 @@ function fmt2(d) {
   return `${dd}/${m}/${y}`;
 }
 
-/** Retorna { from: 'YYYY-MM-DD', to: 'YYYY-MM-DD' } da semana anterior (seg–dom) */
+/** Retorna { from: 'YYYY-MM-DD', to: 'YYYY-MM-DD' } da semana anterior (seg-dom)
+ *  Cron roda toda segunda. Semana anterior = seg passada (hoje-6) a dom passado (hoje-1)
+ */
 function getLastWeek() {
-  const now   = new Date();
-  const day   = now.getUTCDay(); // 1 = seg
-  const diff  = day === 0 ? 1 : day + 6; // dias desde a última segunda-feira passada
-  const mon   = new Date(now);
-  mon.setUTCDate(now.getUTCDate() - diff - 6); // segunda da semana anterior
-  const sun   = new Date(mon);
-  sun.setUTCDate(mon.getUTCDate() + 6);        // domingo da semana anterior
+  const now = new Date();
   const toISO = d => d.toISOString().slice(0, 10);
+  const sun = new Date(now); sun.setUTCDate(now.getUTCDate() - 1); // domingo passado
+  const mon = new Date(now); mon.setUTCDate(now.getUTCDate() - 6); // segunda passada
   return { from: toISO(mon), to: toISO(sun) };
 }
 

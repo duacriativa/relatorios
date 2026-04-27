@@ -446,7 +446,8 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const { from, to } = getLastWeek();
+  const from = (req.query && req.query.from) || getLastWeek().from;
+  const to   = (req.query && req.query.to)   || getLastWeek().to;
   console.log(`[cron] Período: ${from} → ${to}`);
 
   // Carregar config do Supabase

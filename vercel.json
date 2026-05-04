@@ -5,6 +5,14 @@
       "schedule": "0 12 * * 1"
     }
   ],
+  "functions": {
+    "api/cron.js": {
+      "maxDuration": 60
+    },
+    "api/supabase.js": {
+      "maxDuration": 15
+    }
+  },
   "rewrites": [
     {
       "source": "/api/supabase",

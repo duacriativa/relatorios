@@ -384,6 +384,29 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 .btn-act:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
 
 /* Clients — card estilo Lovable */
+/* ══════════ BULK SEND ══════════ */
+.bulk-send-bar{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:18px 22px;margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;transition:var(--transition);}
+.bulk-send-bar .bulk-title{font-family:'Bricolage Grotesque',sans-serif;font-size:15px;font-weight:800;color:var(--text);flex:1;min-width:120px;}
+.bulk-send-bar .bulk-sub{font-size:12px;color:var(--text3);margin-top:2px;}
+.bulk-progress-bar{background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:20px;display:none;}
+.bulk-progress-bar.active{display:block;}
+.bulk-prog-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.bulk-prog-title{font-family:'Bricolage Grotesque',sans-serif;font-size:13px;font-weight:700;color:var(--text);}
+.bulk-prog-count{font-size:12px;color:var(--text3);}
+.bulk-prog-track{background:var(--s3);border-radius:4px;height:4px;overflow:hidden;margin-bottom:12px;}
+.bulk-prog-fill{height:100%;background:linear-gradient(to right,var(--accent),var(--accent2));border-radius:4px;transition:width .4s ease;}
+.bulk-client-log{display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto;}
+.bulk-log-item{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 8px;border-radius:6px;background:var(--s1);}
+.bulk-log-item .bli-icon{font-size:14px;flex-shrink:0;width:18px;text-align:center;}
+.bulk-log-item .bli-name{flex:1;font-weight:600;color:var(--text);}
+.bulk-log-item .bli-status{font-size:11px;color:var(--text3);}
+.bulk-log-item.ok .bli-status{color:var(--green);}
+.bulk-log-item.err .bli-status{color:var(--red);}
+.bulk-log-item.running .bli-name{color:var(--accent2);}
+.month-picker-wrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.month-picker-wrap select{background:var(--input-bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-size:13px;font-family:'Lato',sans-serif;outline:none;cursor:pointer;}
+@media(max-width:768px){.bulk-send-bar{flex-direction:column;align-items:flex-start;}}
+
 /* ══════════ GREETING ══════════ */
 .greeting-section{margin-bottom:28px;padding:4px 0;text-align:center;}
 .greeting-time{font-family:'Lato',sans-serif;font-size:17px;font-weight:300;color:var(--text2);margin-bottom:4px;}
@@ -988,6 +1011,36 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
     </div>
   </div>
 
+  <!-- ══ ENVIO EM MASSA ══ -->
+  <div class="bulk-send-bar">
+    <div>
+      <div class="bulk-title">📤 Enviar Relatórios em Massa</div>
+      <div class="bulk-sub">Busca dados do Meta e envia para todos os clientes no ClickUp de uma vez</div>
+    </div>
+    <button class="btn-act accent" onclick="bulkSendReports('semanal')" id="btn-bulk-semanal">
+      📅 Enviar Semanal (últimos 7 dias)
+    </button>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <button class="btn-act" onclick="bulkSendReports('mensal')" id="btn-bulk-mensal">📆 Enviar Mensal</button>
+      <div class="month-picker-wrap">
+        <select id="bulk-month-sel" style="font-size:12px;padding:5px 8px;"></select>
+        <select id="bulk-year-sel" style="font-size:12px;padding:5px 8px;"></select>
+      </div>
+    </div>
+  </div>
+  <div class="bulk-progress-bar" id="bulk-progress-bar">
+    <div class="bulk-prog-header">
+      <span class="bulk-prog-title" id="bulk-prog-title">Enviando relatórios...</span>
+      <span class="bulk-prog-count" id="bulk-prog-count">0 / 0</span>
+    </div>
+    <div class="bulk-prog-track"><div class="bulk-prog-fill" id="bulk-prog-fill" style="width:0%"></div></div>
+    <div class="bulk-client-log" id="bulk-client-log"></div>
+    <div style="margin-top:10px;display:flex;gap:8px;align-items:center;" id="bulk-result-row">
+      <span id="bulk-result-txt" style="font-size:12px;color:var(--text2)"></span>
+      <button onclick="document.getElementById('bulk-progress-bar').classList.remove('active')" style="background:transparent;border:none;font-size:11px;color:var(--text3);cursor:pointer;padding:2px 6px;">Fechar ✕</button>
+    </div>
+  </div>
+
   <!-- Client activity table -->
   <div class="dash-section-title">Atividade Recente dos Clientes</div>
   <div class="dash-table-wrap">
@@ -1451,6 +1504,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   }
   applyQuickPeriod();
+  initBulkMonthPicker();
 });
 
 const style = document.createElement('style');
@@ -3071,9 +3125,9 @@ async function confirmCampaignSelection() {
     const msgsWPPA       = actions.find(a=>a.action_type==='onsite_conversion.messaging_whatsapp_conversation_started_7d');
     const igDirectA      = actions.find(a=>a.action_type==='onsite_conversion.messaging_instagram_conversation_started_7d');
     const leads          = actions.find(a=>a.action_type==='lead');
-    const profileVisitsA = actions.find(a=>a.action_type==='instagram_profile_visit')
-                        || actions.find(a=>a.action_type==='view_content');
-    const followersA     = actions.find(a=>a.action_type==='instagram_follow')
+    const profileVisitsA = actions.find(a=>a.action_type==='instagram_profile_visit');
+    const followersA     = actions.find(a=>a.action_type==='onsite_conversion.post_net_like')
+                        || actions.find(a=>a.action_type==='instagram_follow')
                         || actions.find(a=>a.action_type==='page_fan');
     const convQty   = parseInt(purchases?.value||0);
     const revVal    = parseFloat(revenue?.value||0);
@@ -4149,6 +4203,239 @@ function fmt2(d) {
 }
 
 function openTutorial() { document.getElementById('modal-tutorial').classList.add('open'); }
+
+// ════════ BULK SEND — ENVIO EM MASSA ════════
+const MONTH_NAMES_PT = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+function initBulkMonthPicker() {
+  const mSel = document.getElementById('bulk-month-sel');
+  const ySel = document.getElementById('bulk-year-sel');
+  if (!mSel || !ySel) return;
+  for (let m = 1; m <= 12; m++) {
+    const opt = document.createElement('option');
+    opt.value = m; opt.textContent = MONTH_NAMES_PT[m];
+    mSel.appendChild(opt);
+  }
+  const now = new Date();
+  mSel.value = now.getMonth() === 0 ? 12 : now.getMonth();
+  for (let y = now.getFullYear(); y >= now.getFullYear() - 2; y--) {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    ySel.appendChild(opt);
+  }
+  ySel.value = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+}
+
+async function fetchMetaForBulk(client, since, until) {
+  const token     = resolveToken(client);
+  const accountId = client.account_id || client.accountId;
+  if (!token || !accountId) throw new Error('Sem token ou account_id');
+  const fields = 'spend,clicks,inline_link_clicks,impressions,reach,ctr,cpm,actions,action_values';
+  const url = `https://graph.facebook.com/v18.0/${accountId}/insights?fields=${fields}&time_range={"since":"${since}","until":"${until}"}&level=account&access_token=${token}`;
+  const ctrl  = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 25000);
+  try {
+    const res  = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(timer);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const ins = data.data?.[0];
+    if (!ins || parseFloat(ins.spend || 0) === 0) return null;
+    const spend = parseFloat(ins.spend||0), clicks = parseInt(ins.clicks||0);
+    const linkClicks = parseInt(ins.inline_link_clicks||0), impr = parseInt(ins.impressions||0);
+    const reach = parseInt(ins.reach||0), ctr = parseFloat(ins.ctr||0), cpm = parseFloat(ins.cpm||0);
+    const actions = ins.actions||[], actVals = ins.action_values||[];
+    const getA  = type => parseFloat(actions.find(a=>a.action_type===type)?.value||0);
+    const getAV = type => parseFloat(actVals.find(a=>a.action_type===type)?.value||0);
+    const convQty = getA('purchase'), revVal = getAV('purchase');
+    // ✅ FIXED: seguidores usa onsite_conversion.post_net_like
+    const followers = getA('onsite_conversion.post_net_like') || getA('instagram_follow') || getA('page_fan');
+    // ✅ FIXED: profileVisits sem fallback errado
+    const profileVisits = getA('instagram_profile_visit');
+    const msgs = getA('onsite_conversion.messaging_conversation_started_7d');
+    const msgsWPP = getA('onsite_conversion.messaging_whatsapp_conversation_started_7d');
+    const igDirect = getA('onsite_conversion.messaging_instagram_conversation_started_7d');
+    const leads = getA('lead');
+    const lc = linkClicks || clicks;
+    const roi = spend>0&&revVal>0?(revVal/spend).toFixed(2):null;
+    const cpa = convQty>0?(spend/convQty).toFixed(2):null;
+    return { spend, clicks, linkClicks, lc, impr, reach, ctr, cpm, convQty, revVal, roi, cpa, msgs, msgsWPP, igDirect, profileVisits, followers, leads };
+  } catch(e) { clearTimeout(timer); throw e; }
+}
+
+function buildBulkReportText(clientName, d, since, until, tipoRel) {
+  const isEcommerce = d.convQty>0||d.revVal>0, hasMsgs = d.msgs>0||d.msgsWPP>0||d.igDirect>0;
+  const lc = d.lc;
+  const fmt2b = s => { const [y,m,dd] = s.split('-'); return `${dd}/${m}/${y}`; };
+  const lines = [`📊 *Relatório ${tipoRel} Meta Ads — ${clientName}*`,`📅 ${fmt2b(since)} – ${fmt2b(until)}`,``];
+  if (isEcommerce) {
+    lines.push(`🛒 *E-commerce*`,`💰 Investido: ${fmtBRL(d.spend)}`);
+    if (d.revVal>0) lines.push(`💵 Receita: ${fmtBRL(d.revVal)}`);
+    if (d.roi) lines.push(`📈 ROI: ${d.roi}x`);
+    if (d.convQty>0) lines.push(`🛒 Conversões: ${d.convQty}`);
+    if (d.cpa) lines.push(`💲 CPA: R$ ${d.cpa}`);
+    lines.push(``);
+  }
+  if (hasMsgs||!isEcommerce) {
+    lines.push(`📱 *Tráfego p/ Perfil IG*`,`👁️ Alcance: ${(d.reach||d.impr).toLocaleString('pt-BR')}`);
+    if (lc>0) { lines.push(`👆 Cliques no link: ${lc.toLocaleString('pt-BR')}`,`🖱️ CPS: ${fmtBRL(d.spend/lc)}`); }
+    lines.push(`🎯 CTR: ${parseFloat(d.ctr).toFixed(2)}%`);
+    if (d.profileVisits>0) { lines.push(`👤 Visitas ao Perfil: ${d.profileVisits.toLocaleString('pt-BR')}`,`💲 Custo/Visita: ${fmtBRL(d.spend/d.profileVisits)}`); }
+    if (d.followers>0) lines.push(`➕ Seguidores: ${d.followers.toLocaleString('pt-BR')}`);
+    if (d.msgs>0) lines.push(`💬 Mensagens (Total): ${d.msgs.toLocaleString('pt-BR')}`);
+    if (d.msgsWPP>0) { lines.push(`📨 Msgs WhatsApp: ${d.msgsWPP.toLocaleString('pt-BR')}`,`🟢 Custo/Msg WPP: ${fmtBRL(d.spend/d.msgsWPP)}`); }
+    if (d.igDirect>0) lines.push(`📩 Msgs Direct (IG): ${d.igDirect.toLocaleString('pt-BR')}`);
+    if (d.msgs>0) lines.push(`💲 Custo/Msg: ${fmtBRL(d.spend/d.msgs)}`);
+    lines.push(``);
+  }
+  lines.push(`💰 *Investimento: ${fmtBRL(d.spend)}*`);
+  return lines.join('\n');
+}
+
+async function genAIForBulk(clientName, d, openaiKey, since, until) {
+  if (!openaiKey) return null;
+  const fmt2b = s => { const [y,m,dd] = s.split('-'); return `${dd}/${m}/${y}`; };
+  const isEcommerce = d.convQty>0||d.revVal>0, lc = d.lc;
+  const dadosStr = isEcommerce
+    ? `Investido: R$ ${d.spend.toFixed(2)}\nReceita: ${d.revVal>0?'R$ '+d.revVal.toFixed(2):'—'}\nROI: ${d.roi?d.roi+'x':'—'}\nConversões: ${d.convQty}\nCPA: ${d.cpa?'R$ '+d.cpa:'—'}\nCTR: ${d.ctr.toFixed(2)}%\nSeguidores: ${d.followers}`
+    : `Investido: R$ ${d.spend.toFixed(2)}\nAlcance: ${d.reach||d.impr}\nCliques: ${lc}\nCTR: ${d.ctr.toFixed(2)}%\nMensagens: ${d.msgs}\nCusto/Msg: ${d.msgs>0?'R$ '+(d.spend/d.msgs).toFixed(2):'—'}\nVisitas perfil IG: ${d.profileVisits}\nSeguidores: ${d.followers}`;
+  const prompt = `Gestor de tráfego sênior. "Próximos Passos" para "${clientName}" (${fmt2b(since)} a ${fmt2b(until)}).
+FORMATO (sem asteriscos):
+📌 Próximos Passos
+[🟢/🟡/🔴] [avaliação com dados reais]
+[Recomendação 1]
+[análise + ação]
+[Recomendação 2]
+[análise + ação]
+Próxima semana
+[ação concreta]
+Máximo 130 palavras. SEM asteriscos.
+Dados:\n${dadosStr}`;
+  try {
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 20000);
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method:'POST', signal: ctrl.signal,
+      headers:{'Authorization':`Bearer ${openaiKey}`,'Content-Type':'application/json'},
+      body: JSON.stringify({model:'gpt-4o-mini',messages:[{role:'user',content:prompt}],max_tokens:200,temperature:0.75})
+    });
+    const data = await res.json();
+    if (data.error) return null;
+    return data.choices?.[0]?.message?.content||null;
+  } catch(e) { return null; }
+}
+
+async function sendBulkToClickUp(clientName, reportText, aiText, tipoRel, since) {
+  const headers = {'Authorization':cfg.clickup,'Content-Type':'application/json'};
+  const cuFetch = async (url, opts={}) => {
+    const r = await fetch(url, {...opts, headers:{...headers,...(opts.headers||{})}});
+    const text = await r.text(); let body={}; try{body=JSON.parse(text);}catch(_){body={raw:text};}
+    if (!r.ok) throw new Error(`ClickUp ${r.status}: ${body.err||body.message||body.raw||''}`);
+    return body;
+  };
+  const tasksData = await cuFetch(`https://api.clickup.com/api/v2/list/${cfg.listId}/task?include_closed=false&limit=100`);
+  const allTasks = tasksData.tasks||[];
+  const clientLow = clientName.toLowerCase().trim();
+  const clientWords = clientLow.split(/\s+/).filter(w=>w.length>2);
+  const matchTask = t => { const tl=t.name.toLowerCase(); return tl.includes(clientLow)||clientWords.some(w=>tl.includes(w)); };
+  const existing = allTasks.find(matchTask);
+  const fmt2b = s => { const [y,m,dd]=s.split('-'); return `${dd}/${m}/${y}`; };
+  const autoHeader = `🤖 *Automação Metricana — ${tipoRel==='mensal'?'Mensal':'Semanal'} ${fmt2b(since)}*\n\n`;
+  const finalComment = autoHeader + reportText;
+  let taskId;
+  if (existing) {
+    taskId = existing.id;
+    if (aiText) await cuFetch(`https://api.clickup.com/api/v2/task/${taskId}`,{method:'PUT',body:JSON.stringify({description:aiText})});
+  } else {
+    const created = await cuFetch(`https://api.clickup.com/api/v2/list/${cfg.listId}/task`,{method:'POST',body:JSON.stringify({name:`Relatório ${tipoRel==='mensal'?'Mensal':'Semanal'} — ${clientName} — ${fmt2b(since)}`,description:aiText||'',tags:[tipoRel==='mensal'?'relatório mensal':'relatório semanal']})});
+    if (created.err) throw new Error(`ClickUp: ${created.err}`);
+    taskId = created.id;
+  }
+  await cuFetch(`https://api.clickup.com/api/v2/task/${taskId}/comment`,{method:'POST',body:JSON.stringify({comment_text:finalComment,notify_all:true})});
+  return { created: !existing };
+}
+
+async function bulkSendReports(tipoRel) {
+  if (!cfg.clickup||!cfg.listId) { toast('⚠️ Configure o ClickUp primeiro em ⚙️ Settings.'); return; }
+  if (!clients.length) { toast('⚠️ Nenhum cliente cadastrado.'); return; }
+  let since, until;
+  const pad = n => String(n).padStart(2,'0');
+  if (tipoRel === 'semanal') {
+    const to = new Date(); to.setDate(to.getDate()-1);
+    const from = new Date(to); from.setDate(to.getDate()-6);
+    since = `${from.getFullYear()}-${pad(from.getMonth()+1)}-${pad(from.getDate())}`;
+    until = `${to.getFullYear()}-${pad(to.getMonth()+1)}-${pad(to.getDate())}`;
+  } else {
+    const m = parseInt(document.getElementById('bulk-month-sel').value);
+    const y = parseInt(document.getElementById('bulk-year-sel').value);
+    if (!m||!y) { toast('⚠️ Selecione o mês e ano.'); return; }
+    since = `${y}-${pad(m)}-01`;
+    const lastDay = new Date(y,m,0).getDate();
+    until = `${y}-${pad(m)}-${pad(lastDay)}`;
+  }
+  const btnS = document.getElementById('btn-bulk-semanal');
+  const btnM = document.getElementById('btn-bulk-mensal');
+  btnS.disabled = true; btnM.disabled = true;
+  const progBar = document.getElementById('bulk-progress-bar');
+  const progFill = document.getElementById('bulk-prog-fill');
+  const progCount = document.getElementById('bulk-prog-count');
+  const progTitle = document.getElementById('bulk-prog-title');
+  const logEl = document.getElementById('bulk-client-log');
+  const resultRow = document.getElementById('bulk-result-row');
+  const resultTxt = document.getElementById('bulk-result-txt');
+  progBar.classList.add('active');
+  progFill.style.width = '0%';
+  logEl.innerHTML = '';
+  resultRow.style.display = 'none';
+  const fmt2b = s => { const [y,m,dd]=s.split('-'); return `${dd}/${m}/${y}`; };
+  progTitle.textContent = `Enviando relatório ${tipoRel} — ${fmt2b(since)} a ${fmt2b(until)}`;
+  const validClients = clients.filter(c => resolveToken(c)&&(c.account_id||c.accountId));
+  const total = validClients.length;
+  let done=0, ok=0, skipped=0, errors=0;
+  progCount.textContent = `0 / ${total}`;
+  for (const client of validClients) {
+    const li = document.createElement('div');
+    li.className = 'bulk-log-item running';
+    li.innerHTML = `<span class="bli-icon">⏳</span><span class="bli-name">${client.name}</span><span class="bli-status">Buscando dados...</span>`;
+    logEl.appendChild(li);
+    logEl.scrollTop = logEl.scrollHeight;
+    try {
+      const metaData = await fetchMetaForBulk(client, since, until);
+      if (!metaData) {
+        li.className='bulk-log-item skip';
+        li.querySelector('.bli-icon').textContent='—';
+        li.querySelector('.bli-status').textContent='Sem dados no período';
+        skipped++;
+      } else {
+        li.querySelector('.bli-status').textContent='Gerando relatório...';
+        const reportText = buildBulkReportText(client.name, metaData, since, until, tipoRel==='mensal'?'Mensal':'Semanal');
+        li.querySelector('.bli-status').textContent='Gerando análise IA...';
+        const aiText = await genAIForBulk(client.name, metaData, cfg.openaiKey, since, until);
+        li.querySelector('.bli-status').textContent='Enviando ao ClickUp...';
+        const cuResult = await sendBulkToClickUp(client.name, reportText, aiText, tipoRel, since);
+        li.className='bulk-log-item ok';
+        li.querySelector('.bli-icon').textContent='✓';
+        li.querySelector('.bli-status').textContent=`${fmtBRL(metaData.spend)} · ${cuResult.created?'tarefa criada':'comentário enviado'}`;
+        ok++;
+      }
+    } catch(e) {
+      li.className='bulk-log-item err';
+      li.querySelector('.bli-icon').textContent='✗';
+      li.querySelector('.bli-status').textContent=e.message.slice(0,60);
+      errors++;
+    }
+    done++;
+    progCount.textContent=`${done} / ${total}`;
+    progFill.style.width=`${Math.round(done/total*100)}%`;
+    if (done<total) await new Promise(r=>setTimeout(r,600));
+  }
+  resultRow.style.display='flex';
+  resultTxt.innerHTML=`✅ <strong>${ok}</strong> enviados · ${skipped} sem dados · ${errors} erros`;
+  btnS.disabled=false; btnM.disabled=false;
+  toast(`✓ ${ok} relatórios enviados ao ClickUp!`);
+  loadClientStatuses();
+}
+
 
 function toast(msg, dur=2800) {
   const el = document.getElementById('toast');

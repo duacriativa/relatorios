@@ -1160,14 +1160,20 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
   </div>
 
   <!-- Client activity table -->
-  <div class="dash-section-title">Atividade dos Clientes</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;">
+    <div class="dash-section-title" style="margin-bottom:0;flex:1">Atividade dos Clientes</div>
+    <button onclick="loadClientTableSpend()" style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:4px 11px;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;transition:var(--transition);" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      Atualizar valores
+    </button>
+  </div>
   <div class="dash-table-wrap">
     <table class="dash-table">
       <thead>
         <tr>
           <th>Cliente</th>
-          <th>Relatório Recente</th>
-          <th>Status</th>
+          <th>Investido no Mês</th>
+          <th>Investido Hoje</th>
           <th></th>
         </tr>
       </thead>
@@ -2299,37 +2305,97 @@ function renderDashMetrics(m) {
 
 let dashTaskMap = {}; // { clientIdx: { id, statusCls, statusLabel } }
 
+const CLIENT_COLORS = ['#7c3aed','#2563eb','#059669','#d97706','#dc2626','#7c3aed','#0891b2','#c026d3','#65a30d','#ea580c'];
+
 function renderDashClientTable() {
   const tbody = document.getElementById('dash-client-tbody');
   if (!tbody) return;
   if (!Array.isArray(clients) || !clients.length) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">Nenhum cliente cadastrado.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text3)">Nenhum cliente cadastrado.</td></tr>`;
     return;
   }
-  const lastReport = {};
-  (weekHistory||[]).forEach(h => { if (h.client) lastReport[h.client] = h.date||h.week||'—'; });
+
+  const fB = v => 'R$ ' + parseFloat(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 
   tbody.innerHTML = clients.map((c,i) => {
-    const recent = lastReport[c.name] || '—';
+    const color    = CLIENT_COLORS[i % CLIENT_COLORS.length];
+    const initials = c.name.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+    const acct     = c.account_id || c.accountId;
+    const hasApi   = !!(acct && resolveToken(c));
     return `<tr>
       <td>
-        <button onclick="selectClient(${i})" style="background:none;border:none;padding:0;cursor:pointer;font-weight:700;font-size:14px;color:var(--text);font-family:'Bricolage Grotesque',sans-serif;text-align:left;" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='var(--text)'">${c.name}</button>
-      </td>
-      <td style="color:var(--text3)">${recent}</td>
-      <td>
-        <div class="dash-status-wrap" id="dswrap-${i}">
-          <span class="dash-status pendente" id="dstatus-${i}" onclick="toggleStatusDd(${i},event)">...</span>
-          <div class="dash-status-dd" id="dsdd-${i}">
-            <div class="dash-status-opt" onclick="updateDashStatus(${i},'pendente','Pendente',event)"><span class="dot" style="background:#7c3aed"></span>Pendente</div>
-            <div class="dash-status-opt" onclick="updateDashStatus(${i},'progresso','Em Progresso',event)"><span class="dot" style="background:#f59e0b"></span>Em Progresso</div>
-            <div class="dash-status-opt" onclick="updateDashStatus(${i},'enviar','A Enviar',event)"><span class="dot" style="background:#f59e0b"></span>A Enviar</div>
-            <div class="dash-status-opt" onclick="updateDashStatus(${i},'concluido','Concluído',event)"><span class="dot" style="background:#22c55e"></span>Concluído</div>
+        <div class="dash-client-cell">
+          <div class="dash-client-avatar" style="background:${color};letter-spacing:-.5px">${initials}</div>
+          <div>
+            <div style="font-weight:700;font-size:14px;font-family:'Bricolage Grotesque',sans-serif;color:var(--text)">${c.name}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${acct ? 'Conta ' + acct : '— Sem conta Meta'}</div>
           </div>
         </div>
       </td>
-      <td><button class="btn-view" onclick="selectClient(${i})">View</button></td>
+      <td>
+        <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;font-weight:800;color:var(--text);line-height:1" id="dspend-month-${i}">${hasApi ? '<span style="color:var(--text3);font-size:12px;font-family:Lato,sans-serif;font-weight:400">carregando...</span>' : '<span style="color:var(--text3)">—</span>'}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px">mês atual</div>
+      </td>
+      <td>
+        <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;font-weight:800;color:var(--text);line-height:1" id="dspend-day-${i}">${hasApi ? '<span style="color:var(--text3);font-size:12px;font-family:Lato,sans-serif;font-weight:400">carregando...</span>' : '<span style="color:var(--text3)">—</span>'}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px">hoje</div>
+      </td>
+      <td style="text-align:right">
+        <button class="btn-view" onclick="selectClient(${i})" style="display:inline-flex;align-items:center;gap:5px">
+          Acessar
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </td>
     </tr>`;
   }).join('');
+
+  // Dispara fetch de spend em background imediatamente
+  loadClientTableSpend();
+}
+
+// Busca investimento mês + hoje para cada cliente na tabela
+async function loadClientTableSpend() {
+  if (!Array.isArray(clients) || !clients.length) return;
+  const now   = new Date();
+  const y     = now.getFullYear();
+  const m     = String(now.getMonth() + 1).padStart(2,'0');
+  const d     = String(now.getDate()).padStart(2,'0');
+  const since = `${y}-${m}-01`;
+  const until = `${y}-${m}-${d}`;
+  const fB    = v => 'R$ ' + parseFloat(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+  await Promise.all(clients.map(async (c, i) => {
+    const monthEl = document.getElementById(`dspend-month-${i}`);
+    const dayEl   = document.getElementById(`dspend-day-${i}`);
+    if (!monthEl || !dayEl) return;
+
+    const acct  = c.account_id || c.accountId;
+    const token = resolveToken(c);
+    if (!acct || !token) return; // já mostra "—" do renderDashClientTable
+
+    try {
+      // Mês atual (paralelo com hoje)
+      const [resMonth, resDay] = await Promise.all([
+        fetch(`https://graph.facebook.com/v18.0/${acct}/insights?fields=spend&time_range={"since":"${since}","until":"${until}"}&level=account&access_token=${token}`),
+        fetch(`https://graph.facebook.com/v18.0/${acct}/insights?fields=spend&date_preset=today&level=account&access_token=${token}`)
+      ]);
+      const [jMonth, jDay] = await Promise.all([resMonth.json(), resDay.json()]);
+
+      const spendMonth = parseFloat(jMonth.data?.[0]?.spend || 0);
+      const spendDay   = parseFloat(jDay.data?.[0]?.spend   || 0);
+
+      monthEl.innerHTML = spendMonth > 0
+        ? `<span style="color:var(--text)">${fB(spendMonth)}</span>`
+        : `<span style="color:var(--text3)">—</span>`;
+
+      dayEl.innerHTML = spendDay > 0
+        ? `<span style="color:var(--green)">${fB(spendDay)}</span>`
+        : `<span style="color:var(--text3)">—</span>`;
+    } catch(e) {
+      monthEl.innerHTML = `<span style="color:var(--text3)">—</span>`;
+      dayEl.innerHTML   = `<span style="color:var(--text3)">—</span>`;
+    }
+  }));
 }
 
 function toggleStatusDd(i, e) {
@@ -2372,57 +2438,46 @@ async function updateDashStatus(i, cls, label, e) {
 }
 
 async function loadClientStatuses() {
-  const pending = document.getElementById('dash-pending-txt');
+  // Conta tarefas pendentes no ClickUp para o card "Relatórios Pendentes"
+  const pending    = document.getElementById('dash-pending-txt');
   const pendingNum = document.getElementById('dm-pending');
   if (!cfg.clickup || !cfg.listId) {
-    if (pending) pending.textContent = '';
+    if (pending)    pending.textContent = '';
     if (pendingNum) pendingNum.textContent = '—';
-    clients.forEach((_,i) => {
-      const el = document.getElementById(`dstatus-${i}`);
-      if (el) { el.textContent = '—'; el.className = 'dash-status'; }
-    });
     return;
   }
   try {
-    const ctrl = new AbortController();
+    const ctrl  = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 10000);
-    const res = await fetch(`https://api.clickup.com/api/v2/list/${cfg.listId}/task?page=0&limit=100`,
-      { headers: { Authorization: cfg.clickup }, signal: ctrl.signal });
+    const res   = await fetch(
+      `https://api.clickup.com/api/v2/list/${cfg.listId}/task?page=0&limit=100`,
+      { headers: { Authorization: cfg.clickup }, signal: ctrl.signal }
+    );
     clearTimeout(timer);
-    const json = await res.json();
+    const json  = await res.json();
     const tasks = json.tasks || [];
     let pendCount = 0;
 
-    clients.forEach((c,i) => {
-      const el = document.getElementById(`dstatus-${i}`);
-      if (!el) return;
-      const cLow = c.name.toLowerCase().trim();
+    clients.forEach(c => {
+      const cLow  = c.name.toLowerCase().trim();
       const words = cLow.split(/\s+/).filter(w=>w.length>2);
-      const task = tasks.find(t => {
+      const task  = tasks.find(t => {
         const tl = t.name.toLowerCase();
         return tl.includes(cLow) || words.some(w=>tl.includes(w));
       });
-      if (!task) {
-        el.textContent = 'Sem task'; el.className = 'dash-status';
-        dashTaskMap[i] = null;
-        return;
-      }
+      if (!task) return;
       const rawStatus = (task.status?.status||'').toLowerCase().trim();
-      let cls = 'pendente', label = 'Pendente';
-      if (rawStatus.includes('conclu'))                                        { cls='concluido'; label='Concluído'; }
-      else if (rawStatus.includes('progresso')||rawStatus.includes('progress')){ cls='progresso'; label='Em Progresso'; }
-      else if (rawStatus.includes('enviar')||rawStatus.includes('send'))       { cls='enviar';    label='A Enviar'; }
-      else if (rawStatus.includes('ativo')||rawStatus.includes('aberto'))      { cls='ativo';     label='Ativo'; }
-      if (cls==='pendente'||cls==='enviar'||cls==='progresso') pendCount++;
-      el.textContent = label;
-      el.className = `dash-status ${cls}`;
-      dashTaskMap[i] = { id: task.id, statusCls: cls, statusLabel: label };
+      const isPend = !rawStatus.includes('conclu') && !rawStatus.includes('ativo');
+      if (isPend) pendCount++;
+      dashTaskMap[clients.indexOf(c)] = { id: task.id };
     });
 
-    if (pending) pending.textContent = `Você tem ${pendCount} relatório${pendCount!==1?'s':''} pendente${pendCount!==1?'s':''} para essa semana.`;
-    if (pendingNum) pendingNum.textContent = pendCount;
+    if (pending)    pending.textContent = pendCount > 0
+      ? `${pendCount} relatório${pendCount!==1?'s':''} pendente${pendCount!==1?'s':''} para envio`
+      : '';
+    if (pendingNum) pendingNum.textContent = pendCount > 0 ? pendCount : '0';
   } catch(e) {
-    if (pending) pending.textContent = 'Não foi possível carregar os status do ClickUp.';
+    if (pending) pending.textContent = '';
   }
 }
 

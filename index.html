@@ -384,29 +384,6 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 .btn-act:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
 
 /* Clients — card estilo Lovable */
-/* ══════════ BULK SEND ══════════ */
-.bulk-send-bar{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:18px 22px;margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;transition:var(--transition);}
-.bulk-send-bar .bulk-title{font-family:'Bricolage Grotesque',sans-serif;font-size:15px;font-weight:800;color:var(--text);flex:1;min-width:120px;}
-.bulk-send-bar .bulk-sub{font-size:12px;color:var(--text3);margin-top:2px;}
-.bulk-progress-bar{background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:20px;display:none;}
-.bulk-progress-bar.active{display:block;}
-.bulk-prog-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
-.bulk-prog-title{font-family:'Bricolage Grotesque',sans-serif;font-size:13px;font-weight:700;color:var(--text);}
-.bulk-prog-count{font-size:12px;color:var(--text3);}
-.bulk-prog-track{background:var(--s3);border-radius:4px;height:4px;overflow:hidden;margin-bottom:12px;}
-.bulk-prog-fill{height:100%;background:linear-gradient(to right,var(--accent),var(--accent2));border-radius:4px;transition:width .4s ease;}
-.bulk-client-log{display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto;}
-.bulk-log-item{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 8px;border-radius:6px;background:var(--s1);}
-.bulk-log-item .bli-icon{font-size:14px;flex-shrink:0;width:18px;text-align:center;}
-.bulk-log-item .bli-name{flex:1;font-weight:600;color:var(--text);}
-.bulk-log-item .bli-status{font-size:11px;color:var(--text3);}
-.bulk-log-item.ok .bli-status{color:var(--green);}
-.bulk-log-item.err .bli-status{color:var(--red);}
-.bulk-log-item.running .bli-name{color:var(--accent2);}
-.month-picker-wrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.month-picker-wrap select{background:var(--input-bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-size:13px;font-family:'Lato',sans-serif;outline:none;cursor:pointer;}
-@media(max-width:768px){.bulk-send-bar{flex-direction:column;align-items:flex-start;}}
-
 /* ══════════ GREETING ══════════ */
 .greeting-section{margin-bottom:28px;padding:4px 0;text-align:center;}
 .greeting-time{font-family:'Lato',sans-serif;font-size:17px;font-weight:300;color:var(--text2);margin-bottom:4px;}
@@ -675,9 +652,66 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 .camp-quick-btns{display:flex;gap:6px;}
 .camp-quick-btn{background:transparent;border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;color:var(--text3);cursor:pointer;transition:var(--transition);}
 .camp-quick-btn:hover{border-color:var(--accent2);color:var(--accent2);}
+
+/* ── Batch Report Buttons ── */
+.batch-btn-row{display:flex;gap:10px;margin-top:20px;margin-bottom:4px;flex-wrap:wrap;}
+.batch-btn{display:flex;align-items:center;gap:8px;padding:9px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:var(--transition);font-family:inherit;}
+.batch-btn-semanal{background:var(--accentbg);border:1px solid var(--accent);color:var(--accent2);}
+.batch-btn-semanal:hover{background:rgba(124,58,237,.22);transform:translateY(-1px);}
+.batch-btn-mensal{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.35);color:var(--green);}
+.batch-btn-mensal:hover{background:rgba(34,197,94,.2);transform:translateY(-1px);}
+
+/* ── Batch Progress Modal ── */
+.batch-client-list{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;margin:14px 0;}
+.batch-row{display:flex;align-items:center;justify-content:space-between;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:9px 14px;gap:10px;}
+.batch-row-name{font-size:13px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.batch-row-status{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
+.batch-row-status.pending{background:var(--s4);color:var(--text3);}
+.batch-row-status.loading{background:var(--accentbg);color:var(--accent2);}
+.batch-row-status.ok{background:rgba(34,197,94,.15);color:var(--green);}
+.batch-row-status.skip{background:var(--s4);color:var(--text3);}
+.batch-row-status.err{background:rgba(239,68,68,.12);color:#f87171;}
+.batch-summary{font-size:14px;font-weight:700;text-align:center;padding:10px 0 4px;}
+
+/* ── Month Picker Modal ── */
+.month-picker-wrap{margin:18px 0;}
+.month-picker-wrap select{width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;font-family:inherit;cursor:pointer;}
+.month-picker-wrap select:focus{outline:none;border-color:var(--accent);}
 </style>
 </head>
 <body>
+
+<!-- ══════════ BATCH REPORT PROGRESS MODAL ══════════ -->
+<div class="modal-bg" id="modal-batch-report" onclick="if(event.target===this)closeBatchModal()">
+<div class="modal" style="max-width:520px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <h2 style="margin:0;font-size:18px" id="batch-modal-title">📊 Gerando Relatórios...</h2>
+    <button onclick="closeBatchModal()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;line-height:1;padding:0 2px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text3)'">✕</button>
+  </div>
+  <div style="font-size:12px;color:var(--text3);margin-bottom:2px">Enviando ao ClickUp de cada cliente automaticamente</div>
+  <div class="batch-client-list" id="batch-client-list"></div>
+  <div class="batch-summary" id="batch-summary"></div>
+  <button class="btn-main" onclick="closeBatchModal()" style="width:100%;margin-top:6px">Fechar</button>
+</div>
+</div>
+
+<!-- ══════════ MONTH PICKER MODAL ══════════ -->
+<div class="modal-bg" id="modal-month-picker" onclick="if(event.target===this)closeMonthPickerModal()">
+<div class="modal" style="max-width:380px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <h2 style="margin:0;font-size:18px">📅 Relatório Mensal</h2>
+    <button onclick="closeMonthPickerModal()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;line-height:1;padding:0 2px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text3)'">✕</button>
+  </div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:10px">Selecione o mês para gerar e enviar relatórios de <strong>todos os clientes</strong> ao ClickUp.</div>
+  <div class="month-picker-wrap">
+    <select id="batch-month-sel"></select>
+  </div>
+  <div style="display:flex;gap:10px;margin-top:4px">
+    <button class="btn-sec" onclick="closeMonthPickerModal()" style="flex:1">Cancelar</button>
+    <button class="btn-main" onclick="confirmMonthPicker()" style="flex:1">Gerar Relatórios →</button>
+  </div>
+</div>
+</div>
 
 <!-- ══════════ TUTORIAL MODAL ══════════ -->
 <div class="modal-bg" id="modal-tutorial" onclick="if(event.target===this)document.getElementById('modal-tutorial').classList.remove('open')">
@@ -1011,36 +1045,6 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
     </div>
   </div>
 
-  <!-- ══ ENVIO EM MASSA ══ -->
-  <div class="bulk-send-bar">
-    <div>
-      <div class="bulk-title">📤 Enviar Relatórios em Massa</div>
-      <div class="bulk-sub">Busca dados do Meta e envia para todos os clientes no ClickUp de uma vez</div>
-    </div>
-    <button class="btn-act accent" onclick="bulkSendReports('semanal')" id="btn-bulk-semanal">
-      📅 Enviar Semanal (últimos 7 dias)
-    </button>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <button class="btn-act" onclick="bulkSendReports('mensal')" id="btn-bulk-mensal">📆 Enviar Mensal</button>
-      <div class="month-picker-wrap">
-        <select id="bulk-month-sel" style="font-size:12px;padding:5px 8px;"></select>
-        <select id="bulk-year-sel" style="font-size:12px;padding:5px 8px;"></select>
-      </div>
-    </div>
-  </div>
-  <div class="bulk-progress-bar" id="bulk-progress-bar">
-    <div class="bulk-prog-header">
-      <span class="bulk-prog-title" id="bulk-prog-title">Enviando relatórios...</span>
-      <span class="bulk-prog-count" id="bulk-prog-count">0 / 0</span>
-    </div>
-    <div class="bulk-prog-track"><div class="bulk-prog-fill" id="bulk-prog-fill" style="width:0%"></div></div>
-    <div class="bulk-client-log" id="bulk-client-log"></div>
-    <div style="margin-top:10px;display:flex;gap:8px;align-items:center;" id="bulk-result-row">
-      <span id="bulk-result-txt" style="font-size:12px;color:var(--text2)"></span>
-      <button onclick="document.getElementById('bulk-progress-bar').classList.remove('active')" style="background:transparent;border:none;font-size:11px;color:var(--text3);cursor:pointer;padding:2px 6px;">Fechar ✕</button>
-    </div>
-  </div>
-
   <!-- Client activity table -->
   <div class="dash-section-title">Atividade Recente dos Clientes</div>
   <div class="dash-table-wrap">
@@ -1057,6 +1061,18 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
         <tr><td colspan="4" style="text-align:center;padding:32px;color:var(--text3)">Carregando clientes...</td></tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- Batch Report Buttons -->
+  <div class="batch-btn-row">
+    <button class="batch-btn batch-btn-semanal" onclick="runBatchReport('semanal')">
+      📊 Relatório Semanal
+      <span style="font-size:10px;font-weight:400;opacity:.75">últimos 7 dias · todos os clientes</span>
+    </button>
+    <button class="batch-btn batch-btn-mensal" onclick="openMonthPickerModal()">
+      📅 Relatório Mensal
+      <span style="font-size:10px;font-weight:400;opacity:.75">escolha o mês · todos os clientes</span>
+    </button>
   </div>
 
   <!-- Hidden elements kept for compatibility -->
@@ -1504,7 +1520,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   }
   applyQuickPeriod();
-  initBulkMonthPicker();
 });
 
 const style = document.createElement('style');
@@ -3125,9 +3140,9 @@ async function confirmCampaignSelection() {
     const msgsWPPA       = actions.find(a=>a.action_type==='onsite_conversion.messaging_whatsapp_conversation_started_7d');
     const igDirectA      = actions.find(a=>a.action_type==='onsite_conversion.messaging_instagram_conversation_started_7d');
     const leads          = actions.find(a=>a.action_type==='lead');
-    const profileVisitsA = actions.find(a=>a.action_type==='instagram_profile_visit');
-    const followersA     = actions.find(a=>a.action_type==='onsite_conversion.post_net_like')
-                        || actions.find(a=>a.action_type==='instagram_follow')
+    const profileVisitsA = actions.find(a=>a.action_type==='instagram_profile_visit')
+                        || actions.find(a=>a.action_type==='view_content');
+    const followersA     = actions.find(a=>a.action_type==='instagram_follow')
                         || actions.find(a=>a.action_type==='page_fan');
     const convQty   = parseInt(purchases?.value||0);
     const revVal    = parseFloat(revenue?.value||0);
@@ -4204,238 +4219,338 @@ function fmt2(d) {
 
 function openTutorial() { document.getElementById('modal-tutorial').classList.add('open'); }
 
-// ════════ BULK SEND — ENVIO EM MASSA ════════
-const MONTH_NAMES_PT = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+// ════════════════════════════════════════════════════════════════
+// BATCH REPORT — RELATÓRIO SEMANAL / MENSAL
+// ════════════════════════════════════════════════════════════════
 
-function initBulkMonthPicker() {
-  const mSel = document.getElementById('bulk-month-sel');
-  const ySel = document.getElementById('bulk-year-sel');
-  if (!mSel || !ySel) return;
-  for (let m = 1; m <= 12; m++) {
-    const opt = document.createElement('option');
-    opt.value = m; opt.textContent = MONTH_NAMES_PT[m];
-    mSel.appendChild(opt);
+// Standalone ClickUp fetch (não depende de contexto local)
+async function cuFetchGlobal(url, options = {}) {
+  const r = await fetch(url, {
+    ...options,
+    headers: {
+      'Authorization': cfg.clickup,
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    }
+  });
+  const text = await r.text();
+  let body = {};
+  try { body = JSON.parse(text); } catch(_) { body = { raw: text }; }
+  if (!r.ok) {
+    const detail = body.err || body.message || body.raw || ('Status ' + r.status);
+    throw new Error(`ClickUp ${r.status}: ${detail}`);
   }
-  const now = new Date();
-  mSel.value = now.getMonth() === 0 ? 12 : now.getMonth();
-  for (let y = now.getFullYear(); y >= now.getFullYear() - 2; y--) {
-    const opt = document.createElement('option');
-    opt.value = y; opt.textContent = y;
-    ySel.appendChild(opt);
-  }
-  ySel.value = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  return body;
 }
 
-async function fetchMetaForBulk(client, since, until) {
-  const token     = resolveToken(client);
-  const accountId = client.account_id || client.accountId;
-  if (!token || !accountId) throw new Error('Sem token ou account_id');
-  const fields = 'spend,clicks,inline_link_clicks,impressions,reach,ctr,cpm,actions,action_values';
-  const url = `https://graph.facebook.com/v18.0/${accountId}/insights?fields=${fields}&time_range={"since":"${since}","until":"${until}"}&level=account&access_token=${token}`;
-  const ctrl  = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 25000);
-  try {
-    const res  = await fetch(url, { signal: ctrl.signal });
-    clearTimeout(timer);
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
-    const ins = data.data?.[0];
-    if (!ins || parseFloat(ins.spend || 0) === 0) return null;
-    const spend = parseFloat(ins.spend||0), clicks = parseInt(ins.clicks||0);
-    const linkClicks = parseInt(ins.inline_link_clicks||0), impr = parseInt(ins.impressions||0);
-    const reach = parseInt(ins.reach||0), ctr = parseFloat(ins.ctr||0), cpm = parseFloat(ins.cpm||0);
-    const actions = ins.actions||[], actVals = ins.action_values||[];
-    const getA  = type => parseFloat(actions.find(a=>a.action_type===type)?.value||0);
-    const getAV = type => parseFloat(actVals.find(a=>a.action_type===type)?.value||0);
-    const convQty = getA('purchase'), revVal = getAV('purchase');
-    // ✅ FIXED: seguidores usa onsite_conversion.post_net_like
-    const followers = getA('onsite_conversion.post_net_like') || getA('instagram_follow') || getA('page_fan');
-    // ✅ FIXED: profileVisits sem fallback errado
-    const profileVisits = getA('instagram_profile_visit');
-    const msgs = getA('onsite_conversion.messaging_conversation_started_7d');
-    const msgsWPP = getA('onsite_conversion.messaging_whatsapp_conversation_started_7d');
-    const igDirect = getA('onsite_conversion.messaging_instagram_conversation_started_7d');
-    const leads = getA('lead');
-    const lc = linkClicks || clicks;
-    const roi = spend>0&&revVal>0?(revVal/spend).toFixed(2):null;
-    const cpa = convQty>0?(spend/convQty).toFixed(2):null;
-    return { spend, clicks, linkClicks, lc, impr, reach, ctr, cpm, convQty, revVal, roi, cpa, msgs, msgsWPP, igDirect, profileVisits, followers, leads };
-  } catch(e) { clearTimeout(timer); throw e; }
+// Retorna tags de campanha de um cliente específico
+function getCampTagsForClient(client) {
+  if (!client) return {};
+  try { return JSON.parse(localStorage.getItem('camp_tags_' + client.id) || '{}'); } catch(_) { return {}; }
 }
 
-function buildBulkReportText(clientName, d, since, until, tipoRel) {
-  const isEcommerce = d.convQty>0||d.revVal>0, hasMsgs = d.msgs>0||d.msgsWPP>0||d.igDirect>0;
-  const lc = d.lc;
-  const fmt2b = s => { const [y,m,dd] = s.split('-'); return `${dd}/${m}/${y}`; };
-  const lines = [`📊 *Relatório ${tipoRel} Meta Ads — ${clientName}*`,`📅 ${fmt2b(since)} – ${fmt2b(until)}`,``];
-  if (isEcommerce) {
-    lines.push(`🛒 *E-commerce*`,`💰 Investido: ${fmtBRL(d.spend)}`);
-    if (d.revVal>0) lines.push(`💵 Receita: ${fmtBRL(d.revVal)}`);
-    if (d.roi) lines.push(`📈 ROI: ${d.roi}x`);
-    if (d.convQty>0) lines.push(`🛒 Conversões: ${d.convQty}`);
-    if (d.cpa) lines.push(`💲 CPA: R$ ${d.cpa}`);
+// buildSplitReport independente (não usa selClient/getCampTags global)
+function buildSplitReportForClient(d, client, tipoRel) {
+  const tags        = getCampTagsForClient(client);
+  const vendasCamps = (d.camps||[]).filter(c => tags[c.name] === 'vendas');
+  const msgsCamps   = (d.camps||[]).filter(c => tags[c.name] === 'mensagens');
+  if (vendasCamps.length === 0 && msgsCamps.length === 0) return null;
+  const fB = v => 'R$' + parseFloat(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const lines = [
+    `📊 *Relatório ${tipoRel} Meta Ads — ${client.name}*`,
+    `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,
+    ``,
+  ];
+  if (vendasCamps.length > 0) {
+    const vs = vendasCamps.reduce((s,c)=>s+c.spend,0);
+    const vc = vendasCamps.reduce((s,c)=>s+c.convPurchase,0);
+    const vr = vendasCamps.reduce((s,c)=>s+c.revenue,0);
+    const useNS   = d.nsSource && d.nsRevenue > 0;
+    const finalRev = useNS ? d.nsRevenue : vr;
+    const finalOrd = useNS ? d.nsOrders  : vc;
+    const vROI   = vs > 0 && finalRev > 0 ? (finalRev/vs).toFixed(2) : null;
+    const vTicket = finalOrd > 0 && finalRev > 0 ? fB(finalRev/finalOrd) : null;
+    const vCPA   = finalOrd > 0 ? fB(vs/finalOrd) : null;
+    lines.push(`🛒 *E-commerce*`);
+    lines.push(`💰 Investido: ${fB(vs)}`);
+    if (finalRev > 0) lines.push(`💵 Receita: ${fB(finalRev)}${useNS?' (Nuvemshop)':''}`);
+    if (vROI)         lines.push(`📈 ROI: ${vROI}x`);
+    if (finalOrd > 0) lines.push(`🛒 Vendas: ${finalOrd}`);
+    if (vTicket)      lines.push(`🎯 Ticket Médio: ${vTicket}`);
+    if (vCPA)         lines.push(`💲 CPA: ${vCPA}`);
+    if (d.nsSource && d.nsNewCustomers > 0) lines.push(`👤 Novos: ${d.nsNewCustomers} | Recorrentes: ${d.nsReturningCustomers}`);
     lines.push(``);
   }
-  if (hasMsgs||!isEcommerce) {
-    lines.push(`📱 *Tráfego p/ Perfil IG*`,`👁️ Alcance: ${(d.reach||d.impr).toLocaleString('pt-BR')}`);
-    if (lc>0) { lines.push(`👆 Cliques no link: ${lc.toLocaleString('pt-BR')}`,`🖱️ CPS: ${fmtBRL(d.spend/lc)}`); }
-    lines.push(`🎯 CTR: ${parseFloat(d.ctr).toFixed(2)}%`);
-    if (d.profileVisits>0) { lines.push(`👤 Visitas ao Perfil: ${d.profileVisits.toLocaleString('pt-BR')}`,`💲 Custo/Visita: ${fmtBRL(d.spend/d.profileVisits)}`); }
-    if (d.followers>0) lines.push(`➕ Seguidores: ${d.followers.toLocaleString('pt-BR')}`);
-    if (d.msgs>0) lines.push(`💬 Mensagens (Total): ${d.msgs.toLocaleString('pt-BR')}`);
-    if (d.msgsWPP>0) { lines.push(`📨 Msgs WhatsApp: ${d.msgsWPP.toLocaleString('pt-BR')}`,`🟢 Custo/Msg WPP: ${fmtBRL(d.spend/d.msgsWPP)}`); }
-    if (d.igDirect>0) lines.push(`📩 Msgs Direct (IG): ${d.igDirect.toLocaleString('pt-BR')}`);
-    if (d.msgs>0) lines.push(`💲 Custo/Msg: ${fmtBRL(d.spend/d.msgs)}`);
+  if (msgsCamps.length > 0) {
+    const ms    = msgsCamps.reduce((s,c)=>s+c.spend,0);
+    const mMsgs = msgsCamps.reduce((s,c)=>s+c.convMsgs,0);
+    const mWPP  = msgsCamps.reduce((s,c)=>s+c.convMsgsWPP,0);
+    const mIG   = msgsCamps.reduce((s,c)=>s+c.convMsgsIG,0);
+    const totalM = (mWPP+mIG) > 0 ? (mWPP+mIG) : mMsgs;
+    const cpMsg  = totalM > 0 ? fB(ms/totalM) : '—';
+    lines.push(`💬 *Mensagens*`);
+    lines.push(`💰 Investido: ${fB(ms)}`);
+    if (totalM > 0) lines.push(`💬 Mensagens iniciadas: ${totalM.toLocaleString('pt-BR')}`);
+    if (mWPP  > 0)  lines.push(`📨 Msgs WhatsApp: ${mWPP.toLocaleString('pt-BR')}`);
+    if (mIG   > 0)  lines.push(`📩 Msgs Direct (IG): ${mIG.toLocaleString('pt-BR')}`);
+    if (totalM > 0) lines.push(`💲 Custo por Msg: ${cpMsg}`);
     lines.push(``);
   }
-  lines.push(`💰 *Investimento: ${fmtBRL(d.spend)}*`);
+  lines.push(`💰 *Valor Geral Investido: ${fB(d.spend)}*`);
   return lines.join('\n');
 }
 
-async function genAIForBulk(clientName, d, openaiKey, since, until) {
-  if (!openaiKey) return null;
-  const fmt2b = s => { const [y,m,dd] = s.split('-'); return `${dd}/${m}/${y}`; };
-  const isEcommerce = d.convQty>0||d.revVal>0, lc = d.lc;
-  const dadosStr = isEcommerce
-    ? `Investido: R$ ${d.spend.toFixed(2)}\nReceita: ${d.revVal>0?'R$ '+d.revVal.toFixed(2):'—'}\nROI: ${d.roi?d.roi+'x':'—'}\nConversões: ${d.convQty}\nCPA: ${d.cpa?'R$ '+d.cpa:'—'}\nCTR: ${d.ctr.toFixed(2)}%\nSeguidores: ${d.followers}`
-    : `Investido: R$ ${d.spend.toFixed(2)}\nAlcance: ${d.reach||d.impr}\nCliques: ${lc}\nCTR: ${d.ctr.toFixed(2)}%\nMensagens: ${d.msgs}\nCusto/Msg: ${d.msgs>0?'R$ '+(d.spend/d.msgs).toFixed(2):'—'}\nVisitas perfil IG: ${d.profileVisits}\nSeguidores: ${d.followers}`;
-  const prompt = `Gestor de tráfego sênior. "Próximos Passos" para "${clientName}" (${fmt2b(since)} a ${fmt2b(until)}).
-FORMATO (sem asteriscos):
-📌 Próximos Passos
-[🟢/🟡/🔴] [avaliação com dados reais]
-[Recomendação 1]
-[análise + ação]
-[Recomendação 2]
-[análise + ação]
-Próxima semana
-[ação concreta]
-Máximo 130 palavras. SEM asteriscos.
-Dados:\n${dadosStr}`;
-  try {
-    const ctrl = new AbortController();
-    setTimeout(() => ctrl.abort(), 20000);
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method:'POST', signal: ctrl.signal,
-      headers:{'Authorization':`Bearer ${openaiKey}`,'Content-Type':'application/json'},
-      body: JSON.stringify({model:'gpt-4o-mini',messages:[{role:'user',content:prompt}],max_tokens:200,temperature:0.75})
-    });
-    const data = await res.json();
-    if (data.error) return null;
-    return data.choices?.[0]?.message?.content||null;
-  } catch(e) { return null; }
+// Monta o comentário para o lote (usa split se tags existirem, senão padrão)
+function buildBatchComment(d, client, tipoRel) {
+  const split = buildSplitReportForClient(d, client, tipoRel);
+  if (split) return split;
+  const fB = v => 'R$' + parseFloat(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const nsRev    = d.nsSource && d.nsRevenue > 0 ? d.nsRevenue : d.revVal;
+  const nsOrd    = d.nsSource && d.nsOrders  > 0 ? d.nsOrders  : d.convQty;
+  const nsROI    = d.spend > 0 && nsRev > 0 ? (nsRev/d.spend).toFixed(2) : d.roi;
+  const nsCPA    = nsOrd > 0 ? fB(d.spend/nsOrd) : (d.cpa!=='—' ? fB(parseFloat(d.cpa)) : '—');
+  const nsTicket = nsOrd > 0 && nsRev > 0 ? fB(nsRev/nsOrd) : null;
+  const msgs     = d.msgs;
+  const custoMsg = msgs > 0 ? fB(d.spend/msgs) : '—';
+  return [
+    `📊 *Relatório ${tipoRel} Meta Ads — ${client.name}*`,
+    `📅 Período: ${fmt2(d.from)} – ${fmt2(d.to)}`,``,
+    `📣 *Meta Ads*`,
+    `💰 Investido: ${fB(d.spend)}`,
+    nsRev > 0     ? `💵 Receita: ${fB(nsRev)}${d.nsSource?' (Nuvemshop)':''}` : null,
+    nsROI !== '—' ? `📈 ROI: ${nsROI}x` : null,
+    nsOrd > 0     ? `🛒 Conversões: ${nsOrd}` : null,
+    nsCPA !== '—' ? `💲 CPA: ${nsCPA}` : null,
+    nsTicket      ? `🎯 Ticket Médio: ${nsTicket}` : null,
+    msgs > 0      ? `💬 Mensagens: ${msgs.toLocaleString('pt-BR')}` : null,
+    msgs > 0      ? `💲 Custo/Msg: ${custoMsg}` : null,
+    d.msgsWPP  > 0 ? `📨 Msgs WhatsApp: ${d.msgsWPP.toLocaleString('pt-BR')}` : null,
+    d.igDirect > 0 ? `📩 Msgs Direct (IG): ${d.igDirect.toLocaleString('pt-BR')}` : null,
+    d.profileVisits > 0 ? `👤 Visitas ao Perfil: ${d.profileVisits.toLocaleString('pt-BR')}` : null,
+    d.followers > 0 ? `➕ Seguidores: ${d.followers.toLocaleString('pt-BR')}` : null,
+    `👆 Cliques: ${d.clicks.toLocaleString('pt-BR')}`,
+    `🎯 CTR: ${parseFloat(d.ctr||0).toFixed(2)}%`,
+  ].filter(Boolean).join('\n');
 }
 
-async function sendBulkToClickUp(clientName, reportText, aiText, tipoRel, since) {
-  const headers = {'Authorization':cfg.clickup,'Content-Type':'application/json'};
-  const cuFetch = async (url, opts={}) => {
-    const r = await fetch(url, {...opts, headers:{...headers,...(opts.headers||{})}});
-    const text = await r.text(); let body={}; try{body=JSON.parse(text);}catch(_){body={raw:text};}
-    if (!r.ok) throw new Error(`ClickUp ${r.status}: ${body.err||body.message||body.raw||''}`);
-    return body;
-  };
-  const tasksData = await cuFetch(`https://api.clickup.com/api/v2/list/${cfg.listId}/task?include_closed=false&limit=100`);
-  const allTasks = tasksData.tasks||[];
-  const clientLow = clientName.toLowerCase().trim();
-  const clientWords = clientLow.split(/\s+/).filter(w=>w.length>2);
-  const matchTask = t => { const tl=t.name.toLowerCase(); return tl.includes(clientLow)||clientWords.some(w=>tl.includes(w)); };
-  const existing = allTasks.find(matchTask);
-  const fmt2b = s => { const [y,m,dd]=s.split('-'); return `${dd}/${m}/${y}`; };
-  const autoHeader = `🤖 *Automação Metricana — ${tipoRel==='mensal'?'Mensal':'Semanal'} ${fmt2b(since)}*\n\n`;
-  const finalComment = autoHeader + reportText;
-  let taskId;
-  if (existing) {
-    taskId = existing.id;
-    if (aiText) await cuFetch(`https://api.clickup.com/api/v2/task/${taskId}`,{method:'PUT',body:JSON.stringify({description:aiText})});
-  } else {
-    const created = await cuFetch(`https://api.clickup.com/api/v2/list/${cfg.listId}/task`,{method:'POST',body:JSON.stringify({name:`Relatório ${tipoRel==='mensal'?'Mensal':'Semanal'} — ${clientName} — ${fmt2b(since)}`,description:aiText||'',tags:[tipoRel==='mensal'?'relatório mensal':'relatório semanal']})});
-    if (created.err) throw new Error(`ClickUp: ${created.err}`);
-    taskId = created.id;
-  }
-  await cuFetch(`https://api.clickup.com/api/v2/task/${taskId}/comment`,{method:'POST',body:JSON.stringify({comment_text:finalComment,notify_all:true})});
-  return { created: !existing };
-}
+// Busca dados Meta de um cliente (sem UI)
+async function batchFetchClientData(client, since, until) {
+  const accountId = client.account_id || client.accountId;
+  const token     = resolveToken(client);
+  if (!accountId || !token) throw new Error('Sem conta/token configurado');
 
-async function bulkSendReports(tipoRel) {
-  if (!cfg.clickup||!cfg.listId) { toast('⚠️ Configure o ClickUp primeiro em ⚙️ Settings.'); return; }
-  if (!clients.length) { toast('⚠️ Nenhum cliente cadastrado.'); return; }
-  let since, until;
-  const pad = n => String(n).padStart(2,'0');
-  if (tipoRel === 'semanal') {
-    const to = new Date(); to.setDate(to.getDate()-1);
-    const from = new Date(to); from.setDate(to.getDate()-6);
-    since = `${from.getFullYear()}-${pad(from.getMonth()+1)}-${pad(from.getDate())}`;
-    until = `${to.getFullYear()}-${pad(to.getMonth()+1)}-${pad(to.getDate())}`;
-  } else {
-    const m = parseInt(document.getElementById('bulk-month-sel').value);
-    const y = parseInt(document.getElementById('bulk-year-sel').value);
-    if (!m||!y) { toast('⚠️ Selecione o mês e ano.'); return; }
-    since = `${y}-${pad(m)}-01`;
-    const lastDay = new Date(y,m,0).getDate();
-    until = `${y}-${pad(m)}-${pad(lastDay)}`;
-  }
-  const btnS = document.getElementById('btn-bulk-semanal');
-  const btnM = document.getElementById('btn-bulk-mensal');
-  btnS.disabled = true; btnM.disabled = true;
-  const progBar = document.getElementById('bulk-progress-bar');
-  const progFill = document.getElementById('bulk-prog-fill');
-  const progCount = document.getElementById('bulk-prog-count');
-  const progTitle = document.getElementById('bulk-prog-title');
-  const logEl = document.getElementById('bulk-client-log');
-  const resultRow = document.getElementById('bulk-result-row');
-  const resultTxt = document.getElementById('bulk-result-txt');
-  progBar.classList.add('active');
-  progFill.style.width = '0%';
-  logEl.innerHTML = '';
-  resultRow.style.display = 'none';
-  const fmt2b = s => { const [y,m,dd]=s.split('-'); return `${dd}/${m}/${y}`; };
-  progTitle.textContent = `Enviando relatório ${tipoRel} — ${fmt2b(since)} a ${fmt2b(until)}`;
-  const validClients = clients.filter(c => resolveToken(c)&&(c.account_id||c.accountId));
-  const total = validClients.length;
-  let done=0, ok=0, skipped=0, errors=0;
-  progCount.textContent = `0 / ${total}`;
-  for (const client of validClients) {
-    const li = document.createElement('div');
-    li.className = 'bulk-log-item running';
-    li.innerHTML = `<span class="bli-icon">⏳</span><span class="bli-name">${client.name}</span><span class="bli-status">Buscando dados...</span>`;
-    logEl.appendChild(li);
-    logEl.scrollTop = logEl.scrollHeight;
+  // Account-level insights
+  const insUrl = `https://graph.facebook.com/v18.0/${accountId}/insights?fields=spend,clicks,inline_link_clicks,impressions,reach,ctr,cpm,actions,action_values&time_range={"since":"${since}","until":"${until}"}&level=account&access_token=${token}`;
+  const insData = await fetch(insUrl).then(r=>r.json());
+  if (insData.error) throw new Error(insData.error.message);
+
+  const ins        = insData.data?.[0] || {};
+  const spend      = parseFloat(ins.spend||0);
+  const clicks     = parseInt(ins.clicks||0);
+  const linkClicks = parseInt(ins.inline_link_clicks||0);
+  const impr       = parseInt(ins.impressions||0);
+  const reach      = parseInt(ins.reach||0);
+  const ctr        = parseFloat(ins.ctr||0);
+  const cpm        = parseFloat(ins.cpm||0);
+  const actions    = ins.actions||[];
+  const actVals    = ins.action_values||[];
+
+  const purchases      = actions.find(a=>a.action_type==='purchase');
+  const revenue        = actVals.find(a=>a.action_type==='purchase');
+  const msgsA          = actions.find(a=>a.action_type==='onsite_conversion.messaging_conversation_started_7d');
+  const msgsWPPA       = actions.find(a=>a.action_type==='onsite_conversion.messaging_whatsapp_conversation_started_7d');
+  const igDirectA      = actions.find(a=>a.action_type==='onsite_conversion.messaging_instagram_conversation_started_7d');
+  const profileVisitsA = actions.find(a=>a.action_type==='instagram_profile_visit')
+                      || actions.find(a=>a.action_type==='view_content');
+  const followersA     = actions.find(a=>a.action_type==='instagram_follow')
+                      || actions.find(a=>a.action_type==='page_fan');
+
+  const convQty = parseInt(purchases?.value||0);
+  const revVal  = parseFloat(revenue?.value||0);
+  const roi     = spend > 0 && revVal > 0 ? (revVal/spend).toFixed(2) : '—';
+  const cpa     = convQty > 0 ? (spend/convQty).toFixed(2) : '—';
+
+  // Campaign-level insights (para split report por tags)
+  const campInsUrl = `https://graph.facebook.com/v18.0/${accountId}/insights?fields=campaign_name,campaign_id,spend,clicks,ctr,actions,action_values&time_range={"since":"${since}","until":"${until}"}&level=campaign&access_token=${token}`;
+  const campInsData = await fetch(campInsUrl).then(r=>r.json());
+
+  const camps = (campInsData.data||[]).map(ci => {
+    const ca    = ci.actions||[];
+    const cav   = ci.action_values||[];
+    const cp    = ca.find(a=>a.action_type==='purchase');
+    const cc    = ca.find(a=>a.action_type==='onsite_conversion.messaging_conversation_started_7d');
+    const ccWPP = ca.find(a=>a.action_type==='onsite_conversion.messaging_whatsapp_conversation_started_7d');
+    const ccIG  = ca.find(a=>a.action_type==='onsite_conversion.messaging_instagram_conversation_started_7d');
+    const rev   = cav.find(a=>a.action_type==='purchase');
+    return {
+      name: ci.campaign_name, id: ci.campaign_id,
+      spend:        parseFloat(ci.spend||0),
+      clicks:       parseInt(ci.clicks||0),
+      ctr:          parseFloat(ci.ctr||0),
+      convPurchase: parseInt(cp?.value||0),
+      convMsgs:     parseInt(cc?.value||0),
+      convMsgsWPP:  parseInt(ccWPP?.value||0),
+      convMsgsIG:   parseInt(ccIG?.value||0),
+      revenue:      parseFloat(rev?.value||0),
+      conv:         parseInt(cp?.value||cc?.value||0),
+    };
+  });
+
+  // Nuvemshop opcional
+  let nsSource = false, nsRevenue = 0, nsOrders = 0,
+      nsNewCustomers = 0, nsReturningCustomers = 0, nsProductsSold = 0;
+  if (client.nuvemshop_store_id && client.nuvemshop_token) {
     try {
-      const metaData = await fetchMetaForBulk(client, since, until);
-      if (!metaData) {
-        li.className='bulk-log-item skip';
-        li.querySelector('.bli-icon').textContent='—';
-        li.querySelector('.bli-status').textContent='Sem dados no período';
-        skipped++;
-      } else {
-        li.querySelector('.bli-status').textContent='Gerando relatório...';
-        const reportText = buildBulkReportText(client.name, metaData, since, until, tipoRel==='mensal'?'Mensal':'Semanal');
-        li.querySelector('.bli-status').textContent='Gerando análise IA...';
-        const aiText = await genAIForBulk(client.name, metaData, cfg.openaiKey, since, until);
-        li.querySelector('.bli-status').textContent='Enviando ao ClickUp...';
-        const cuResult = await sendBulkToClickUp(client.name, reportText, aiText, tipoRel, since);
-        li.className='bulk-log-item ok';
-        li.querySelector('.bli-icon').textContent='✓';
-        li.querySelector('.bli-status').textContent=`${fmtBRL(metaData.spend)} · ${cuResult.created?'tarefa criada':'comentário enviado'}`;
-        ok++;
+      const nsData = await fetchNuvemshopRevenue(client.nuvemshop_store_id, client.nuvemshop_token, since, until);
+      if (nsData.revenue > 0 || nsData.orders > 0) {
+        nsSource = true;
+        ({ revenue: nsRevenue, orders: nsOrders,
+           newCustomers: nsNewCustomers, returningCustomers: nsReturningCustomers,
+           productsSold: nsProductsSold } = nsData);
       }
-    } catch(e) {
-      li.className='bulk-log-item err';
-      li.querySelector('.bli-icon').textContent='✗';
-      li.querySelector('.bli-status').textContent=e.message.slice(0,60);
-      errors++;
-    }
-    done++;
-    progCount.textContent=`${done} / ${total}`;
-    progFill.style.width=`${Math.round(done/total*100)}%`;
-    if (done<total) await new Promise(r=>setTimeout(r,600));
+    } catch(e) { console.warn('Nuvemshop batch:', e.message); }
   }
-  resultRow.style.display='flex';
-  resultTxt.innerHTML=`✅ <strong>${ok}</strong> enviados · ${skipped} sem dados · ${errors} erros`;
-  btnS.disabled=false; btnM.disabled=false;
-  toast(`✓ ${ok} relatórios enviados ao ClickUp!`);
-  loadClientStatuses();
+
+  return {
+    spend, clicks, linkClicks, impr, reach, ctr, cpm,
+    convQty, revVal, roi, cpa,
+    msgs:     parseInt(msgsA?.value||0),
+    msgsWPP:  parseInt(msgsWPPA?.value||0),
+    igDirect: parseInt(igDirectA?.value||0),
+    profileVisits: parseInt(profileVisitsA?.value||0),
+    followers:     parseInt(followersA?.value||0),
+    camps, from: since, to: until,
+    nsSource, nsRevenue, nsOrders, nsNewCustomers, nsReturningCustomers, nsProductsSold,
+  };
 }
 
+// Posta comentário na tarefa do cliente no ClickUp
+async function batchPostClickUp(commentText, client) {
+  if (!cfg.clickup || !cfg.listId) throw new Error('ClickUp não configurado');
+  const tasksData = await cuFetchGlobal(`https://api.clickup.com/api/v2/list/${cfg.listId}/task?include_closed=true`);
+  const allTasks  = tasksData.tasks || [];
+  const nameLow   = client.name.toLowerCase();
+  const task      = allTasks.find(t => t.name.toLowerCase().includes(nameLow));
+  if (task) {
+    await cuFetchGlobal(`https://api.clickup.com/api/v2/task/${task.id}/comment`, {
+      method: 'POST',
+      body: JSON.stringify({ comment_text: commentText, notify_all: false })
+    });
+    return `comentado em "${task.name}"`;
+  } else {
+    await cuFetchGlobal(`https://api.clickup.com/api/v2/list/${cfg.listId}/task`, {
+      method: 'POST',
+      body: JSON.stringify({ name: `Relatório — ${client.name}`, description: commentText })
+    });
+    return `nova tarefa criada`;
+  }
+}
+
+// ─── Modal helpers ───
+function closeBatchModal() {
+  document.getElementById('modal-batch-report').classList.remove('open');
+}
+
+function openMonthPickerModal() {
+  const sel = document.getElementById('batch-month-sel');
+  sel.innerHTML = '';
+  const now = new Date();
+  for (let i = 0; i < 13; i++) {
+    const d   = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const val = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const lbl = d.toLocaleDateString('pt-BR', { month:'long', year:'numeric' });
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = lbl.charAt(0).toUpperCase() + lbl.slice(1);
+    sel.appendChild(opt);
+  }
+  document.getElementById('modal-month-picker').classList.add('open');
+}
+
+function closeMonthPickerModal() {
+  document.getElementById('modal-month-picker').classList.remove('open');
+}
+
+function confirmMonthPicker() {
+  const val = document.getElementById('batch-month-sel').value;
+  closeMonthPickerModal();
+  if (val) runBatchReport('mensal', val);
+}
+
+// ─── Orquestrador principal ───
+async function runBatchReport(type, yearMonth) {
+  const validClients = (clients||[]).filter(c => resolveToken(c) && (c.account_id || c.accountId));
+  if (!validClients.length) { toast('⚠️ Nenhum cliente com Meta configurado.'); return; }
+  if (!cfg.clickup || !cfg.listId) { toast('⚠️ Configure o ClickUp antes de enviar.'); return; }
+
+  // Calcula intervalo de datas
+  let since, until, tipoRel;
+  if (type === 'semanal') {
+    const now  = new Date();
+    const d7   = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+    const yest = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    since   = d7.toISOString().slice(0,10);
+    until   = yest.toISOString().slice(0,10);
+    tipoRel = 'Semanal';
+  } else {
+    const [y, m] = yearMonth.split('-').map(Number);
+    const lastDay = new Date(y, m, 0).getDate();
+    since   = `${yearMonth}-01`;
+    until   = `${yearMonth}-${String(lastDay).padStart(2,'0')}`;
+    tipoRel = 'Mensal';
+  }
+
+  // Exibe modal de progresso
+  const modal   = document.getElementById('modal-batch-report');
+  const listEl  = document.getElementById('batch-client-list');
+  const titleEl = document.getElementById('batch-modal-title');
+  const summEl  = document.getElementById('batch-summary');
+  titleEl.textContent = `📊 Relatório ${tipoRel} — ${validClients.length} clientes`;
+  summEl.textContent  = '';
+  summEl.style.color  = '';
+  listEl.innerHTML    = validClients.map(c => `
+    <div class="batch-row" id="brow-${c.id}">
+      <div class="batch-row-name">${c.name}</div>
+      <div class="batch-row-status pending" id="bstat-${c.id}">⏳ Aguardando...</div>
+    </div>`).join('');
+  modal.classList.add('open');
+
+  let ok = 0, fail = 0, skip = 0;
+
+  for (const client of validClients) {
+    const statEl = document.getElementById(`bstat-${client.id}`);
+    try {
+      statEl.className   = 'batch-row-status loading';
+      statEl.textContent = '⌛ Buscando dados...';
+      const d = await batchFetchClientData(client, since, until);
+
+      if (d.spend === 0) {
+        statEl.className   = 'batch-row-status skip';
+        statEl.textContent = '— Sem investimento no período';
+        skip++; continue;
+      }
+
+      statEl.textContent = '📝 Montando relatório...';
+      const commentText  = buildBatchComment(d, client, tipoRel);
+
+      statEl.textContent = '📤 Enviando ao ClickUp...';
+      const result       = await batchPostClickUp(commentText + '\n\n_Relatório gerado por Metricana_', client);
+
+      statEl.className   = 'batch-row-status ok';
+      statEl.textContent = `✓ ${result}`;
+      ok++;
+    } catch(e) {
+      statEl.className   = 'batch-row-status err';
+      statEl.textContent = `❌ ${e.message.slice(0,55)}`;
+      fail++;
+    }
+    // Pequeno delay para evitar rate limit
+    await new Promise(r => setTimeout(r, 500));
+  }
+
+  summEl.textContent = `Concluído: ${ok} enviado${ok!==1?'s':''}${skip>0?`, ${skip} sem dados`:''}${fail>0?`, ${fail} com erro`:''}`;
+  summEl.style.color = fail > 0 ? 'var(--red,#f87171)' : 'var(--green)';
+}
 
 function toast(msg, dur=2800) {
   const el = document.getElementById('toast');

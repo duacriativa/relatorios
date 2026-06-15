@@ -1174,11 +1174,12 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
           <th>Cliente</th>
           <th>Investido no Mês</th>
           <th>Investido Hoje</th>
+          <th>Faturamento (Mês)</th>
           <th></th>
         </tr>
       </thead>
       <tbody id="dash-client-tbody">
-        <tr><td colspan="4" style="text-align:center;padding:32px;color:var(--text3)">Carregando clientes...</td></tr>
+        <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">Carregando clientes...</td></tr>
       </tbody>
     </table>
   </div>
@@ -2311,7 +2312,7 @@ function renderDashClientTable() {
   const tbody = document.getElementById('dash-client-tbody');
   if (!tbody) return;
   if (!Array.isArray(clients) || !clients.length) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text3)">Nenhum cliente cadastrado.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text3)">Nenhum cliente cadastrado.</td></tr>`;
     return;
   }
 
@@ -2340,6 +2341,10 @@ function renderDashClientTable() {
         <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;font-weight:800;color:var(--text);line-height:1" id="dspend-day-${i}">${hasApi ? '<span style="color:var(--text3);font-size:12px;font-family:Lato,sans-serif;font-weight:400">carregando...</span>' : '<span style="color:var(--text3)">—</span>'}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:3px">hoje</div>
       </td>
+      <td>
+        <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;font-weight:800;color:var(--text);line-height:1" id="dfat-${i}">${hasApi ? '<span style="color:var(--text3);font-size:12px;font-family:Lato,sans-serif;font-weight:400">carregando...</span>' : '<span style="color:var(--text3)">—</span>'}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px">mês atual</div>
+      </td>
       <td style="text-align:right">
         <button class="btn-view" onclick="selectClient(${i})" style="display:inline-flex;align-items:center;gap:5px">
           Acessar
@@ -2367,33 +2372,53 @@ async function loadClientTableSpend() {
   await Promise.all(clients.map(async (c, i) => {
     const monthEl = document.getElementById(`dspend-month-${i}`);
     const dayEl   = document.getElementById(`dspend-day-${i}`);
-    if (!monthEl || !dayEl) return;
+    const fatEl   = document.getElementById(`dfat-${i}`);
 
     const acct  = c.account_id || c.accountId;
     const token = resolveToken(c);
-    if (!acct || !token) return; // já mostra "—" do renderDashClientTable
 
-    try {
-      // Mês atual (paralelo com hoje)
-      const [resMonth, resDay] = await Promise.all([
-        fetch(`https://graph.facebook.com/v18.0/${acct}/insights?fields=spend&time_range={"since":"${since}","until":"${until}"}&level=account&access_token=${token}`),
-        fetch(`https://graph.facebook.com/v18.0/${acct}/insights?fields=spend&date_preset=today&level=account&access_token=${token}`)
-      ]);
-      const [jMonth, jDay] = await Promise.all([resMonth.json(), resDay.json()]);
+    // Meta Ads spend
+    if (monthEl && dayEl && acct && token) {
+      try {
+        const [resMonth, resDay] = await Promise.all([
+          fetch(`https://graph.facebook.com/v18.0/${acct}/insights?fields=spend&time_range={"since":"${since}","until":"${until}"}&level=account&access_token=${token}`),
+          fetch(`https://graph.facebook.com/v18.0/${acct}/insights?fields=spend&date_preset=today&level=account&access_token=${token}`)
+        ]);
+        const [jMonth, jDay] = await Promise.all([resMonth.json(), resDay.json()]);
 
-      const spendMonth = parseFloat(jMonth.data?.[0]?.spend || 0);
-      const spendDay   = parseFloat(jDay.data?.[0]?.spend   || 0);
+        const spendMonth = parseFloat(jMonth.data?.[0]?.spend || 0);
+        const spendDay   = parseFloat(jDay.data?.[0]?.spend   || 0);
 
-      monthEl.innerHTML = spendMonth > 0
-        ? `<span style="color:var(--text)">${fB(spendMonth)}</span>`
-        : `<span style="color:var(--text3)">—</span>`;
+        monthEl.innerHTML = spendMonth > 0
+          ? `<span style="color:var(--text)">${fB(spendMonth)}</span>`
+          : `<span style="color:var(--text3)">—</span>`;
 
-      dayEl.innerHTML = spendDay > 0
-        ? `<span style="color:var(--green)">${fB(spendDay)}</span>`
-        : `<span style="color:var(--text3)">—</span>`;
-    } catch(e) {
-      monthEl.innerHTML = `<span style="color:var(--text3)">—</span>`;
-      dayEl.innerHTML   = `<span style="color:var(--text3)">—</span>`;
+        dayEl.innerHTML = spendDay > 0
+          ? `<span style="color:var(--green)">${fB(spendDay)}</span>`
+          : `<span style="color:var(--text3)">—</span>`;
+      } catch(e) {
+        if (monthEl) monthEl.innerHTML = `<span style="color:var(--text3)">—</span>`;
+        if (dayEl)   dayEl.innerHTML   = `<span style="color:var(--text3)">—</span>`;
+      }
+    }
+
+    // Meta Ads faturamento (purchase action_values) do mês
+    if (fatEl && acct && token) {
+      try {
+        const resFat = await fetch(`https://graph.facebook.com/v18.0/${acct}/insights?fields=action_values&time_range={"since":"${since}","until":"${until}"}&level=account&access_token=${token}`);
+        const jFat = await resFat.json();
+        const actionValues = jFat.data?.[0]?.action_values || [];
+        const purchaseTypes = ['offsite_conversion.fb_pixel_purchase','omni_purchase','purchase'];
+        let totalFat = 0;
+        for (const av of actionValues) {
+          if (purchaseTypes.includes(av.action_type)) totalFat += parseFloat(av.value || 0);
+        }
+        fatEl.innerHTML = totalFat > 0
+          ? `<span style="color:var(--green)">${fB(totalFat)}</span>`
+          : `<span style="color:var(--text3)">—</span>`;
+      } catch(e) {
+        fatEl.innerHTML = `<span style="color:var(--text3)">—</span>`;
+      }
     }
   }));
 }

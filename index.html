@@ -1175,6 +1175,7 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
           <th>Investido no Mês</th>
           <th>Investido Hoje</th>
           <th>Faturamento (Mês)</th>
+          <th>ROAS</th>
           <th></th>
         </tr>
       </thead>
@@ -2345,6 +2346,10 @@ function renderDashClientTable() {
         <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;font-weight:800;color:var(--text);line-height:1" id="dfat-${i}">${hasApi ? '<span style="color:var(--text3);font-size:12px;font-family:Lato,sans-serif;font-weight:400">carregando...</span>' : '<span style="color:var(--text3)">—</span>'}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:3px">mês atual</div>
       </td>
+      <td>
+        <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;font-weight:800;line-height:1" id="droas-${i}">${hasApi ? '<span style="color:var(--text3);font-size:12px;font-family:Lato,sans-serif;font-weight:400">carregando...</span>' : '<span style="color:var(--text3)">—</span>'}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px">mês atual</div>
+      </td>
       <td style="text-align:right">
         <button class="btn-view" onclick="selectClient(${i})" style="display:inline-flex;align-items:center;gap:5px">
           Acessar
@@ -2377,11 +2382,12 @@ async function loadClientTableSpend() {
     const acct  = c.account_id || c.accountId;
     const token = resolveToken(c);
 
-    // Meta Ads spend
-    if (monthEl && dayEl && acct && token) {
+    if (acct && token) {
+      const roasEl = document.getElementById(`droas-${i}`);
       try {
+        // Uma única chamada para spend + action_values + hoje
         const [resMonth, resDay] = await Promise.all([
-          fetch(`https://graph.facebook.com/v18.0/${acct}/insights?fields=spend&time_range={"since":"${since}","until":"${until}"}&level=account&access_token=${token}`),
+          fetch(`https://graph.facebook.com/v18.0/${acct}/insights?fields=spend,action_values&time_range={"since":"${since}","until":"${until}"}&level=account&access_token=${token}`),
           fetch(`https://graph.facebook.com/v18.0/${acct}/insights?fields=spend&date_preset=today&level=account&access_token=${token}`)
         ]);
         const [jMonth, jDay] = await Promise.all([resMonth.json(), resDay.json()]);
@@ -2389,37 +2395,41 @@ async function loadClientTableSpend() {
         const spendMonth = parseFloat(jMonth.data?.[0]?.spend || 0);
         const spendDay   = parseFloat(jDay.data?.[0]?.spend   || 0);
 
-        monthEl.innerHTML = spendMonth > 0
+        if (monthEl) monthEl.innerHTML = spendMonth > 0
           ? `<span style="color:var(--text)">${fB(spendMonth)}</span>`
           : `<span style="color:var(--text3)">—</span>`;
 
-        dayEl.innerHTML = spendDay > 0
+        if (dayEl) dayEl.innerHTML = spendDay > 0
           ? `<span style="color:var(--green)">${fB(spendDay)}</span>`
           : `<span style="color:var(--text3)">—</span>`;
-      } catch(e) {
-        if (monthEl) monthEl.innerHTML = `<span style="color:var(--text3)">—</span>`;
-        if (dayEl)   dayEl.innerHTML   = `<span style="color:var(--text3)">—</span>`;
-      }
-    }
 
-    // Meta Ads faturamento (purchase action_values) do mês
-    if (fatEl && acct && token) {
-      try {
-        const resFat = await fetch(`https://graph.facebook.com/v18.0/${acct}/insights?fields=action_values&time_range={"since":"${since}","until":"${until}"}&level=account&access_token=${token}`);
-        const jFat = await resFat.json();
-        const actionValues = jFat.data?.[0]?.action_values || [];
-        // Prioridade: omni_purchase > offsite_conversion.fb_pixel_purchase > purchase (são o mesmo evento, não somar)
+        // Faturamento: pega só um tipo (prioridade para evitar duplicação)
+        const actionValues = jMonth.data?.[0]?.action_values || [];
         const priority = ['omni_purchase','offsite_conversion.fb_pixel_purchase','purchase'];
         let totalFat = 0;
         for (const type of priority) {
           const found = actionValues.find(av => av.action_type === type);
           if (found) { totalFat = parseFloat(found.value || 0); break; }
         }
-        fatEl.innerHTML = totalFat > 0
+        if (fatEl) fatEl.innerHTML = totalFat > 0
           ? `<span style="color:var(--green)">${fB(totalFat)}</span>`
           : `<span style="color:var(--text3)">—</span>`;
+
+        // ROAS = faturamento / investido no mês
+        if (roasEl) {
+          if (totalFat > 0 && spendMonth > 0) {
+            const roas = totalFat / spendMonth;
+            const roasColor = roas >= 3 ? 'var(--green)' : roas >= 1 ? 'var(--accent2)' : '#ef4444';
+            roasEl.innerHTML = `<span style="color:${roasColor}">${roas.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}x</span>`;
+          } else {
+            roasEl.innerHTML = `<span style="color:var(--text3)">—</span>`;
+          }
+        }
       } catch(e) {
-        fatEl.innerHTML = `<span style="color:var(--text3)">—</span>`;
+        if (monthEl) monthEl.innerHTML = `<span style="color:var(--text3)">—</span>`;
+        if (dayEl)   dayEl.innerHTML   = `<span style="color:var(--text3)">—</span>`;
+        if (fatEl)   fatEl.innerHTML   = `<span style="color:var(--text3)">—</span>`;
+        if (roasEl)  roasEl.innerHTML  = `<span style="color:var(--text3)">—</span>`;
       }
     }
   }));

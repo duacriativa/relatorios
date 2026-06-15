@@ -2408,10 +2408,12 @@ async function loadClientTableSpend() {
         const resFat = await fetch(`https://graph.facebook.com/v18.0/${acct}/insights?fields=action_values&time_range={"since":"${since}","until":"${until}"}&level=account&access_token=${token}`);
         const jFat = await resFat.json();
         const actionValues = jFat.data?.[0]?.action_values || [];
-        const purchaseTypes = ['offsite_conversion.fb_pixel_purchase','omni_purchase','purchase'];
+        // Prioridade: omni_purchase > offsite_conversion.fb_pixel_purchase > purchase (são o mesmo evento, não somar)
+        const priority = ['omni_purchase','offsite_conversion.fb_pixel_purchase','purchase'];
         let totalFat = 0;
-        for (const av of actionValues) {
-          if (purchaseTypes.includes(av.action_type)) totalFat += parseFloat(av.value || 0);
+        for (const type of priority) {
+          const found = actionValues.find(av => av.action_type === type);
+          if (found) { totalFat = parseFloat(found.value || 0); break; }
         }
         fatEl.innerHTML = totalFat > 0
           ? `<span style="color:var(--green)">${fB(totalFat)}</span>`

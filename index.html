@@ -2342,7 +2342,7 @@ function renderDashClientTable() {
         <div style="font-size:11px;color:var(--text3);margin-top:3px">hoje</div>
       </td>
       <td>
-        <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;font-weight:800;color:var(--text);line-height:1" id="dfat-${i}">${c.nuvemshop_store_id && c.nuvemshop_token ? '<span style="color:var(--text3);font-size:12px;font-family:Lato,sans-serif;font-weight:400">carregando...</span>' : '<span style="color:var(--text3)">—</span>'}</div>
+        <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;font-weight:800;color:var(--text);line-height:1" id="dfat-${i}">${hasApi ? '<span style="color:var(--text3);font-size:12px;font-family:Lato,sans-serif;font-weight:400">carregando...</span>' : '<span style="color:var(--text3)">—</span>'}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:3px">mês atual</div>
       </td>
       <td style="text-align:right">
@@ -2402,23 +2402,19 @@ async function loadClientTableSpend() {
       }
     }
 
-    // Nuvemshop faturamento do mês
-    if (fatEl && c.nuvemshop_store_id && c.nuvemshop_token) {
+    // Meta Ads faturamento (purchase action_values) do mês
+    if (fatEl && acct && token) {
       try {
-        let totalRev = 0;
-        let page = 1;
-        while (true) {
-          const url = `/api/nuvemshop?storeId=${c.nuvemshop_store_id}&from=${since}&to=${until}&perPage=200&page=${page}`;
-          const res = await fetch(url, { headers: { 'x-ns-token': c.nuvemshop_token } });
-          if (!res.ok) break;
-          const orders = await res.json();
-          if (!Array.isArray(orders) || orders.length === 0) break;
-          for (const o of orders) totalRev += parseFloat(o.total || 0);
-          if (orders.length < 200) break;
-          page++;
+        const resFat = await fetch(`https://graph.facebook.com/v18.0/${acct}/insights?fields=action_values&time_range={"since":"${since}","until":"${until}"}&level=account&access_token=${token}`);
+        const jFat = await resFat.json();
+        const actionValues = jFat.data?.[0]?.action_values || [];
+        const purchaseTypes = ['offsite_conversion.fb_pixel_purchase','omni_purchase','purchase'];
+        let totalFat = 0;
+        for (const av of actionValues) {
+          if (purchaseTypes.includes(av.action_type)) totalFat += parseFloat(av.value || 0);
         }
-        fatEl.innerHTML = totalRev > 0
-          ? `<span style="color:var(--green)">${fB(totalRev)}</span>`
+        fatEl.innerHTML = totalFat > 0
+          ? `<span style="color:var(--green)">${fB(totalFat)}</span>`
           : `<span style="color:var(--text3)">—</span>`;
       } catch(e) {
         fatEl.innerHTML = `<span style="color:var(--text3)">—</span>`;

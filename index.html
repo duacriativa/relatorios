@@ -4638,6 +4638,10 @@ async function batchPostClickUp(commentText, client) {
   const nameLow   = client.name.toLowerCase();
   const task      = allTasks.find(t => t.name.toLowerCase().includes(nameLow));
   if (task) {
+    await cuFetchGlobal(`https://api.clickup.com/api/v2/task/${task.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: 'enviar grupo cliente' })
+    });
     await cuFetchGlobal(`https://api.clickup.com/api/v2/task/${task.id}/comment`, {
       method: 'POST',
       body: JSON.stringify({ comment_text: commentText, notify_all: false })
@@ -4646,7 +4650,7 @@ async function batchPostClickUp(commentText, client) {
   } else {
     await cuFetchGlobal(`https://api.clickup.com/api/v2/list/${cfg.listId}/task`, {
       method: 'POST',
-      body: JSON.stringify({ name: `Relatório — ${client.name}`, description: commentText })
+      body: JSON.stringify({ name: `Relatório — ${client.name}`, description: commentText, status: 'enviar grupo cliente' })
     });
     return `nova tarefa criada`;
   }

@@ -1393,17 +1393,10 @@ Meta Ads — <span id="lbl-client2" style="color:var(--accent2)">—</span>
       </button>
     </div>
   </div>
-  <!-- Coluna direita: Próximos Passos (IA) -->
+  <!-- Coluna direita: Enviar relatório -->
   <div class="card" style="height:100%;">
-    <div class="card-title" style="font-size:18px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;margin-bottom:4px;">Próximos Passos
-      <span style="font-size:10px;font-weight:700;background:var(--accentbg);border:1px solid rgba(124,58,237,.3);color:var(--accent2);border-radius:50px;padding:2px 10px;margin-left:8px;">AI Generated</span>
-    </div>
-    <div class="ai-box loading" id="ai-box">Gerando próximos passos<span class="dots"></span></div>
-    <div class="action-row" style="margin-top:12px;">
-      <button class="btn-act" onclick="genAnalysis()">↺ Regenerar</button>
-      <button class="btn-act green" onclick="copyAI()">📋 Copiar</button>
-    </div>
-    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+    <div class="card-title" style="font-size:18px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;margin-bottom:4px;">Enviar Relatório</div>
+    <div style="margin-top:14px;padding-top:14px;">
       <button class="btn-act accent" style="width:100%;justify-content:center;" id="btn-send-cu-full" onclick="sendClickUpFull()">✓ Enviar ao ClickUp</button>
       <div id="cu-result-p3" style="margin-top:8px;"></div>
     </div>
@@ -2636,7 +2629,7 @@ function goStep(n) {
   if (n >= 1 && !selClient) { toast('⚠️ Selecione um cliente primeiro.'); return; }
   if (n >= 2 && !fetchedData) { toast('⚠️ Puxe os dados primeiro.'); return; }
   if (n === 2) { buildCUPreview(); document.getElementById('cu-result').innerHTML=''; }
-  if (n === 3) { buildRelatorio(); setTimeout(genAnalysis, 300); }
+  if (n === 3) { buildRelatorio(); }
   if (n === 0) renderHistory();
   document.querySelectorAll('.panel').forEach((p,i) => p.classList.toggle('active', i===n));
   document.querySelectorAll('.sidebar-item[id^="tab"]').forEach((t,i) => {
@@ -4038,11 +4031,7 @@ async function sendClickUpFull() {
   if (!fetchedData || !selClient) return;
   const btn = document.getElementById('btn-send-cu-full');
   const res = document.getElementById('cu-result-p3');
-  const aiText = document.getElementById('ai-box').textContent || '';
-
-  if (aiText.includes('Gerando') || aiText.includes('dots')) {
-    toast('⚠️ Aguarde a IA terminar de gerar os próximos passos.'); return;
-  }
+  const aiText = '';
 
   btn.disabled = true; btn.textContent = 'Enviando...';
 

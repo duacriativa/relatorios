@@ -297,8 +297,8 @@ export default async function handler(req, res) {
         // Monta texto do relatório
         const reportText = buildReportText(client.name, metaData, labelFrom, labelTo);
 
-        // Gera análise IA (opcional — não bloqueia se falhar)
-        const aiText = await genAI(client.name, metaData, geminiKey, labelFrom, labelTo);
+        // Análise de IA desativada por enquanto
+        const aiText = null;
 
         // Envia ao ClickUp
         const cuResult = await sendToClickUp(client.name, reportText, aiText, clickupToken, listId, labelFrom, labelTo);

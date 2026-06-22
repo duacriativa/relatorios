@@ -906,7 +906,12 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 <div class="hint">Token permanente do Usuário do Sistema. Usado para todos os clientes sem token próprio.</div>
 </div>
 <div class="field">
-<label>Chave OpenAI API Key</label>
+<label>Chave Gemini API Key (Próximos Passos da IA)</label>
+<input type="password" id="gemini-key" placeholder="AIzaSy..."/>
+<div class="hint">Gere em <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a></div>
+</div>
+<div class="field">
+<label>Chave OpenAI API Key (geração de imagem do cliente, opcional)</label>
 <input type="password" id="oai-key" placeholder="sk-..."/>
 </div>
 <button class="btn-main" onclick="startApp()">Salvar e entrar →</button>
@@ -949,7 +954,11 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-he
 </div>
 <div id="cu-diag-result" style="display:none;margin-bottom:12px;padding:10px 13px;border-radius:8px;font-size:12px;line-height:1.6;font-family:monospace;word-break:break-all;"></div>
 <div class="field">
-  <label>OpenAI API Key</label>
+  <label>Gemini API Key (Próximos Passos da IA)</label>
+  <input type="password" id="cfg-gemini-modal" placeholder="AIzaSy..."/>
+</div>
+<div class="field">
+  <label>OpenAI API Key (geração de imagem do cliente, opcional)</label>
   <input type="password" id="cfg-oai-modal" placeholder="sk-..."/>
 </div>
 <button class="btn-main" id="btn-save-config" onclick="saveConfig()">Salvar configurações</button>
@@ -1467,6 +1476,7 @@ async function loadConfig() {
       cfg.clickup   = rows[0].clickup_token || '';
       cfg.listId    = rows[0].clickup_list_id || '';
       cfg.openaiKey = rows[0].openai_key || '';
+      cfg.geminiKey = rows[0].gemini_key || '';
       cfg.metaToken = rows[0].meta_token || '';
       return true;
     }
@@ -1476,12 +1486,12 @@ async function loadConfig() {
   return false;
 }
 
-async function saveConfigToSupabase(clickup, listId, openaiKey, metaToken) {
+async function saveConfigToSupabase(clickup, listId, openaiKey, metaToken, geminiKey) {
   await sbFetch('config', {
     method: 'POST',
     prefer: 'return=minimal,resolution=merge-duplicates',
     headers: { 'Prefer': 'return=minimal,resolution=merge-duplicates' },
-    body: JSON.stringify({ id: 1, clickup_token: clickup, clickup_list_id: listId, openai_key: openaiKey, meta_token: metaToken })
+    body: JSON.stringify({ id: 1, clickup_token: clickup, clickup_list_id: listId, openai_key: openaiKey, meta_token: metaToken, gemini_key: geminiKey })
   });
 }
 
@@ -1649,7 +1659,7 @@ style.textContent = '@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{tr
 document.head.appendChild(style);
 
 // ════════ STATE ════════
-let cfg = {clickup:'', listId:'', openaiKey:'', metaToken:'', isDemo:false};
+let cfg = {clickup:'', listId:'', openaiKey:'', geminiKey:'', metaToken:'', isDemo:false};
 let clients = [];
 let selClient = null;
 let fetchedData = null;
@@ -1947,10 +1957,11 @@ async function startApp() {
   cfg.clickup   = document.getElementById('cfg-clickup').value.trim();
   cfg.listId    = document.getElementById('cfg-list').value.trim();
   cfg.openaiKey = document.getElementById('oai-key').value.trim();
+  cfg.geminiKey = document.getElementById('gemini-key').value.trim();
   cfg.metaToken = document.getElementById('cfg-meta-token').value.trim();
   if (!cfg.clickup || !cfg.listId) { toast('⚠️ Preencha o token do ClickUp e o ID da lista.'); return; }
   try {
-    await saveConfigToSupabase(cfg.clickup, cfg.listId, cfg.openaiKey, cfg.metaToken);
+    await saveConfigToSupabase(cfg.clickup, cfg.listId, cfg.openaiKey, cfg.metaToken, cfg.geminiKey);
     toast('✓ Configuração salva para toda a equipe!');
   } catch(e) {
     toast('⚠️ Erro ao salvar config: ' + e.message);
@@ -1966,6 +1977,7 @@ function openConfig() {
   document.getElementById('cfg-clickup-modal').value    = cfg.clickup || '';
   document.getElementById('cfg-list-modal').value       = cfg.listId || '';
   document.getElementById('cfg-oai-modal').value        = cfg.openaiKey || '';
+  document.getElementById('cfg-gemini-modal').value     = cfg.geminiKey || '';
   document.getElementById('global-token-result').style.display = 'none';
   document.getElementById('modal-config').classList.add('open');
 }
@@ -1975,6 +1987,7 @@ async function saveConfig() {
   const clickup   = document.getElementById('cfg-clickup-modal').value.trim();
   const listId    = document.getElementById('cfg-list-modal').value.trim();
   const openaiKey = document.getElementById('cfg-oai-modal').value.trim();
+  const geminiKey = document.getElementById('cfg-gemini-modal').value.trim();
   const btn = document.getElementById('btn-save-config');
   btn.disabled = true; btn.textContent = 'Salvando...';
 
@@ -1982,6 +1995,7 @@ async function saveConfig() {
   const finalClickup   = clickup   || cfg.clickup   || '';
   const finalListId    = listId    || cfg.listId    || '';
   const finalOpenaiKey = openaiKey || cfg.openaiKey || '';
+  const finalGeminiKey = geminiKey || cfg.geminiKey || '';
   const finalMetaToken = metaToken || cfg.metaToken || '';
 
   try {
@@ -1993,6 +2007,7 @@ async function saveConfig() {
         clickup_token:   finalClickup,
         clickup_list_id: finalListId,
         openai_key:      finalOpenaiKey,
+        gemini_key:      finalGeminiKey,
         meta_token:      finalMetaToken
       })
     });
@@ -2000,6 +2015,7 @@ async function saveConfig() {
     cfg.clickup   = finalClickup;
     cfg.listId    = finalListId;
     cfg.openaiKey = finalOpenaiKey;
+    cfg.geminiKey = finalGeminiKey;
     toast('✓ Configurações salvas!');
     document.getElementById('modal-config').classList.remove('open');
     if (!cfg.isDemo) checkAllTokens();
@@ -4294,7 +4310,7 @@ async function genAnalysis() {
   box.className = 'ai-box loading';
   box.innerHTML = 'Gerando análise<span class="dots"></span>';
 
-  if (cfg.isDemo || !cfg.openaiKey) {
+  if (cfg.isDemo || !cfg.geminiKey) {
     await new Promise(r=>setTimeout(r,1500));
     box.className='ai-box';
     const d = fetchedData;
@@ -4384,15 +4400,18 @@ ${dadosAI}
 Escreva APENAS o texto final, sem introdução ou explicação.`;
 
   try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${cfg.geminiKey}`, {
       method:'POST',
-      headers:{'Authorization':'Bearer '+cfg.openaiKey,'Content-Type':'application/json'},
-      body: JSON.stringify({model:'gpt-4o-mini',messages:[{role:'user',content:prompt}],max_tokens:280,temperature:0.75})
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 280, temperature: 0.75 }
+      })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
     box.className='ai-box';
-    box.textContent = data.choices[0].message.content;
+    box.textContent = data.candidates[0].content.parts[0].text.trim();
   } catch(e) {
     box.className='ai-box';
     box.textContent = '⚠️ Erro ao gerar análise: '+e.message;

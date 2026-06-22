@@ -127,9 +127,9 @@ function buildReportText(clientName, d, labelFrom, labelTo) {
   return lines.join('\n');
 }
 
-// ─── OpenAI — Próximos Passos ───
-async function genAI(clientName, d, openaiKey, labelFrom, labelTo) {
-  if (!openaiKey) return null;
+// ─── Gemini — Próximos Passos ───
+async function genAI(clientName, d, geminiKey, labelFrom, labelTo) {
+  if (!geminiKey) return null;
   const isEcommerce = d.convQty > 0 || d.revVal > 0;
   const lc = d.lc;
   const dadosStr = isEcommerce
@@ -164,16 +164,19 @@ ${dadosStr}`;
   try {
     const ctrl  = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 18000);
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
       method: 'POST',
       signal: ctrl.signal,
-      headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: prompt }], max_tokens: 220, temperature: 0.75 })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 220, temperature: 0.75 }
+      })
     });
     clearTimeout(timer);
     const data = await res.json();
     if (data.error) return null;
-    return data.choices?.[0]?.message?.content || null;
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
   } catch(e) {
     return null; // IA falhou — não bloqueia o relatório
   }
@@ -260,7 +263,7 @@ export default async function handler(req, res) {
     if (!configRows?.length) {
       return res.status(500).json({ error: 'Config não encontrada no Supabase' });
     }
-    const { clickup_token: clickupToken, clickup_list_id: listId, openai_key: openaiKey, meta_token: globalToken } = configRows[0];
+    const { clickup_token: clickupToken, clickup_list_id: listId, gemini_key: geminiKey, meta_token: globalToken } = configRows[0];
 
     if (!clickupToken || !listId) {
       return res.status(500).json({ error: 'ClickUp token ou list ID não configurados' });
@@ -295,7 +298,7 @@ export default async function handler(req, res) {
         const reportText = buildReportText(client.name, metaData, labelFrom, labelTo);
 
         // Gera análise IA (opcional — não bloqueia se falhar)
-        const aiText = await genAI(client.name, metaData, openaiKey, labelFrom, labelTo);
+        const aiText = await genAI(client.name, metaData, geminiKey, labelFrom, labelTo);
 
         // Envia ao ClickUp
         const cuResult = await sendToClickUp(client.name, reportText, aiText, clickupToken, listId, labelFrom, labelTo);
